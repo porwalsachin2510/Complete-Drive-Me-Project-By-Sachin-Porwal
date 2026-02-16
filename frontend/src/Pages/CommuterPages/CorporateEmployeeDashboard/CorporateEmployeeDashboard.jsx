@@ -30,37 +30,50 @@ export default function CorporateEmployeeDashboard() {
       setLoading(true);
       setError(null);
 
-      // Fetch employee details and assigned stop assignments
-      const employeeRes = await api.get(`/corporate-employees/${userId}`);
-      if (employeeRes.data.success) {
-        setAssignedBus(employeeRes.data.employee);
-      }
+      // Get today's date for API calls
+      const today = new Date();
+      const dateStr = today.toISOString().split("T")[0];
 
-      // Fetch today's available trips for the assigned route
-      const today = new Date().toISOString().split("T")[0];
-      const tripsRes = await api.get(`/trips/available?date=${today}`);
-      if (tripsRes.data.success) {
-        setTodayTrips(tripsRes.data.trips || []);
-      }
-
-      // Fetch employee's upcoming bookings
-      const upcomingRes = await api.get(
-        `/corporate-employees/bookings?status=SCHEDULED`,
+      // Fetch employee's assigned trips for today using new API
+      const employeeTripsRes = await api.get(
+        `/corporate-operations/employee/${userId}/trips?date=${dateStr}`
       );
-      if (upcomingRes.data.success) {
-        setUpcomingTrips(upcomingRes.data.bookings || []);
+      
+      if (employeeTripsRes.data.success) {
+        const trips = employeeTripsRes.data.data?.trips || [];
+        console.log("[v0] Employee assigned trips:", trips);
+        setTodayTrips(trips);
+        setUpcomingTrips(trips.filter(t => t.status === "SCHEDULED"));
+      }
+
+      // Fetch assigned bus/route info - employee's route assignment
+      try {
+        const busRes = await api.get(`/corporate-employees/${userId}/assigned-route`);
+        if (busRes.data.success) {
+          setAssignedBus(busRes.data.data);
+        }
+      } catch (err) {
+        console.log("[v0] Could not fetch bus info:", err.message);
       }
 
       // Fetch no-show history
-      const noShowRes = await api.get(`/no-show/my-history`);
-      if (noShowRes.data.success) {
-        setNoShowHistory(noShowRes.data.noShows || []);
+      try {
+        const noShowRes = await api.get(`/no-show/my-history`);
+        if (noShowRes.data.success) {
+          setNoShowHistory(noShowRes.data.noShows || []);
+        }
+      } catch (err) {
+        console.log("[v0] Could not fetch no-show history:", err.message);
       }
 
       // Fetch notifications
-      const notifRes = await api.get(`/notifications`);
-      if (notifRes.data.success) {
-        setNotifications(notifRes.data.notifications || []);
+      try {
+        const notifRes = await api.get(`/notifications`);
+        if (notifRes.data.success) {
+          setNotifications(notifRes.data.notifications || []);
+        }
+      } catch (err) {
+        console.log("[v0] Could not fetch notifications:", err.message);
       }
 
       setLoading(false);
@@ -125,43 +138,30 @@ export default function CorporateEmployeeDashboard() {
 
   const handleBookTrip = async (tripId) => {
     try {
-      const seatNumber = prompt(
-        "Enter your seat number (or leave blank to auto-assign):",
-      );
-
-      const response = await api.post(`/trips/${tripId}/book`, {
-        pickupStop: assignedBus?.assignedStops?.[0],
-        seatNumber: seatNumber ? parseInt(seatNumber) : null,
-        employeeId: userId,
-      });
-
-      if (response.data.success) {
-        alert(
-          "Trip booked successfully! Reference: " +
-            response.data.booking.bookingReference,
-        );
-        fetchEmployeeDashboardData();
-      }
+      // For corporate trips, employees are pre-assigned by the corporate admin
+      // This is a confirmation/check-in action
+      alert("Trip is already assigned to you. Please check in 15 minutes before departure.");
+      fetchEmployeeDashboardData();
     } catch (error) {
-      console.error("[v0] Error booking trip:", error);
-      alert(
-        `Error booking trip: ${error.response?.data?.message || error.message}`,
-      );
+      console.error("[v0] Error handling trip:", error);
     }
   };
 
   const handleCancelBooking = async (tripId) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
+    if (window.confirm("Are you sure you want to cancel this trip assignment?")) {
       try {
+        // Cancel booking through trip endpoint
         const response = await api.delete(`/trips/${tripId}/cancel`);
         if (response.data.success) {
-          alert("Booking cancelled successfully!");
+          alert("Trip assignment cancelled successfully!");
           fetchEmployeeDashboardData();
+        } else {
+          alert(response.data.message || "Failed to cancel trip");
         }
       } catch (error) {
-        console.error("[v0] Error cancelling booking:", error);
+        console.error("[v0] Error cancelling trip:", error);
         alert(
-          `Error cancelling booking: ${error.response?.data?.message || error.message}`,
+          `Error cancelling trip: ${error.response?.data?.message || error.message}`,
         );
       }
     }
@@ -294,7 +294,7 @@ export default function CorporateEmployeeDashboard() {
                 </div>
 
                 <div className="today-trips-card">
-                  <h2>Today's Available Trips</h2>
+                  <h2>Your Assigned Trips Today</h2>
                   {todayTrips.length > 0 ? (
                     <div className="trips-list">
                       {todayTrips.map((trip) => (
@@ -304,22 +304,31 @@ export default function CorporateEmployeeDashboard() {
                             <span className="trip-route">
                               {trip.fromLocation} → {trip.toLocation}
                             </span>
+                            {trip.currentLocation && (
+                              <span className="trip-location">
+                                Driver Location: {trip.currentLocation.lat?.toFixed(2)}, {trip.currentLocation.lng?.toFixed(2)}
+                              </span>
+                            )}
                           </div>
-                          <div className="trip-seats">
-                            <span>{trip.availableSeats} seats available</span>
+                          <div className="trip-details">
+                            <span>Status: <strong>{trip.status}</strong></span>
+                            <span>Pickup: {trip.pickupPoint || trip.fromLocation}</span>
+                            {trip.driverInfo && (
+                              <span>Driver: {trip.driverInfo.name}</span>
+                            )}
                           </div>
                           <button
                             className="book-btn"
                             onClick={() => handleBookTrip(trip._id)}
                           >
-                            Book Now
+                            Check In
                           </button>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="no-trips">
-                      <p>No trips available for today</p>
+                      <p>No trips assigned for today</p>
                     </div>
                   )}
                 </div>

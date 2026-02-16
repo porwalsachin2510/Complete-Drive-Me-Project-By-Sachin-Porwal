@@ -43,6 +43,7 @@ import noShowRoutes from "./routes/noShowRoutes.js"
 import subscriptionSettingsRoutes from "./routes/subscriptionSettingsRoutes.js"
 import travelHistoryRoutes from "./routes/travelHistoryRoutes.js"
 import settlementRoutes from "./routes/settlementRoutes.js"
+import corporateOperationsRoutes from "./routes/corporateOperationsRoutes.js"
 // import { dailyTripGeneration, frequentTripGeneration, hourlyTripGeneration, runImmediateGeneration } from "./cron/tripGenerationCron.js" // DISABLED
 
 dotenv.config()
