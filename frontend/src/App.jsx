@@ -44,6 +44,7 @@ import WalletPage from "./Pages/CommuterPages/WalletPage/WalletPage";
 import WalletPaymentCallback from "./Pages/CommuterPages/WalletPage/WalletPaymentCallback";
 import CorporateEmployeeDashboard from "./Pages/CommuterPages/CorporateEmployeeDashboard/CorporateEmployeeDashboard";
 import CorporateEmployeeManagementPage from "./Pages/CorporatePages/CorporateEmployeeManagementPage/CorporateEmployeeManagementPage";
+import EmployeeDashboard from "./Pages/CommuterPages/EmployeeDashboard/EmployeeDashboard";
 
 function App() {
   return (
@@ -116,6 +117,14 @@ function App() {
           />
           <Route
             path="/employee-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_EMPLOYEE"]}>
+                <EmployeeDashboard />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/employee/dashboard-old"
             element={
               <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_EMPLOYEE"]}>
                 <CorporateEmployeeDashboard />

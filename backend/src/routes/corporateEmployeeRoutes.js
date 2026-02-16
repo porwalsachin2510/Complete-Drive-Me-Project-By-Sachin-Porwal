@@ -8,7 +8,8 @@ import {
     deleteEmployee,
     getEmployeeAttendance,
     getRouteUtilization,
-    approveEmployeeRegistration
+    approveEmployeeRegistration,
+    assignStopsToEmployee
 } from "../controllers/corporateEmployeeController.js";
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post("/bulk-upload", verifyToken, bulkUploadEmployees);
 router.post("/upload-csv", verifyToken, uploadEmployeesFromCSV);
 router.get("/", verifyToken, getEmployees);
 router.put("/:employeeId", verifyToken, updateEmployee);
+router.patch("/:employeeId/assign-stops", verifyToken, assignStopsToEmployee);
 router.delete("/:employeeId", verifyToken, deleteEmployee);
 router.post("/approve/:employeeId", verifyToken, approveEmployeeRegistration);
 

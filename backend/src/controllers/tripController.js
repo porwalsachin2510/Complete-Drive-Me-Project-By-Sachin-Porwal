@@ -93,11 +93,26 @@ export const createTripsFromRoute = async (req, res) => {
                         toLocation = route.fromLocation;
                     }
 
+                    // Check vehicle assignment rule for driver assignment
+                    let driverId = null;
+                    let driverStatus = "UNASSIGNED";
+                    
+                    if (assignedVehicleDetail.driverAssignedBy === "WITH_DRIVER" || 
+                        (assignedVehicleDetail.driverAssignedBy !== "WITHOUT_DRIVER" && assignedVehicleDetail.driverId)) {
+                        // Auto-assign driver if vehicle assignment has a driver
+                        driverId = assignedVehicleDetail.driverId;
+                        driverStatus = "ASSIGNED";
+                    } else if (assignedVehicleDetail.driverAssignedBy === "WITHOUT_DRIVER") {
+                        // Driver will be assigned separately by corporate admin
+                        driverStatus = "PENDING_ASSIGNMENT";
+                    }
+
                     const trip = new Trip({
                         contractId: contract._id,
                         routeId: route._id,
                         vehicleId: assignedVehicle.vehicleId,
-                        driverId: assignedVehicleDetail.driverId,
+                        driverId: driverId,
+                        driverStatus: driverStatus,
                         corporateId: corporateId,
                         b2bPartnerId: contract.fleetOwnerId,
                         
@@ -124,11 +139,17 @@ export const createTripsFromRoute = async (req, res) => {
                     const savedTrip = await trip.save();
                     trips.push(savedTrip);
 
-                    // Send real-time notification to driver
-                    if (assignedVehicleDetail.driverId) {
-                        io.to(`driver_${assignedVehicleDetail.driverId}`).emit('newTripAssigned', {
+                    // Send real-time notification to driver if auto-assigned
+                    if (driverId && driverStatus === "ASSIGNED") {
+                        io.to(`driver_${driverId}`).emit('newTripAssigned', {
                             trip: savedTrip,
                             message: `New trip assigned: ${fromLocation} → ${toLocation} on ${tripDateTime.toLocaleDateString()} at ${schedule.startTime}`
+                        });
+                    } else if (driverStatus === "PENDING_ASSIGNMENT") {
+                        // Notify corporate admin to assign driver
+                        io.to(`corporate_${corporateId}`).emit('tripNeedsDriverAssignment', {
+                            tripId: savedTrip._id,
+                            message: `Trip requires driver assignment: ${fromLocation} → ${toLocation}`
                         });
                     }
                 }
