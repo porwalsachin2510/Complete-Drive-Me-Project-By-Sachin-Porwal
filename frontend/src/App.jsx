@@ -42,6 +42,8 @@ import B2C_PartnerBookingsPage from "./Pages/B2C_PartnerPages/B2C_PartnerBooking
 import CommuterMyBookingsPage from "./Pages/CommuterPages/CommuterMyBookingsPage/CommuterMyBookingsPage";
 import WalletPage from "./Pages/CommuterPages/WalletPage/WalletPage";
 import WalletPaymentCallback from "./Pages/CommuterPages/WalletPage/WalletPaymentCallback";
+import CorporateEmployeeDashboard from "./Pages/CommuterPages/CorporateEmployeeDashboard/CorporateEmployeeDashboard";
+import CorporateEmployeeManagementPage from "./Pages/CorporatePages/CorporateEmployeeManagementPage/CorporateEmployeeManagementPage";
 
 function App() {
   return (
@@ -109,6 +111,14 @@ function App() {
             element={
               <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
                 <WalletPaymentCallback />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/employee-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_EMPLOYEE"]}>
+                <CorporateEmployeeDashboard />
               </ProtectedRoleBasedRoute>
             }
           />
@@ -262,6 +272,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["CORPORATE"]}>
                 <CorporateEmployeeBookingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/corporate/employee-management"
+            element={
+              <ProtectedRoute allowedRoles={["CORPORATE"]}>
+                <CorporateEmployeeManagementPage />
               </ProtectedRoute>
             }
           />
