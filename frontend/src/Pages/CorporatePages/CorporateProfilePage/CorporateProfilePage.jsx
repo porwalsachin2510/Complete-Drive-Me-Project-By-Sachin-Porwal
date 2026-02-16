@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../../Redux/slices/authSlice";
@@ -23,8 +23,40 @@ export default function CorporateProfilePage() {
   const [activeTab, setActiveTab] = useState("corporate");
   
   const [corporateactiveTab, setCorporateActiveTab] = useState("company-profile");
+  
+  // Add state for real corporate stats
+  const [corporateStats, setCorporateStats] = useState({
+    activeContracts: 0,
+    totalEmployees: 0,
+    activeRoutes: 0,
+    monthlyBookings: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   
+  // Fetch corporate stats from backend
+  useEffect(() => {
+    const fetchCorporateStats = async () => {
+      try {
+        setStatsLoading(true);
+        const response = await api.get('/corporate/stats');
+        if (response.data.success) {
+          setCorporateStats({
+            activeContracts: response.data.data?.activeContracts || 0,
+            totalEmployees: response.data.data?.totalEmployees || 0,
+            activeRoutes: response.data.data?.activeRoutes || 0,
+            monthlyBookings: response.data.data?.monthlyBookings || 0,
+          });
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching corporate stats:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    
+    fetchCorporateStats();
+  }, []);
   
   const handleLogout = async () => {
     try {
@@ -95,7 +127,7 @@ export default function CorporateProfilePage() {
             </div>
             <div className="corporate-stat-content">
               <div className="corporate-stat-label">Active Contracts</div>
-              <div className="corporate-stat-value">0</div>
+              <div className="corporate-stat-value">{corporateStats.activeContracts}</div>
             </div>
           </div>
 
@@ -116,8 +148,8 @@ export default function CorporateProfilePage() {
               </svg>
             </div>
             <div className="corporate-stat-content">
-              <div className="corporate-stat-label">Employees Transported</div>
-              <div className="corporate-stat-value">0</div>
+              <div className="corporate-stat-label">Total Employees</div>
+              <div className="corporate-stat-value">{corporateStats.totalEmployees}</div>
             </div>
           </div>
 
@@ -137,8 +169,8 @@ export default function CorporateProfilePage() {
               </svg>
             </div>
             <div className="corporate-stat-content">
-              <div className="corporate-stat-label">Monthly Spend</div>
-              <div className="corporate-stat-value">0 KWD</div>
+              <div className="corporate-stat-label">Active Routes</div>
+              <div className="corporate-stat-value">{corporateStats.activeRoutes}</div>
             </div>
           </div>
         </div>
