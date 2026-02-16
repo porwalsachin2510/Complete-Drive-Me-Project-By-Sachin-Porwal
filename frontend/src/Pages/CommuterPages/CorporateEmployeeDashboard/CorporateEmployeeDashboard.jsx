@@ -1,23 +1,42 @@
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
 import "./corporateemployeedashboard.css";
-import api from "../../../utils/api";
 import io from "socket.io-client";
+import {
+  fetchEmployeeTrips,
+  fetchAssignedRoute,
+  fetchNoShowHistory,
+  fetchNotifications,
+  setDriverLocation,
+  addNotification,
+  updateTripStatus,
+  selectEmployeeTrips,
+  selectTripsLoading,
+  selectTripsError,
+  selectAssignedRoute,
+  selectNotifications,
+  selectNoShowHistory,
+  selectDriverLocation
+} from "../../../Redux/slices/corporateEmployeeSlice";
 
 export default function CorporateEmployeeDashboard() {
+  const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
   const userId = useSelector((state) => state.auth.userId);
 
+  // Redux selectors
+  const todayTrips = useSelector(selectEmployeeTrips);
+  const tripsLoading = useSelector(selectTripsLoading);
+  const tripsError = useSelector(selectTripsError);
+  const assignedBus = useSelector(selectAssignedRoute);
+  const notifications = useSelector(selectNotifications);
+  const noShowHistory = useSelector(selectNoShowHistory);
+  const driverLocation = useSelector(selectDriverLocation);
+
   const [activeTab, setActiveTab] = useState("corporate");
-  const [assignedBus, setAssignedBus] = useState(null);
-  const [todayTrips, setTodayTrips] = useState([]);
   const [upcomingTrips, setUpcomingTrips] = useState([]);
-  const [noShowHistory, setNoShowHistory] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [driverLocation, setDriverLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("trip-info");
   const [socket, setSocket] = useState(null);
@@ -27,54 +46,19 @@ export default function CorporateEmployeeDashboard() {
 
   const fetchEmployeeDashboardData = async () => {
     try {
-      setLoading(true);
       setError(null);
 
       // Get today's date for API calls
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0];
 
-      // Fetch employee's assigned trips for today using new API
-      const employeeTripsRes = await api.get(
-        `/corporate-operations/employee/${userId}/trips?date=${dateStr}`
-      );
-      
-      if (employeeTripsRes.data.success) {
-        const trips = employeeTripsRes.data.data?.trips || [];
-        console.log("[v0] Employee assigned trips:", trips);
-        setTodayTrips(trips);
-        setUpcomingTrips(trips.filter(t => t.status === "SCHEDULED"));
-      }
-
-      // Fetch assigned bus/route info - employee's route assignment
-      try {
-        const busRes = await api.get(`/corporate-employees/${userId}/assigned-route`);
-        if (busRes.data.success) {
-          setAssignedBus(busRes.data.data);
-        }
-      } catch (err) {
-        console.log("[v0] Could not fetch bus info:", err.message);
-      }
-
-      // Fetch no-show history
-      try {
-        const noShowRes = await api.get(`/no-show/my-history`);
-        if (noShowRes.data.success) {
-          setNoShowHistory(noShowRes.data.noShows || []);
-        }
-      } catch (err) {
-        console.log("[v0] Could not fetch no-show history:", err.message);
-      }
-
-      // Fetch notifications
-      try {
-        const notifRes = await api.get(`/notifications`);
-        if (notifRes.data.success) {
-          setNotifications(notifRes.data.notifications || []);
-        }
-      } catch (err) {
-        console.log("[v0] Could not fetch notifications:", err.message);
-      }
+      // Dispatch Redux actions to fetch all data
+      await Promise.all([
+        dispatch(fetchEmployeeTrips({ employeeId: userId, date: dateStr })),
+        dispatch(fetchAssignedRoute(userId)),
+        dispatch(fetchNoShowHistory()),
+        dispatch(fetchNotifications())
+      ]);
 
       setLoading(false);
     } catch (error) {
@@ -97,19 +81,19 @@ export default function CorporateEmployeeDashboard() {
         newSocket.emit("join-notification-room", userId);
       });
 
-      newSocket.on("employee-location-update", (locationData) => {
+      newSocket.on("location-update", (locationData) => {
         console.log("[v0] Received driver location update:", locationData);
-        setDriverLocation(locationData);
+        dispatch(setDriverLocation(locationData));
       });
 
-      newSocket.on("trip-update", () => {
-        console.log("[v0] Trip update received, refreshing data");
-        fetchEmployeeDashboardData();
+      newSocket.on("trip-update", (tripData) => {
+        console.log("[v0] Trip update received:", tripData);
+        dispatch(updateTripStatus({ tripId: tripData.tripId, status: tripData.status }));
       });
 
       newSocket.on("notification", (notificationData) => {
         console.log("[v0] Received notification:", notificationData);
-        setNotifications((prev) => [notificationData, ...prev]);
+        dispatch(addNotification(notificationData));
       });
 
       newSocket.on("error", (error) => {
@@ -184,7 +168,7 @@ export default function CorporateEmployeeDashboard() {
           </div>
         )}
 
-        {loading ? (
+        {loading || tripsLoading ? (
           <div className="loading-container">
             <div className="spinner"></div>
             <p>Loading your dashboard...</p>

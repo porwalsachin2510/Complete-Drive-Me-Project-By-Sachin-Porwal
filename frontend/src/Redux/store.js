@@ -11,6 +11,10 @@ import paymentScheduleReducer from "./slices/paymentScheduleSlice"
 import driverReducer from "./slices/driverSlice"
 import bookingReducer from "./slices/bookingSlice"
 import notificationReducer from "./slices/notificationSlice"
+import corporateEmployeeReducer from "./slices/corporateEmployeeSlice"
+import b2bPartnerReducer from "./slices/b2bPartnerSlice"
+import commuterBookingReducer from "./slices/commuterBookingSlice"
+import adminDashboardReducer from "./slices/adminDashboardSlice"
 
 export const store = configureStore({
     reducer: {
@@ -26,6 +30,10 @@ export const store = configureStore({
         driver: driverReducer,
         booking: bookingReducer,
         notifications: notificationReducer,
+        corporateEmployee: corporateEmployeeReducer,
+        b2bPartner: b2bPartnerReducer,
+        commuterBooking: commuterBookingReducer,
+        adminDashboard: adminDashboardReducer,
     },
 })
 
