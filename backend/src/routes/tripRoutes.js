@@ -8,7 +8,8 @@ import {
     startTrip,
     completeTrip,
     updateDriverLocation,
-    getCorporateTrips
+    getCorporateTrips,
+    assignDriverToTrip
 } from "../controllers/tripController.js";
 import {
     createMonthlyPass,
@@ -27,6 +28,7 @@ router.post("/create-from-route", verifyToken, createTripsFromRoute);
 router.get("/available", verifyToken, getAvailableTrips);
 router.get("/my-bookings", verifyToken, getMyBookings);
 router.get("/corporate", verifyToken, getCorporateTrips);
+router.post("/:tripId/assign-driver", verifyToken, assignDriverToTrip);
 router.post("/:tripId/book", verifyToken, bookTripSeat);
 router.delete("/:tripId/cancel", verifyToken, cancelTripBooking);
 router.post("/:tripId/start", verifyToken, startTrip);

@@ -9,19 +9,163 @@ import { io } from "../index.js";
 // @desc    Create recurring trips from route
 // @route   POST /api/trips/create-from-route
 // @access  Private (CORPORATE only)
+// export const createTripsFromRoute = async (req, res) => {
+//     try {
+//         const corporateId = req.userId;
+//         const { 
+//             routeId,
+//             tripSchedules // Array of { startTime, endTime, tripType, direction }
+//         } = req.body;
+
+//         // Validate route belongs to corporate
+//         const route = await Route.findOne({ 
+//             _id: routeId, 
+//             corporateId,
+//             status: "ACTIVE" 
+//         }).populate("contractId");
+
+//         if (!route) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Route not found or unauthorized"
+//             });
+//         }
+
+//         // Get contract details
+//         const contract = route.contractId;
+//         if (!contract || contract.status !== "ACTIVE") {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Contract is not active"
+//             });
+//         }
+
+//         // Find assigned vehicle and driver for this route
+//         const assignedVehicle = contract.vehicles.find(v => 
+//             v.assignedVehicles.some(av => 
+//                 av.routeDetails && av.routeDetails.toString() === routeId
+//             )
+//         );
+
+//         if (!assignedVehicle) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "No vehicle assigned to this route"
+//             });
+//         }
+
+//         const assignedVehicleDetail = assignedVehicle.assignedVehicles.find(av => 
+//             av.routeDetails && av.routeDetails.toString() === routeId
+//         );
+
+//         // Create ongoing trips starting from route's routeStartDate
+//         const trips = [];
+//         const schedulesToUse = tripSchedules && tripSchedules.length > 0 ? tripSchedules : [
+//             { startTime: "09:00", endTime: "12:00", tripType: "ONE_WAY", direction: "FORWARD" }
+//         ];
+
+//         // Create trips for next 30 days from route start date (ongoing trips)
+//         const routeStartDate = new Date(route.routeStartDate);
+//         const endDate = new Date(routeStartDate);
+//         endDate.setDate(endDate.getDate() + 30); // Create trips for next 30 days
+
+//         for (let date = new Date(routeStartDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+//             const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+            
+//             // Use route's availableDays
+//             if (route.availableDays.includes(dayOfWeek)) {
+//                 // Create multiple trips for this day based on schedules
+//                 for (const schedule of schedulesToUse) {
+//                     const tripDate = new Date(date);
+//                     const tripDateTime = new Date(tripDate);
+                    
+//                     // Set time for this specific trip schedule
+//                     const [hours, minutes] = schedule.startTime.split(':');
+//                     tripDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+//                     // Determine from/to locations based on direction
+//                     let fromLocation, toLocation;
+//                     if (schedule.direction === "FORWARD") {
+//                         fromLocation = route.fromLocation;
+//                         toLocation = route.toLocation;
+//                     } else {
+//                         fromLocation = route.toLocation;
+//                         toLocation = route.fromLocation;
+//                     }
+
+//                     const trip = new Trip({
+//                         contractId: contract._id,
+//                         routeId: route._id,
+//                         vehicleId: assignedVehicle.vehicleId,
+//                         driverId: assignedVehicleDetail.driverId,
+//                         corporateId: corporateId,
+//                         b2bPartnerId: contract.fleetOwnerId,
+                        
+//                         tripDate: tripDateTime,
+//                         startTime: schedule.startTime,
+//                         endTime: schedule.endTime,
+//                         fromLocation: fromLocation,
+//                         toLocation: toLocation,
+//                         totalDistance: route.totalDistance,
+//                         estimatedDuration: route.estimatedDuration,
+                        
+//                         totalSeats: route.totalSeats,
+//                         availableSeats: route.availableSeats,
+//                         pricePerSeat: route.pricePerSeat,
+//                         currency: route.currency,
+                        
+//                         tripType: schedule.tripType || "ONE_WAY",
+//                         direction: schedule.direction,
+//                         scheduleIndex: schedulesToUse.indexOf(schedule),
+                        
+//                         createdBy: corporateId,
+//                     });
+
+//                     const savedTrip = await trip.save();
+//                     trips.push(savedTrip);
+
+//                     // Send real-time notification to driver
+//                     if (assignedVehicleDetail.driverId) {
+//                         io.to(`driver_${assignedVehicleDetail.driverId}`).emit('newTripAssigned', {
+//                             trip: savedTrip,
+//                             message: `New trip assigned: ${fromLocation} → ${toLocation} on ${tripDateTime.toLocaleDateString()} at ${schedule.startTime}`
+//                         });
+//                     }
+//                 }
+//             }
+//         }
+
+//         res.status(201).json({
+//             success: true,
+//             message: `Created ${trips.length} trips successfully`,
+//             data: { trips }
+//         });
+
+//     } catch (error) {
+//         console.error("Error creating trips from route:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to create trips"
+//         });
+//     }
+// };
+
+// @desc    Create recurring trips from route
+// @route   POST /api/trips/create-from-route
+// @access  Private (CORPORATE only)
 export const createTripsFromRoute = async (req, res) => {
     try {
         const corporateId = req.userId;
-        const { 
+        const {
             routeId,
             tripSchedules // Array of { startTime, endTime, tripType, direction }
         } = req.body;
 
         // Validate route belongs to corporate
-        const route = await Route.findOne({ 
-            _id: routeId, 
+        const route = await Route.findOne({
+            _id: routeId,
             corporateId,
-            status: "ACTIVE" 
+            status: "ACTIVE"
         }).populate("contractId");
 
         if (!route) {
@@ -41,8 +185,8 @@ export const createTripsFromRoute = async (req, res) => {
         }
 
         // Find assigned vehicle and driver for this route
-        const assignedVehicle = contract.vehicles.find(v => 
-            v.assignedVehicles.some(av => 
+        const assignedVehicle = contract.vehicles.find(v =>
+            v.assignedVehicles.some(av =>
                 av.routeDetails && av.routeDetails.toString() === routeId
             )
         );
@@ -54,7 +198,7 @@ export const createTripsFromRoute = async (req, res) => {
             });
         }
 
-        const assignedVehicleDetail = assignedVehicle.assignedVehicles.find(av => 
+        const assignedVehicleDetail = assignedVehicle.assignedVehicles.find(av =>
             av.routeDetails && av.routeDetails.toString() === routeId
         );
 
@@ -71,14 +215,14 @@ export const createTripsFromRoute = async (req, res) => {
 
         for (let date = new Date(routeStartDate); date <= endDate; date.setDate(date.getDate() + 1)) {
             const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-            
+
             // Use route's availableDays
             if (route.availableDays.includes(dayOfWeek)) {
                 // Create multiple trips for this day based on schedules
                 for (const schedule of schedulesToUse) {
                     const tripDate = new Date(date);
                     const tripDateTime = new Date(tripDate);
-                    
+
                     // Set time for this specific trip schedule
                     const [hours, minutes] = schedule.startTime.split(':');
                     tripDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
@@ -93,14 +237,29 @@ export const createTripsFromRoute = async (req, res) => {
                         toLocation = route.fromLocation;
                     }
 
+                    // Check vehicle assignment rule for driver assignment
+                    let driverId = null;
+                    let driverStatus = "UNASSIGNED";
+
+                    if (assignedVehicleDetail.driverAssignedBy === "WITH_DRIVER" ||
+                        (assignedVehicleDetail.driverAssignedBy !== "WITHOUT_DRIVER" && assignedVehicleDetail.driverId)) {
+                        // Auto-assign driver if vehicle assignment has a driver
+                        driverId = assignedVehicleDetail.driverId;
+                        driverStatus = "ASSIGNED";
+                    } else if (assignedVehicleDetail.driverAssignedBy === "WITHOUT_DRIVER") {
+                        // Driver will be assigned separately by corporate admin
+                        driverStatus = "PENDING_ASSIGNMENT";
+                    }
+
                     const trip = new Trip({
                         contractId: contract._id,
                         routeId: route._id,
                         vehicleId: assignedVehicle.vehicleId,
-                        driverId: assignedVehicleDetail.driverId,
+                        driverId: driverId,
+                        driverStatus: driverStatus,
                         corporateId: corporateId,
                         b2bPartnerId: contract.fleetOwnerId,
-                        
+
                         tripDate: tripDateTime,
                         startTime: schedule.startTime,
                         endTime: schedule.endTime,
@@ -108,27 +267,33 @@ export const createTripsFromRoute = async (req, res) => {
                         toLocation: toLocation,
                         totalDistance: route.totalDistance,
                         estimatedDuration: route.estimatedDuration,
-                        
+
                         totalSeats: route.totalSeats,
                         availableSeats: route.availableSeats,
                         pricePerSeat: route.pricePerSeat,
                         currency: route.currency,
-                        
+
                         tripType: schedule.tripType || "ONE_WAY",
                         direction: schedule.direction,
                         scheduleIndex: schedulesToUse.indexOf(schedule),
-                        
+
                         createdBy: corporateId,
                     });
 
                     const savedTrip = await trip.save();
                     trips.push(savedTrip);
 
-                    // Send real-time notification to driver
-                    if (assignedVehicleDetail.driverId) {
-                        io.to(`driver_${assignedVehicleDetail.driverId}`).emit('newTripAssigned', {
+                    // Send real-time notification to driver if auto-assigned
+                    if (driverId && driverStatus === "ASSIGNED") {
+                        io.to(`driver_${driverId}`).emit('newTripAssigned', {
                             trip: savedTrip,
                             message: `New trip assigned: ${fromLocation} → ${toLocation} on ${tripDateTime.toLocaleDateString()} at ${schedule.startTime}`
+                        });
+                    } else if (driverStatus === "PENDING_ASSIGNMENT") {
+                        // Notify corporate admin to assign driver
+                        io.to(`corporate_${corporateId}`).emit('tripNeedsDriverAssignment', {
+                            tripId: savedTrip._id,
+                            message: `Trip requires driver assignment: ${fromLocation} → ${toLocation}`
                         });
                     }
                 }
@@ -711,6 +876,157 @@ export const getCorporateTrips = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch trips"
+        });
+    }
+};
+
+// @desc    Assign driver to a trip
+// @route   POST /api/trips/:tripId/assign-driver
+// @access  Private (Corporate admin or B2B Partner)
+export const assignDriverToTrip = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { tripId } = req.params;
+        const { driverId } = req.body;
+
+        // Get trip details
+        const trip = await Trip.findById(tripId).populate('contractId');
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        // Verify authorization - must be corporate owner or fleet owner
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const isAuthorized =
+            trip.corporateId.toString() === userId ||
+            trip.b2bPartnerId.toString() === userId ||
+            user.role === "ADMIN";
+
+        if (!isAuthorized) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized to assign drivers for this trip"
+            });
+        }
+
+        // Get driver details
+        const driver = await User.findById(driverId);
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found"
+            });
+        }
+
+        // Validate driver role
+        const validRoles = ["B2C_PARTNER_DRIVER", "B2B_PARTNER_DRIVER", "CORPORATE_DRIVER"];
+        if (!validRoles.includes(driver.role)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid driver role for assignment"
+            });
+        }
+
+        // Check if trip already has a driver assigned
+        if (trip.driverId) {
+            return res.status(400).json({
+                success: false,
+                message: "A driver is already assigned to this trip"
+            });
+        }
+
+        // Verify vehicle assignment details if from contract
+        if (trip.contractId) {
+            const contract = await Contract.findById(trip.contractId);
+            if (contract) {
+                const vehicleAssignment = contract.vehicles
+                    .flatMap(v => v.assignedVehicles)
+                    .find(av => av.vehicleId.toString() === trip.vehicleId.toString());
+
+                if (!vehicleAssignment) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Vehicle not found in contract assignments"
+                    });
+                }
+
+                // Check with/without driver flag
+                if (vehicleAssignment.driverAssignedBy === "B2B_PARTNER" &&
+                    !["B2B_PARTNER_DRIVER", "B2C_PARTNER_DRIVER"].includes(driver.role)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Driver must be from B2B Partner for this vehicle assignment"
+                    });
+                }
+
+                if (vehicleAssignment.driverAssignedBy === "CORPORATE" &&
+                    driver.role !== "CORPORATE_DRIVER") {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Driver must be a Corporate Driver for this vehicle assignment"
+                    });
+                }
+            }
+        }
+
+        // Assign driver to trip
+        trip.driverId = driverId;
+        trip.driverStatus = "ASSIGNED";
+
+        // Add assignment event
+        trip.events.push({
+            eventType: "DRIVER_ASSIGNED",
+            timestamp: new Date(),
+            description: `Driver ${driver.fullName} assigned to trip`,
+            location: trip.fromLocation
+        });
+
+        await trip.save();
+
+        // Notify driver via socket
+        io.to(`driver_${driverId}`).emit('trip-assigned', {
+            tripId: trip._id,
+            trip: {
+                fromLocation: trip.fromLocation,
+                toLocation: trip.toLocation,
+                tripDate: trip.tripDate,
+                startTime: trip.startTime,
+                endTime: trip.endTime,
+                totalSeats: trip.totalSeats,
+                passengers: trip.passengers.length
+            },
+            message: `You have been assigned to a new trip`
+        });
+
+        res.json({
+            success: true,
+            message: "Driver assigned to trip successfully",
+            data: {
+                trip: trip.toObject(),
+                assignedDriver: {
+                    _id: driver._id,
+                    fullName: driver.fullName,
+                    phone: driver.phone,
+                    role: driver.role
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error assigning driver to trip:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to assign driver to trip"
         });
     }
 };

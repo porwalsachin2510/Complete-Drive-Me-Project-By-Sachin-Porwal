@@ -1,6 +1,7 @@
 import CorporateEmployee from "../models/CorporateEmployee.js";
 import User from "../models/User.js";
 import Contract from "../models/Contract.js";
+import Route from "../models/Route.js";
 import { sendEmail } from "../Services/emailService.js";
 import csv from "csv-parser";
 import fs from "fs";
@@ -606,4 +607,100 @@ const getRouteUtilizationData = async (query, page, limit) => {
         utilization: [],
         total: 0
     };
+};
+
+// Assign pickup and dropoff stops to employee
+export const assignStopsToEmployee = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const { pickupStop, dropoffStop, routeId } = req.body;
+        const managerId = req.userId;
+
+        // Validate required fields
+        if (!pickupStop || !dropoffStop || !routeId) {
+            return res.status(400).json({
+                success: false,
+                message: "pickupStop, dropoffStop, and routeId are required"
+            });
+        }
+
+        // Get employee
+        const employee = await CorporateEmployee.findOne({
+            _id: employeeId,
+            managerId
+        });
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found"
+            });
+        }
+
+        // Validate route exists
+        const route = await Route.findById(routeId);
+        if (!route) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found"
+            });
+        }
+
+        // Validate stops exist in route
+        const pickupStopObj = route.stopPoints.find(s => s._id.toString() === pickupStop);
+        const dropoffStopObj = route.stopPoints.find(s => s._id.toString() === dropoffStop);
+
+        if (!pickupStopObj || !dropoffStopObj) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid pickup or dropoff stop. Stop not found in route."
+            });
+        }
+
+        // Update employee stops
+        employee.transportDetails.assignedRoute = routeId;
+        employee.transportDetails.pickupPoint = pickupStopObj.location;
+        employee.transportDetails.dropOffPoint = dropoffStopObj.location;
+
+        await employee.save();
+
+        // Send notification email
+        const user = await User.findById(employee.userId);
+        if (user && user.email) {
+            await sendEmail({
+                to: user.email,
+                subject: "Your Transport Stops Have Been Updated",
+                html: `
+                    <h2>Hello ${user.fullName},</h2>
+                    <p>Your transport stops have been updated in the Drive-Me system.</p>
+                    <p><strong>Pickup Stop:</strong> ${pickupStopObj.location} at ${pickupStopObj.time}</p>
+                    <p><strong>Dropoff Stop:</strong> ${dropoffStopObj.location}</p>
+                    <p>Please confirm these stops in your employee dashboard.</p>
+                    <p>Best regards,<br/>Drive-Me Transport System</p>
+                `
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Stops assigned successfully",
+            data: {
+                employeeId: employee._id,
+                pickupPoint: pickupStopObj.location,
+                dropoffPoint: dropoffStopObj.location,
+                route: {
+                    id: route._id,
+                    name: route.fromLocation + " → " + route.toLocation
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error assigning stops:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error assigning stops to employee",
+            error: error.message
+        });
+    }
 };

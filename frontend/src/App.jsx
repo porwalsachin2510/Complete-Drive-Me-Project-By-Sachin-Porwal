@@ -42,6 +42,9 @@ import B2C_PartnerBookingsPage from "./Pages/B2C_PartnerPages/B2C_PartnerBooking
 import CommuterMyBookingsPage from "./Pages/CommuterPages/CommuterMyBookingsPage/CommuterMyBookingsPage";
 import WalletPage from "./Pages/CommuterPages/WalletPage/WalletPage";
 import WalletPaymentCallback from "./Pages/CommuterPages/WalletPage/WalletPaymentCallback";
+import CorporateEmployeeDashboard from "./Pages/CommuterPages/CorporateEmployeeDashboard/CorporateEmployeeDashboard";
+import CorporateEmployeeManagementPage from "./Pages/CorporatePages/CorporateEmployeeManagementPage/CorporateEmployeeManagementPage";
+import EmployeeDashboard from "./Pages/CommuterPages/EmployeeDashboard/EmployeeDashboard";
 
 function App() {
   return (
@@ -75,7 +78,14 @@ function App() {
           <Route
             path="/wallet"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
+              <ProtectedRoleBasedRoute
+                allowedRoles={[
+                  "COMMUTER",
+                  "B2C_PARTNER",
+                  "B2B_PARTNER",
+                  "CORPORATE_EMPLOYEE",
+                ]}
+              >
                 <WalletPage />
               </ProtectedRoleBasedRoute>
             }
@@ -83,7 +93,14 @@ function App() {
           <Route
             path="/wallet/add-funds"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
+              <ProtectedRoleBasedRoute
+                allowedRoles={[
+                  "COMMUTER",
+                  "B2C_PARTNER",
+                  "B2B_PARTNER",
+                  "CORPORATE_EMPLOYEE",
+                ]}
+              >
                 <WalletPage />
               </ProtectedRoleBasedRoute>
             }
@@ -91,7 +108,14 @@ function App() {
           <Route
             path="/wallet/withdraw"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
+              <ProtectedRoleBasedRoute
+                allowedRoles={[
+                  "COMMUTER",
+                  "B2C_PARTNER",
+                  "B2B_PARTNER",
+                  "CORPORATE_EMPLOYEE",
+                ]}
+              >
                 <WalletPage />
               </ProtectedRoleBasedRoute>
             }
@@ -99,7 +123,14 @@ function App() {
           <Route
             path="/wallet/transactions"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
+              <ProtectedRoleBasedRoute
+                allowedRoles={[
+                  "COMMUTER",
+                  "B2C_PARTNER",
+                  "B2B_PARTNER",
+                  "CORPORATE_EMPLOYEE",
+                ]}
+              >
                 <WalletPage />
               </ProtectedRoleBasedRoute>
             }
@@ -107,8 +138,33 @@ function App() {
           <Route
             path="/wallet/payment/verify"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["COMMUTER", "B2C_PARTNER", "B2B_PARTNER", "CORPORATE_EMPLOYEE"]}>
+              <ProtectedRoleBasedRoute
+                allowedRoles={[
+                  "COMMUTER",
+                  "B2C_PARTNER",
+                  "B2B_PARTNER",
+                  "CORPORATE_EMPLOYEE",
+                ]}
+              >
                 <WalletPaymentCallback />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+
+          <Route
+            path="/employee-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_EMPLOYEE"]}>
+                <EmployeeDashboard />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+
+          <Route
+            path="/employee/dashboard-old"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_EMPLOYEE"]}>
+                <CorporateEmployeeDashboard />
               </ProtectedRoleBasedRoute>
             }
           />
@@ -262,6 +318,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["CORPORATE"]}>
                 <CorporateEmployeeBookingsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/corporate/employee-management"
+            element={
+              <ProtectedRoute allowedRoles={["CORPORATE"]}>
+                <CorporateEmployeeManagementPage />
               </ProtectedRoute>
             }
           />

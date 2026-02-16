@@ -18,6 +18,8 @@ import AdminFinance from "../../../Components/Admin/AdminFinance/AdminFinance";
 import AdminComm from "../../../Components/Admin/AdminComm/AdminComm";
 import AdminAds from "../../../Components/Admin/AdminAds/AdminAds";
 import PaymentVerification from "../AdminPaymentVerification/PaymentVerification";
+import AdminVehicleApproval from "../../../Components/Admin/AdminVehicleApproval/AdminVehicleApproval";
+import AdminSettlement from "../../../Components/Admin/AdminSettlement/AdminSettlement";
 import api from "../../../utils/api";
 import "./admindashboardpage.css";
 
@@ -52,6 +54,10 @@ const renderContent = () => {
       return <AdminAds />;
     case "Payment Verification":
       return <PaymentVerification />;
+    case "vehicle-approval":
+      return <AdminVehicleApproval />;
+    case "settlement":
+      return <AdminSettlement />;
     default:
       return <AdminOverview />;
   }

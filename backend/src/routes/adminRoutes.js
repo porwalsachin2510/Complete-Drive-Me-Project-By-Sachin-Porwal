@@ -68,7 +68,10 @@ import {
     updateB2BSettings,
     getMonthlyRevenue,
     getBookingTrends,
-    getB2CStats
+    getB2CStats,
+    getPendingVehicleApprovals,
+    approveVehicle,
+    rejectVehicle
 } from "../controllers/adminController.js";
 import { verifyToken, checkAdminRole } from "../middleware/auth.js"
 
@@ -170,5 +173,10 @@ router.get("/payments/stats", verifyToken, checkAdminRole, getPaymentStats)
 
 // Contracts
 router.get("/contracts", verifyToken, checkAdminRole, getAllContracts)
+
+// Vehicle Approvals
+router.get("/vehicles/pending", verifyToken, checkAdminRole, getPendingVehicleApprovals)
+router.put("/vehicles/:vehicleId/approve", verifyToken, checkAdminRole, approveVehicle)
+router.put("/vehicles/:vehicleId/reject", verifyToken, checkAdminRole, rejectVehicle)
 
 export default router

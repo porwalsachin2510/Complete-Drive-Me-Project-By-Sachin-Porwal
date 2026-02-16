@@ -523,3 +523,191 @@ export const sendQuotationNotification = async (b2bPartnerIds, requirementId, qu
         throw error;
     }
 };
+
+// ============ CRITICAL NOTIFICATION FUNCTIONS ============
+
+// Send trip start reminder (12 hours before trip)
+export const sendTripStartReminder = async (tripId) => {
+    try {
+        const Trip = (await import("../models/Trip.js")).default;
+        const trip = await Trip.findById(tripId).populate('passengers.employeeId');
+
+        if (!trip) return;
+
+        const tripTime = new Date(`${trip.tripDate} ${trip.startTime}`);
+        const hoursUntilTrip = (tripTime - new Date()) / (1000 * 60 * 60);
+
+        if (hoursUntilTrip > 11 && hoursUntilTrip <= 12) {
+            for (const passenger of trip.passengers) {
+                if (passenger.employeeId) {
+                    await createNotification({
+                        userId: passenger.employeeId.userId,
+                        type: "TRIP_START_REMINDER",
+                        title: "Upcoming Trip - 12 Hours Away",
+                        message: `Your trip from ${trip.fromLocation} to ${trip.toLocation} departs in 12 hours at ${trip.startTime}`,
+                        data: {
+                            tripId: trip._id,
+                            startTime: trip.startTime,
+                            fromLocation: trip.fromLocation,
+                            toLocation: trip.toLocation
+                        }
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error("[v0] Error sending trip start reminder:", error);
+    }
+};
+
+// Send bus near stop notification (when driver is <2km from pickup stop)
+export const sendBusNearStopNotification = async (tripId, driverId, currentLocation) => {
+    try {
+        const Trip = (await import("../models/Trip.js")).default;
+        const trip = await Trip.findById(tripId).populate('passengers.employeeId');
+
+        if (!trip || !currentLocation) return;
+
+        // Calculate distance from current location to pickup stops
+        for (const passenger of trip.passengers) {
+            if (passenger.employeeId && passenger.status === "CONFIRMED") {
+                const pickupCoords = passenger.pickupCoords || { lat: 0, lng: 0 };
+                const distance = calculateDistance(
+                    currentLocation.lat,
+                    currentLocation.lng,
+                    pickupCoords.lat,
+                    pickupCoords.lng
+                );
+
+                if (distance < 2) { // Less than 2km
+                    await createNotification({
+                        userId: passenger.employeeId.userId,
+                        type: "BUS_NEAR_STOP",
+                        title: "Bus Arriving Soon!",
+                        message: `The bus is ${Math.round(distance * 1000)}m away from your pickup point`,
+                        data: {
+                            tripId: trip._id,
+                            distance: Math.round(distance * 1000),
+                            eta: "2-5 minutes"
+                        }
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error("[v0] Error sending bus near stop notification:", error);
+    }
+};
+
+// Send driver assigned notification
+export const sendDriverAssignedNotification = async (tripId, driverId) => {
+    try {
+        const Trip = (await import("../models/Trip.js")).default;
+        const User = (await import("../models/User.js")).default;
+        const trip = await Trip.findById(tripId).populate('passengers.employeeId');
+        const driver = await User.findById(driverId);
+
+        if (!trip || !driver) return;
+
+        for (const passenger of trip.passengers) {
+            if (passenger.employeeId) {
+                await createNotification({
+                    userId: passenger.employeeId.userId,
+                    type: "DRIVER_ASSIGNED",
+                    title: "Driver Assigned",
+                    message: `${driver.fullName} is your driver for the trip from ${trip.fromLocation} to ${trip.toLocation}`,
+                    data: {
+                        tripId: trip._id,
+                        driverId: driver._id,
+                        driverName: driver.fullName,
+                        driverPhone: driver.phone,
+                        vehicleInfo: trip.vehicleInfo
+                    }
+                });
+            }
+        }
+
+        // Also notify the driver
+        await createNotification({
+            userId: driverId,
+            type: "TRIP_ASSIGNED",
+            title: "New Trip Assigned",
+            message: `You have been assigned a trip from ${trip.fromLocation} to ${trip.toLocation}`,
+            data: {
+                tripId: trip._id,
+                startTime: trip.startTime,
+                passengerCount: trip.passengers.length
+            }
+        });
+
+    } catch (error) {
+        console.error("[v0] Error sending driver assigned notification:", error);
+    }
+};
+
+// Send payment success notification
+export const sendPaymentSuccessNotification = async (userId, paymentDetails) => {
+    try {
+        await createNotification({
+            userId,
+            type: "PAYMENT_SUCCESS",
+            title: "Payment Successful",
+            message: `Your payment of AED ${paymentDetails.amount} has been successfully processed`,
+            data: {
+                transactionId: paymentDetails.transactionId,
+                amount: paymentDetails.amount,
+                paymentMethod: paymentDetails.method,
+                timestamp: new Date(),
+                receiptUrl: paymentDetails.receiptUrl
+            }
+        });
+
+        console.log(`[v0] Payment success notification sent to user: ${userId}`);
+    } catch (error) {
+        console.error("[v0] Error sending payment success notification:", error);
+    }
+};
+
+// Send contract expiry warning (7 days before expiry)
+export const sendContractExpiryWarning = async (contractId) => {
+    try {
+        const Contract = (await import("../models/Contract.js")).default;
+        const contract = await Contract.findById(contractId).populate('corporateId');
+
+        if (!contract) return;
+
+        const daysUntilExpiry = Math.ceil((contract.endDate - new Date()) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilExpiry === 7) {
+            await createNotification({
+                userId: contract.corporateId._id,
+                type: "CONTRACT_EXPIRY_WARNING",
+                title: "Contract Expiring Soon",
+                message: `Your contract for transport services expires in 7 days on ${contract.endDate.toLocaleDateString()}`,
+                data: {
+                    contractId: contract._id,
+                    expiryDate: contract.endDate,
+                    daysRemaining: 7,
+                    autoRenewal: contract.autoRenewal
+                }
+            });
+
+            console.log(`[v0] Contract expiry warning sent for contract: ${contractId}`);
+        }
+    } catch (error) {
+        console.error("[v0] Error sending contract expiry warning:", error);
+    }
+};
+
+// Helper function to calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};

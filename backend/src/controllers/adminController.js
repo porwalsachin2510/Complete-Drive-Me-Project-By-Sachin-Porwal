@@ -5156,3 +5156,156 @@ export const getB2CStats = async (req, res) => {
         });
     }
 };
+
+// Get pending vehicle approvals
+export const getPendingVehicleApprovals = async (req, res) => {
+    try {
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const vehicles = await Vehicle.find({ approvalStatus: "PENDING" })
+            .populate("fleetOwnerId", "fullName companyName email phone")
+            .skip(skip)
+            .limit(Number(limit))
+            .sort({ createdAt: -1 });
+
+        const total = await Vehicle.countDocuments({ approvalStatus: "PENDING" });
+
+        res.status(200).json({
+            success: true,
+            vehicles,
+            pagination: {
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / Number(limit))
+            }
+        });
+    } catch (error) {
+        console.error("[v0] Error fetching pending vehicles:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching pending vehicle approvals",
+            error: error.message
+        });
+    }
+};
+
+// Approve vehicle
+export const approveVehicle = async (req, res) => {
+    try {
+        const { vehicleId } = req.params;
+        const adminId = req.userId;
+
+        const vehicle = await Vehicle.findById(vehicleId);
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found"
+            });
+        }
+
+        if (vehicle.approvalStatus !== "PENDING") {
+            return res.status(400).json({
+                success: false,
+                message: `Vehicle is already ${vehicle.approvalStatus.toLowerCase()}`
+            });
+        }
+
+        vehicle.approvalStatus = "APPROVED";
+        vehicle.approvedAt = new Date();
+        vehicle.approvedBy = adminId;
+        await vehicle.save();
+
+        // Notify fleet owner
+        const fleetOwner = await User.findById(vehicle.fleetOwnerId);
+        if (fleetOwner && fleetOwner.email) {
+            await sendEmail({
+                to: fleetOwner.email,
+                subject: "Vehicle Approved on Drive-Me Platform",
+                html: `
+                    <h2>Vehicle Approval Confirmed</h2>
+                    <p>Your vehicle <strong>${vehicle.vehicleName}</strong> (${vehicle.registrationNumber}) has been approved!</p>
+                    <p>You can now list it on the platform and start accepting bookings.</p>
+                `
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Vehicle approved successfully",
+            vehicle
+        });
+    } catch (error) {
+        console.error("[v0] Error approving vehicle:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error approving vehicle",
+            error: error.message
+        });
+    }
+};
+
+// Reject vehicle
+export const rejectVehicle = async (req, res) => {
+    try {
+        const { vehicleId } = req.params;
+        const { rejectionReason } = req.body;
+        const adminId = req.userId;
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: "Rejection reason is required"
+            });
+        }
+
+        const vehicle = await Vehicle.findById(vehicleId);
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found"
+            });
+        }
+
+        if (vehicle.approvalStatus !== "PENDING") {
+            return res.status(400).json({
+                success: false,
+                message: `Vehicle is already ${vehicle.approvalStatus.toLowerCase()}`
+            });
+        }
+
+        vehicle.approvalStatus = "REJECTED";
+        vehicle.rejectionReason = rejectionReason;
+        vehicle.approvedBy = adminId;
+        vehicle.approvedAt = new Date();
+        await vehicle.save();
+
+        // Notify fleet owner
+        const fleetOwner = await User.findById(vehicle.fleetOwnerId);
+        if (fleetOwner && fleetOwner.email) {
+            await sendEmail({
+                to: fleetOwner.email,
+                subject: "Vehicle Application Rejected",
+                html: `
+                    <h2>Vehicle Application Rejected</h2>
+                    <p>Your vehicle <strong>${vehicle.vehicleName}</strong> (${vehicle.registrationNumber}) was not approved.</p>
+                    <p><strong>Reason:</strong> ${rejectionReason}</p>
+                    <p>Please update your vehicle details and resubmit.</p>
+                `
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Vehicle rejected successfully",
+            vehicle
+        });
+    } catch (error) {
+        console.error("[v0] Error rejecting vehicle:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error rejecting vehicle",
+            error: error.message
+        });
+    }
+};
