@@ -44,7 +44,7 @@ import subscriptionSettingsRoutes from "./routes/subscriptionSettingsRoutes.js"
 import travelHistoryRoutes from "./routes/travelHistoryRoutes.js"
 import settlementRoutes from "./routes/settlementRoutes.js"
 import corporateOperationsRoutes from "./routes/corporateOperationsRoutes.js"
-// import { dailyTripGeneration, frequentTripGeneration, hourlyTripGeneration, runImmediateGeneration } from "./cron/tripGenerationCron.js" // DISABLED
+import { dailyTripGeneration, frequentTripGeneration, hourlyTripGeneration, runImmediateGeneration, corporateTripGeneration } from "./cron/tripGenerationCron.js"
 
 dotenv.config()
 
@@ -422,8 +422,18 @@ const PORT = process.env.PORT || 5000
 server.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`)
     console.log(`Socket.io server integrated and ready`)
-    console.log(`Trip generation cron jobs DISABLED - trips generated only on passenger booking`)
+    console.log(`Trip generation cron jobs ENABLED`)
+    console.log(`- Daily B2C: 00:00`)
+    console.log(`- Daily Corporate: 00:30`)
+    console.log(`- Frequent: every 6 hours`)
+    console.log(`- Hourly: every hour`)
     
-    // Run immediate trip generation on server start - DISABLED
-    // await runImmediateGeneration(); // DISABLED
+    // Run immediate trip generation on server start
+    console.log(`[v0] Initializing trip generation on server startup...`)
+    try {
+        await runImmediateGeneration();
+        console.log(`[v0] Server startup trip generation completed`)
+    } catch (error) {
+        console.error(`[v0] Error during server startup trip generation:`, error.message)
+    }
 })
