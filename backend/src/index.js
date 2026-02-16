@@ -42,6 +42,7 @@ import routeRequestRoutes from "./routes/routeRequestRoutes.js"
 import noShowRoutes from "./routes/noShowRoutes.js"
 import subscriptionSettingsRoutes from "./routes/subscriptionSettingsRoutes.js"
 import travelHistoryRoutes from "./routes/travelHistoryRoutes.js"
+import settlementRoutes from "./routes/settlementRoutes.js"
 // import { dailyTripGeneration, frequentTripGeneration, hourlyTripGeneration, runImmediateGeneration } from "./cron/tripGenerationCron.js" // DISABLED
 
 dotenv.config()
@@ -405,6 +406,7 @@ app.use("/api/route-requests", routeRequestRoutes)
 app.use("/api/no-show", noShowRoutes)
 app.use("/api/subscription-settings", subscriptionSettingsRoutes)
 app.use("/api/travel-history", travelHistoryRoutes)
+app.use("/api/settlement", settlementRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

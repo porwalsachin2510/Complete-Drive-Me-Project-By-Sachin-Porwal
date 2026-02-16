@@ -3,7 +3,8 @@ import { useSelector } from "react-redux";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
 import "./corporateemployeedashboard.css";
-import axios from "axios";
+import api from "../../../utils/api";
+import io from "socket.io-client";
 
 export default function CorporateEmployeeDashboard() {
   const token = useSelector((state) => state.auth.token);
@@ -18,85 +19,120 @@ export default function CorporateEmployeeDashboard() {
   const [driverLocation, setDriverLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("trip-info");
+  const [socket, setSocket] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (token && userId) {
       fetchEmployeeDashboardData();
-      subscribeToUpdates();
+      subscribeToRealTimeUpdates();
     }
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, [token, userId]);
 
   const fetchEmployeeDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Fetch employee details and assigned bus
-      const employeeRes = await axios.get(
-        `/api/corporate-employees/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setAssignedBus(employeeRes.data.data.route);
+      // Fetch employee details and assigned stop assignments
+      const employeeRes = await api.get(`/corporate-employees/${userId}`);
+      if (employeeRes.data.success) {
+        setAssignedBus(employeeRes.data.employee);
+      }
 
-      // Fetch today's trips
+      // Fetch today's available trips for the assigned route
       const today = new Date().toISOString().split("T")[0];
-      const tripsRes = await axios.get(
-        `/api/trips/available?date=${today}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setTodayTrips(tripsRes.data.data.trips || []);
+      const tripsRes = await api.get(`/trips/available?date=${today}`);
+      if (tripsRes.data.success) {
+        setTodayTrips(tripsRes.data.trips || []);
+      }
 
-      // Fetch upcoming trips
-      const upcomingRes = await axios.get(
-        `/api/trips/my-bookings?status=SCHEDULED`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setUpcomingTrips(upcomingRes.data.data.bookings || []);
+      // Fetch employee's upcoming bookings
+      const upcomingRes = await api.get(`/corporate-employees/bookings?status=SCHEDULED`);
+      if (upcomingRes.data.success) {
+        setUpcomingTrips(upcomingRes.data.bookings || []);
+      }
 
       // Fetch no-show history
-      const noShowRes = await axios.get(
-        `/api/no-shows/my-history`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setNoShowHistory(noShowRes.data.data.noShows || []);
+      const noShowRes = await api.get(`/no-show/my-history`);
+      if (noShowRes.data.success) {
+        setNoShowHistory(noShowRes.data.noShows || []);
+      }
 
       // Fetch notifications
-      const notifRes = await axios.get(
-        `/api/notifications`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setNotifications(notifRes.data.data.notifications || []);
+      const notifRes = await api.get(`/notifications`);
+      if (notifRes.data.success) {
+        setNotifications(notifRes.data.notifications || []);
+      }
 
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("[v0] Error fetching dashboard data:", error);
+      setError("Failed to load dashboard data. Please try again.");
       setLoading(false);
     }
   };
 
-  const subscribeToUpdates = () => {
-    // This would typically use WebSocket or polling for real-time updates
-    // Placeholder for socket subscription
-    console.log("[v0] Subscribed to real-time updates");
+  const subscribeToRealTimeUpdates = () => {
+    try {
+      const backendURL = process.env.REACT_APP_API_URL || "http://localhost:3000";
+      const newSocket = io(backendURL, {
+        auth: { token }
+      });
+
+      newSocket.on("connect", () => {
+        console.log("[v0] Connected to socket server");
+        newSocket.emit("join-notification-room", userId);
+      });
+
+      newSocket.on("employee-location-update", (locationData) => {
+        console.log("[v0] Received driver location update:", locationData);
+        setDriverLocation(locationData);
+      });
+
+      newSocket.on("trip-update", () => {
+        console.log("[v0] Trip update received, refreshing data");
+        fetchEmployeeDashboardData();
+      });
+
+      newSocket.on("notification", (notificationData) => {
+        console.log("[v0] Received notification:", notificationData);
+        setNotifications(prev => [notificationData, ...prev]);
+      });
+
+      newSocket.on("error", (error) => {
+        console.error("[v0] Socket error:", error);
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
+    } catch (error) {
+      console.error("[v0] Error setting up socket connection:", error);
+    }
   };
 
   const handleBookTrip = async (tripId) => {
     try {
-      const seatNumber = prompt("Enter your seat number:");
-      if (!seatNumber) return;
+      const seatNumber = prompt("Enter your seat number (or leave blank to auto-assign):");
+      
+      const response = await api.post(`/trips/${tripId}/book`, {
+        pickupStop: assignedBus?.assignedStops?.[0],
+        seatNumber: seatNumber ? parseInt(seatNumber) : null,
+        employeeId: userId
+      });
 
-      const response = await axios.post(
-        `/api/trips/${tripId}/book`,
-        {
-          pickupPoint: assignedBus?.fromLocation,
-          seatNumber: parseInt(seatNumber),
-          useMonthlyPass: false
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      alert("Trip booked successfully!");
-      fetchEmployeeDashboardData();
+      if (response.data.success) {
+        alert("Trip booked successfully! Reference: " + response.data.booking.bookingReference);
+        fetchEmployeeDashboardData();
+      }
     } catch (error) {
+      console.error("[v0] Error booking trip:", error);
       alert(`Error booking trip: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -104,13 +140,13 @@ export default function CorporateEmployeeDashboard() {
   const handleCancelBooking = async (tripId) => {
     if (window.confirm("Are you sure you want to cancel this booking?")) {
       try {
-        await axios.delete(
-          `/api/trips/${tripId}/cancel`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert("Booking cancelled successfully!");
-        fetchEmployeeDashboardData();
+        const response = await api.delete(`/trips/${tripId}/cancel`);
+        if (response.data.success) {
+          alert("Booking cancelled successfully!");
+          fetchEmployeeDashboardData();
+        }
       } catch (error) {
+        console.error("[v0] Error cancelling booking:", error);
         alert(`Error cancelling booking: ${error.response?.data?.message || error.message}`);
       }
     }
@@ -125,6 +161,13 @@ export default function CorporateEmployeeDashboard() {
           <h1>My Daily Commute</h1>
           <p>Stay updated with your assigned bus and bookings</p>
         </div>
+
+        {error && (
+          <div className="error-banner">
+            <p>{error}</p>
+            <button onClick={fetchEmployeeDashboardData}>Retry</button>
+          </div>
+        )}
 
         {loading ? (
           <div className="loading-container">

@@ -196,6 +196,24 @@ const vehicleSchema = new mongoose.Schema(
             enum: ["AVAILABLE", "BOOKED", "MAINTENANCE", "INACTIVE"],
             default: "AVAILABLE",
         },
+        approvalStatus: {
+            type: String,
+            enum: ["PENDING", "APPROVED", "REJECTED"],
+            default: "PENDING",
+        },
+        approvedAt: {
+            type: Date,
+            default: null,
+        },
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        rejectionReason: {
+            type: String,
+            default: null,
+        },
         isActive: {
             type: Boolean,
             default: true,
