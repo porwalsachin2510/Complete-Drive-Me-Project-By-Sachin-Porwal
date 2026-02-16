@@ -1,0 +1,716 @@
+import Trip from "../models/Trip.js";
+import Route from "../models/Route.js";
+import Contract from "../models/Contract.js";
+import Vehicle from "../models/Vehicle.js";
+import User from "../models/User.js";
+import MonthlyPass from "../models/MonthlyPass.js";
+import { io } from "../index.js";
+
+// @desc    Create recurring trips from route
+// @route   POST /api/trips/create-from-route
+// @access  Private (CORPORATE only)
+export const createTripsFromRoute = async (req, res) => {
+    try {
+        const corporateId = req.userId;
+        const { 
+            routeId,
+            tripSchedules // Array of { startTime, endTime, tripType, direction }
+        } = req.body;
+
+        // Validate route belongs to corporate
+        const route = await Route.findOne({ 
+            _id: routeId, 
+            corporateId,
+            status: "ACTIVE" 
+        }).populate("contractId");
+
+        if (!route) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found or unauthorized"
+            });
+        }
+
+        // Get contract details
+        const contract = route.contractId;
+        if (!contract || contract.status !== "ACTIVE") {
+            return res.status(400).json({
+                success: false,
+                message: "Contract is not active"
+            });
+        }
+
+        // Find assigned vehicle and driver for this route
+        const assignedVehicle = contract.vehicles.find(v => 
+            v.assignedVehicles.some(av => 
+                av.routeDetails && av.routeDetails.toString() === routeId
+            )
+        );
+
+        if (!assignedVehicle) {
+            return res.status(400).json({
+                success: false,
+                message: "No vehicle assigned to this route"
+            });
+        }
+
+        const assignedVehicleDetail = assignedVehicle.assignedVehicles.find(av => 
+            av.routeDetails && av.routeDetails.toString() === routeId
+        );
+
+        // Create ongoing trips starting from route's routeStartDate
+        const trips = [];
+        const schedulesToUse = tripSchedules && tripSchedules.length > 0 ? tripSchedules : [
+            { startTime: "09:00", endTime: "12:00", tripType: "ONE_WAY", direction: "FORWARD" }
+        ];
+
+        // Create trips for next 30 days from route start date (ongoing trips)
+        const routeStartDate = new Date(route.routeStartDate);
+        const endDate = new Date(routeStartDate);
+        endDate.setDate(endDate.getDate() + 30); // Create trips for next 30 days
+
+        for (let date = new Date(routeStartDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+            const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+            
+            // Use route's availableDays
+            if (route.availableDays.includes(dayOfWeek)) {
+                // Create multiple trips for this day based on schedules
+                for (const schedule of schedulesToUse) {
+                    const tripDate = new Date(date);
+                    const tripDateTime = new Date(tripDate);
+                    
+                    // Set time for this specific trip schedule
+                    const [hours, minutes] = schedule.startTime.split(':');
+                    tripDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                    // Determine from/to locations based on direction
+                    let fromLocation, toLocation;
+                    if (schedule.direction === "FORWARD") {
+                        fromLocation = route.fromLocation;
+                        toLocation = route.toLocation;
+                    } else {
+                        fromLocation = route.toLocation;
+                        toLocation = route.fromLocation;
+                    }
+
+                    const trip = new Trip({
+                        contractId: contract._id,
+                        routeId: route._id,
+                        vehicleId: assignedVehicle.vehicleId,
+                        driverId: assignedVehicleDetail.driverId,
+                        corporateId: corporateId,
+                        b2bPartnerId: contract.fleetOwnerId,
+                        
+                        tripDate: tripDateTime,
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        fromLocation: fromLocation,
+                        toLocation: toLocation,
+                        totalDistance: route.totalDistance,
+                        estimatedDuration: route.estimatedDuration,
+                        
+                        totalSeats: route.totalSeats,
+                        availableSeats: route.availableSeats,
+                        pricePerSeat: route.pricePerSeat,
+                        currency: route.currency,
+                        
+                        tripType: schedule.tripType || "ONE_WAY",
+                        direction: schedule.direction,
+                        scheduleIndex: schedulesToUse.indexOf(schedule),
+                        
+                        createdBy: corporateId,
+                    });
+
+                    const savedTrip = await trip.save();
+                    trips.push(savedTrip);
+
+                    // Send real-time notification to driver
+                    if (assignedVehicleDetail.driverId) {
+                        io.to(`driver_${assignedVehicleDetail.driverId}`).emit('newTripAssigned', {
+                            trip: savedTrip,
+                            message: `New trip assigned: ${fromLocation} → ${toLocation} on ${tripDateTime.toLocaleDateString()} at ${schedule.startTime}`
+                        });
+                    }
+                }
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            message: `Created ${trips.length} trips successfully`,
+            data: { trips }
+        });
+
+    } catch (error) {
+        console.error("Error creating trips from route:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to create trips"
+        });
+    }
+};
+
+// @desc    Get available trips for corporate employees
+// @route   GET /api/trips/available
+// @access  Private (CORPORATE employees only)
+export const getAvailableTrips = async (req, res) => {
+    try {
+        const employeeId = req.userId;
+        const { date, fromLocation, toLocation } = req.query;
+
+        // Get employee details
+        const employee = await User.findById(employeeId);
+        if (!employee || employee.role !== "CORPORATE_DRIVER" && employee.role !== "CORPORATE") {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        // Build query
+        const query = {
+            corporateId: employee.companyId,
+            status: "SCHEDULED",
+            availableSeats: { $gt: 0 },
+            tripDate: { $gte: new Date().setHours(0, 0, 0, 0) }
+        };
+
+        if (date) {
+            const targetDate = new Date(date);
+            query.tripDate = {
+                $gte: new Date(targetDate.setHours(0, 0, 0, 0)),
+                $lt: new Date(targetDate.setHours(23, 59, 59, 999))
+            };
+        }
+
+        if (fromLocation) {
+            query.fromLocation = { $regex: fromLocation, $options: 'i' };
+        }
+
+        if (toLocation) {
+            query.toLocation = { $regex: toLocation, $options: 'i' };
+        }
+
+        const trips = await Trip.find(query)
+            .populate('routeId', 'stopPoints estimatedDuration')
+            .populate('vehicleId', 'make model licensePlate')
+            .populate('driverId', 'fullName phone')
+            .sort({ tripDate: 1, startTime: 1 });
+
+        res.json({
+            success: true,
+            data: { trips }
+        });
+
+    } catch (error) {
+        console.error("Error fetching available trips:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch trips"
+        });
+    }
+};
+
+// @desc    Book a seat on a trip
+// @route   POST /api/trips/:tripId/book
+// @access  Private (CORPORATE employees only)
+export const bookTripSeat = async (req, res) => {
+    try {
+        const employeeId = req.userId;
+        const { tripId } = req.params;
+        const { pickupPoint, pickupTime, seatNumber, useMonthlyPass } = req.body;
+
+        // Get employee details
+        const employee = await User.findById(employeeId);
+        if (!employee || employee.role !== "CORPORATE_DRIVER" && employee.role !== "CORPORATE") {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        // Get trip details
+        const trip = await Trip.findById(tripId)
+            .populate('routeId', 'stopPoints');
+
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        // Check if trip is available for booking
+        if (trip.status !== "SCHEDULED") {
+            return res.status(400).json({
+                success: false,
+                message: "Trip is not available for booking"
+            });
+        }
+
+        if (trip.availableSeats <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No seats available"
+            });
+        }
+
+        // Check if employee already booked this trip
+        const existingBooking = trip.passengers.find(p => 
+            p.employeeId.toString() === employeeId
+        );
+
+        if (existingBooking) {
+            return res.status(400).json({
+                success: false,
+                message: "You have already booked this trip"
+            });
+        }
+
+        // Validate pickup point
+        const stopPoint = trip.routeId.stopPoints.find(sp => sp.location === pickupPoint);
+        if (!stopPoint) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid pickup point"
+            });
+        }
+
+        // Handle monthly pass
+        let monthlyPass = null;
+        if (useMonthlyPass) {
+            monthlyPass = await MonthlyPass.findOne({
+                employeeId,
+                status: "ACTIVE",
+                validFrom: { $lte: trip.tripDate },
+                validTo: { $gte: trip.tripDate },
+                routeId: trip.routeId
+            });
+
+            if (!monthlyPass) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No active monthly pass found for this route"
+                });
+            }
+
+            if (monthlyPass.remainingTrips <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No trips remaining in your monthly pass"
+                });
+            }
+        }
+
+        // Add passenger to trip
+        const passenger = {
+            employeeId,
+            seatNumber,
+            pickupPoint,
+            pickupTime: stopPoint.time,
+            bookingStatus: "CONFIRMED",
+            bookedAt: new Date(),
+            monthlyPass: monthlyPass?._id
+        };
+
+        trip.passengers.push(passenger);
+        trip.availableSeats -= 1;
+        trip.bookedSeats += 1;
+
+        // Update monthly pass if used
+        if (monthlyPass) {
+            monthlyPass.usedTrips += 1;
+            monthlyPass.remainingTrips -= 1;
+            await monthlyPass.save();
+        }
+
+        await trip.save();
+
+        // Notify driver about new booking
+        io.to(`driver-${trip.driverId}`).emit('passenger-booked', {
+            tripId: trip._id,
+            passenger: {
+                employeeId,
+                seatNumber,
+                pickupPoint,
+                pickupTime: stopPoint.time
+            }
+        });
+
+        res.json({
+            success: true,
+            message: "Seat booked successfully",
+            data: {
+                trip,
+                booking: passenger,
+                usedMonthlyPass: !!monthlyPass
+            }
+        });
+
+    } catch (error) {
+        console.error("Error booking trip seat:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to book seat"
+        });
+    }
+};
+
+// @desc    Cancel trip booking
+// @route   DELETE /api/trips/:tripId/cancel
+// @access  Private (CORPORATE employees only)
+export const cancelTripBooking = async (req, res) => {
+    try {
+        const employeeId = req.userId;
+        const { tripId } = req.params;
+
+        const trip = await Trip.findById(tripId);
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        // Find and remove passenger
+        const passengerIndex = trip.passengers.findIndex(p => 
+            p.employeeId.toString() === employeeId
+        );
+
+        if (passengerIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        const passenger = trip.passengers[passengerIndex];
+
+        // Restore monthly pass if used
+        if (passenger.monthlyPass) {
+            const monthlyPass = await MonthlyPass.findById(passenger.monthlyPass);
+            if (monthlyPass) {
+                monthlyPass.usedTrips -= 1;
+                monthlyPass.remainingTrips += 1;
+                await monthlyPass.save();
+            }
+        }
+
+        // Remove passenger and restore seat
+        trip.passengers.splice(passengerIndex, 1);
+        trip.availableSeats += 1;
+        trip.bookedSeats -= 1;
+
+        await trip.save();
+
+        // Notify driver about cancellation
+        io.to(`driver-${trip.driverId}`).emit('passenger-cancelled', {
+            tripId: trip._id,
+            employeeId
+        });
+
+        res.json({
+            success: true,
+            message: "Booking cancelled successfully"
+        });
+
+    } catch (error) {
+        console.error("Error cancelling trip booking:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to cancel booking"
+        });
+    }
+};
+
+// @desc    Get employee's trip bookings
+// @route   GET /api/trips/my-bookings
+// @access  Private (CORPORATE employees only)
+export const getMyBookings = async (req, res) => {
+    try {
+        const employeeId = req.userId;
+        const { status, date } = req.query;
+
+        // Build query
+        const query = { "passengers.employeeId": employeeId };
+
+        if (status) {
+            query.status = status;
+        }
+
+        if (date) {
+            const targetDate = new Date(date);
+            query.tripDate = {
+                $gte: new Date(targetDate.setHours(0, 0, 0, 0)),
+                $lt: new Date(targetDate.setHours(23, 59, 59, 999))
+            };
+        }
+
+        const trips = await Trip.find(query)
+            .populate('routeId', 'fromLocation toLocation stopPoints')
+            .populate('vehicleId', 'make model licensePlate')
+            .populate('driverId', 'fullName phone')
+            .sort({ tripDate: -1 });
+
+        // Filter to show only this employee's booking
+        const myBookings = trips.map(trip => {
+            const myPassenger = trip.passengers.find(p => 
+                p.employeeId.toString() === employeeId
+            );
+            
+            return {
+                ...trip.toObject(),
+                myBooking: myPassenger
+            };
+        });
+
+        res.json({
+            success: true,
+            data: { bookings: myBookings }
+        });
+
+    } catch (error) {
+        console.error("Error fetching my bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch bookings"
+        });
+    }
+};
+
+// @desc    Start trip (Driver only)
+// @route   POST /api/trips/:tripId/start
+// @access  Private (Driver only)
+export const startTrip = async (req, res) => {
+    try {
+        const driverId = req.userId;
+        const { tripId } = req.params;
+
+        const trip = await Trip.findById(tripId);
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        if (trip.driverId.toString() !== driverId) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        if (trip.status !== "SCHEDULED") {
+            return res.status(400).json({
+                success: false,
+                message: "Trip cannot be started"
+            });
+        }
+
+        // Update trip status
+        trip.status = "IN_PROGRESS";
+        
+        // Add trip event
+        trip.events.push({
+            eventType: "TRIP_STARTED",
+            timestamp: new Date(),
+            description: "Trip started by driver",
+            location: trip.fromLocation
+        });
+
+        await trip.save();
+
+        // Notify all passengers
+        trip.passengers.forEach(passenger => {
+            io.to(`notifications-${passenger.employeeId}`).emit('trip-started', {
+                tripId: trip._id,
+                startTime: new Date(),
+                driverLocation: trip.driverLocation
+            });
+        });
+
+        res.json({
+            success: true,
+            message: "Trip started successfully",
+            data: { trip }
+        });
+
+    } catch (error) {
+        console.error("Error starting trip:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to start trip"
+        });
+    }
+};
+
+// @desc    Complete trip (Driver only)
+// @route   POST /api/trips/:tripId/complete
+// @access  Private (Driver only)
+export const completeTrip = async (req, res) => {
+    try {
+        const driverId = req.userId;
+        const { tripId } = req.params;
+
+        const trip = await Trip.findById(tripId);
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        if (trip.driverId.toString() !== driverId) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        if (trip.status !== "IN_PROGRESS") {
+            return res.status(400).json({
+                success: false,
+                message: "Trip is not in progress"
+            });
+        }
+
+        // Update trip status
+        trip.status = "COMPLETED";
+        
+        // Add trip event
+        trip.events.push({
+            eventType: "TRIP_COMPLETED",
+            timestamp: new Date(),
+            description: "Trip completed successfully",
+            location: trip.toLocation
+        });
+
+        await trip.save();
+
+        // Notify all passengers
+        trip.passengers.forEach(passenger => {
+            io.to(`notifications-${passenger.employeeId}`).emit('trip-completed', {
+                tripId: trip._id,
+                completionTime: new Date()
+            });
+        });
+
+        res.json({
+            success: true,
+            message: "Trip completed successfully",
+            data: { trip }
+        });
+
+    } catch (error) {
+        console.error("Error completing trip:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to complete trip"
+        });
+    }
+};
+
+// @desc    Update driver location (Real-time tracking)
+// @route   POST /api/trips/:tripId/location
+// @access  Private (Driver only)
+export const updateDriverLocation = async (req, res) => {
+    try {
+        const driverId = req.userId;
+        const { tripId } = req.params;
+        const { lat, lng } = req.body;
+
+        const trip = await Trip.findById(tripId);
+        if (!trip) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found"
+            });
+        }
+
+        if (trip.driverId.toString() !== driverId) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access"
+            });
+        }
+
+        // Update driver location
+        trip.driverLocation = {
+            lat,
+            lng,
+            lastUpdated: new Date()
+        };
+
+        await trip.save();
+
+        // Broadcast location to all passengers
+        trip.passengers.forEach(passenger => {
+            io.to(`notifications-${passenger.employeeId}`).emit('driver-location-update', {
+                tripId: trip._id,
+                location: { lat, lng },
+                timestamp: new Date()
+            });
+        });
+
+        res.json({
+            success: true,
+            message: "Location updated successfully"
+        });
+
+    } catch (error) {
+        console.error("Error updating driver location:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update location"
+        });
+    }
+};
+
+// @desc    Get corporate trips (Corporate admin)
+// @route   GET /api/trips/corporate
+// @access  Private (Corporate admin only)
+export const getCorporateTrips = async (req, res) => {
+    try {
+        const corporateId = req.userId;
+        const { date, status, vehicleId } = req.query;
+
+        // Build query
+        const query = { corporateId };
+
+        if (date) {
+            const targetDate = new Date(date);
+            query.tripDate = {
+                $gte: new Date(targetDate.setHours(0, 0, 0, 0)),
+                $lt: new Date(targetDate.setHours(23, 59, 59, 999))
+            };
+        }
+
+        if (status) {
+            query.status = status;
+        }
+
+        if (vehicleId) {
+            query.vehicleId = vehicleId;
+        }
+
+        const trips = await Trip.find(query)
+            .populate('routeId', 'fromLocation toLocation totalDistance')
+            .populate('vehicleId', 'make model licensePlate')
+            .populate('driverId', 'fullName phone')
+            .populate('passengers.employeeId', 'fullName email')
+            .sort({ tripDate: -1, startTime: -1 });
+
+        res.json({
+            success: true,
+            data: { trips }
+        });
+
+    } catch (error) {
+        console.error("Error fetching corporate trips:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch trips"
+        });
+    }
+};

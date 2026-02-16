@@ -1,0 +1,701 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout } from "../../../Redux/slices/authSlice";
+import { useSelector } from "react-redux";
+import { useSocket } from "../../../hooks/useSocket";
+import {
+  getPartnerDriverBookings,
+  startB2CTrip,
+  completeB2CTrip
+} from "../../../Redux/slices/bookingSlice";
+import api from "../../../utils/api";
+import "./B2CPartnerDriverDashboard.css";
+
+function B2CPartnerDriverDashboard() {
+  const { user } = useSelector((state) => state.auth);
+  const { partnerBookings, loading } = useSelector((state) => state.booking);
+  const socket = useSocket();
+  const dispatch = useDispatch();
+
+  // Get driver-specific bookings from Redux
+  const driverBookings = useSelector((state) => state.booking.driverBookings) || [];
+
+  const [liveLocation, setLiveLocation] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("ACCEPTED");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [activeMainTab, setActiveMainTab] = useState("bookings");
+  const [isSharingLocation, setIsSharingLocation] = useState(false);
+  const [activeTrip, setActiveTrip] = useState(null);
+  const locationIntervalRef = useRef(null);
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+      try {
+        const token = localStorage.getItem("token");
+  
+        if (!token) {
+          console.log("[v0] No token found, redirecting to login");
+          navigate("/login");
+          return;
+        }
+  
+        dispatch(logout());
+  
+        // Call backend logout endpoint to clear cookies and session
+        await api.post(
+          "/auth/logout",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          },
+        );
+  
+        // Clear frontend storage
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+  
+        console.log("[v0] User logged out successfully");
+  
+        // Redirect to login page
+        navigate("/login");
+      } catch (err) {
+        console.error("[v0] Logout error:", err);
+  
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+  
+        // Redirect to login regardless of error
+        navigate("/login");
+      }
+    };
+
+  // Fetch B2C Partner Driver Bookings
+  useEffect(() => {
+    if (user?.role === "B2C_PARTNER_DRIVER") {
+      console.log("[B2CPartnerDriverDashboard] Fetching driver bookings...");
+      dispatch(getPartnerDriverBookings({ status: "ALL" })); // Fetch all bookings first
+    } else {
+      navigate("/");
+    }
+  }, [dispatch, user, navigate]);
+
+  // Set filter status based on available bookings
+  useEffect(() => {
+    if (driverBookings && driverBookings.length > 0) {
+      // Find the most relevant status to show
+      const statuses = driverBookings.map(b => b.bookingStatus);
+      const hasAccepted = statuses.includes("ACCEPTED");
+      const hasInProgress = statuses.includes("IN_PROGRESS");
+      const hasPending = statuses.includes("PENDING");
+      
+      if (hasInProgress) {
+        setFilterStatus("IN_PROGRESS");
+      } else if (hasAccepted) {
+        setFilterStatus("ACCEPTED");
+      } else if (hasPending) {
+        setFilterStatus("PENDING");
+      } else {
+        setFilterStatus("ALL");
+      }
+    }
+  }, [driverBookings]);
+
+  // Debug: Log driverBookings state
+  useEffect(() => {
+    console.log("[B2CPartnerDriverDashboard] driverBookings state:", driverBookings);
+    console.log("[B2CPartnerDriverDashboard] Current user:", user);
+    if (driverBookings && driverBookings.length > 0) {
+      driverBookings.forEach(booking => {
+        console.log("[B2CPartnerDriverDashboard] Booking check:", {
+          bookingId: booking._id,
+          assignedDriverId: booking.assignedDriverId,
+          currentUserId: user?._id,
+          currentDriverId: user?.driverId,
+          isMatch: booking.assignedDriverId === user?._id,
+          isDriverIdMatch: booking.assignedDriverId === user?.driverId,
+          bookingStatus: booking.bookingStatus,
+          userRole: user?.role
+        });
+      });
+    }
+  }, [driverBookings, user]);
+
+  const handleAccept = (bookingId) => {
+    dispatch(acceptBooking(bookingId)).then(() => {
+      dispatch(getPartnerDriverBookings({ status: filterStatus }));
+    });
+  };
+
+  const handleRejectClick = (booking) => {
+    setSelectedBooking(booking);
+    setShowRejectModal(true);
+  };
+
+  const handleRejectSubmit = () => {
+    if (selectedBooking) {
+      dispatch(
+        rejectBooking({
+          bookingId: selectedBooking._id,
+          rejectionReason,
+        })
+      ).then(() => {
+        dispatch(getPartnerDriverBookings({ status: filterStatus }));
+        setShowRejectModal(false);
+        setSelectedBooking(null);
+        setRejectionReason("");
+      });
+    }
+  };
+
+  const handleComplete = async (bookingId) => {
+    try {
+      await dispatch(completeBooking(bookingId)).unwrap();
+      dispatch(getPartnerBookings({ status: filterStatus }));
+    } catch (error) {
+      console.error("Error completing booking:", error);
+    }
+  };
+
+  const shareLocation = async () => {
+    try {
+      const position = await getCurrentPosition();
+      const locationData = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        driverId: user?.driverId || user?._id, // Use driverId first, fallback to _id
+        driverType: user?.role,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log("📍 Location updated:", locationData);
+      
+      // Send location to backend
+      const response = await api.post("/location/share", locationData);
+      
+      // Send real-time location to passenger
+      if (socket && activeTrip) {
+        socket.socket.emit("driver-location-update", {
+          bookingId: activeTrip._id,
+          driverId: user?.driverId || user?._id, // Use driverId first, fallback to _id
+          location: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error("Error sharing location:", error);
+    }
+  };
+
+  const updateLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            driverId: user?.driverId || user?._id, // Use driverId first, fallback to _id
+            timestamp: new Date().toISOString(),
+            driverType: user?.role,
+          };
+
+          if (socket && socket.socket) {
+            const locationData = {
+              bookingId: activeTrip?._id,
+              driverId: user?.driverId || user?._id,
+              location: {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              },
+              timestamp: new Date().toISOString(),
+              driverType: user?.role,
+            };
+            
+            console.log("🚗 Emitting driver-location-update:", locationData);
+            socket.socket.emit("driver-location-update", locationData);
+          }
+
+          setLiveLocation(location);
+          console.log("📍 Location updated:", location);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        },
+      );
+    }
+  }, [socket, user._id]);
+
+  const startAutomaticLocationSharing = useCallback(() => {
+    if (isSharingLocation) return;
+
+    setIsSharingLocation(true);
+    console.log(
+      "🚗 Starting automatic location sharing for B2C Partner Driver",
+    );
+
+    updateLocation();
+
+    locationIntervalRef.current = setInterval(() => {
+      updateLocation();
+    }, 5000);
+
+    if (socket && socket.socket) {
+      socket.socket.emit("join-driver-room", user._id);
+    }
+  }, [isSharingLocation, socket, user._id, updateLocation]);
+
+  const stopAutomaticLocationSharing = useCallback(() => {
+    if (!isSharingLocation) return;
+
+    setIsSharingLocation(false);
+    console.log("🛑 Stopping automatic location sharing");
+
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+
+    setActiveTrip(null);
+  }, [isSharingLocation]);
+
+  const startTrip = async (bookingId) => {
+    try {
+      console.log("🚀 Starting trip for booking:", bookingId);
+      
+      // Start the trip using the new Redux action
+      const result = await dispatch(startB2CTrip(bookingId)).unwrap();
+      
+      console.log("📊 Start trip response:", result);
+
+      // Refresh bookings to get updated status
+      await dispatch(getPartnerDriverBookings({ status: filterStatus }));
+
+      // Start location sharing for the trip
+      const booking = driverBookings.find(b => b._id === bookingId);
+      setActiveTrip(booking);
+      if (!isSharingLocation) {
+        startAutomaticLocationSharing();
+      }
+
+      console.log("✅ Trip started successfully:", bookingId);
+    } catch (error) {
+      console.error("❌ Error starting trip:", error);
+    }
+  };
+
+  const completeTrip = async (bookingId) => {
+    try {
+      console.log("🏁 Completing trip for booking:", bookingId);
+      
+      // Complete the trip using the new Redux action
+      const result = await dispatch(completeB2CTrip(bookingId)).unwrap();
+      
+      console.log("📊 Complete trip response:", result);
+
+      // Refresh bookings to get updated status
+      await dispatch(getPartnerDriverBookings({ status: filterStatus }));
+      
+      const remainingTrips = partnerBookings.filter(
+        (booking) =>
+          booking._id !== bookingId &&
+          (booking.bookingStatus === "ACCEPTED" || booking.bookingStatus === "IN_PROGRESS"),
+      );
+
+      if (remainingTrips.length === 0) {
+        stopAutomaticLocationSharing();
+      } else {
+        setActiveTrip(remainingTrips[0]);
+      }
+
+      console.log("✅ Trip completed successfully:", bookingId);
+    } catch (error) {
+      console.error("❌ Error completing trip:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!socket || !socket.socket) return;
+
+    // Listen for new bookings
+    socket.socket.on("new-b2c-booking", (booking) => {
+      console.log("📱 New B2C booking received:", booking);
+      dispatch(getPartnerBookings({ status: filterStatus }));
+
+      // Start location sharing for new booking
+      if (!isSharingLocation) {
+        startAutomaticLocationSharing();
+      }
+    });
+
+    // Listen for location updates
+    socket.socket.on("location-update", (location) => {
+      console.log("📍 Location update received:", location);
+    });
+
+    return () => {
+      socket.socket.off("new-b2c-booking");
+      socket.socket.off("location-update");
+    };
+  }, [socket, isSharingLocation, startAutomaticLocationSharing, dispatch, filterStatus]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const filteredBookings = Array.isArray(driverBookings) ? driverBookings.filter((booking) => {
+    if (filterStatus === "ALL") return true;
+    return booking.bookingStatus === filterStatus;
+  }) : [];
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "#ffc107";
+      case "ACCEPTED":
+        return "#28a745";
+      case "REJECTED":
+        return "#dc3545";
+      case "COMPLETED":
+        return "#6c757d";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="b2c-partner-driver-dashboard">
+        <div className="loading">Loading bookings...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="b2c-partner-driver-dashboard">
+      <button className="b2c-logout-btn" onClick={handleLogout}>
+        Log Out
+      </button>
+      
+      <div className="dashboard-header">
+        <h1>B2C Partner Driver Dashboard</h1>
+        <div className="driver-info">
+          <span>Welcome, {user?.fullName}</span>
+          <div
+            className={`location-status ${isSharingLocation ? "active" : ""}`}
+          >
+            📍 {isSharingLocation ? "Sharing Live" : "Not Sharing"}
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-tabs">
+        <button
+          className={`tab ${activeMainTab === "bookings" ? "active" : ""}`}
+          onClick={() => setActiveMainTab("bookings")}
+        >
+          Bookings
+        </button>
+        <button
+          className={`tab ${activeMainTab === "location" ? "active" : ""}`}
+          onClick={() => setActiveMainTab("location")}
+        >
+          Live Location
+        </button>
+      </div>
+
+      <div className="dashboard-content">
+        {activeMainTab === "bookings" && (
+          <div className="bookings-section">
+            <div className="bookings-header">
+              <h2>Booking Management</h2>
+              <div className="filter-controls">
+                <select 
+                  value={filterStatus} 
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="status-filter"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="ACCEPTED">Accepted</option>
+                  <option value="REJECTED">Rejected</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="ALL">All</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bookings-stats">
+              <div className="stat-card">
+                <span className="stat-number">{Array.isArray(driverBookings) ? driverBookings.length : 0}</span>
+                <span className="stat-label">Total Bookings</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-number">
+                  {Array.isArray(driverBookings) ? driverBookings.filter(b => b.bookingStatus === "PENDING").length : 0}
+                </span>
+                <span className="stat-label">Pending</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-number">
+                  {Array.isArray(driverBookings) ? driverBookings.filter(b => b.bookingStatus === "ACCEPTED").length : 0}
+                </span>
+                <span className="stat-label">Accepted</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-number">
+                  {Array.isArray(driverBookings) ? driverBookings.filter(b => b.bookingStatus === "COMPLETED").length : 0}
+                </span>
+                <span className="stat-label">Completed</span>
+              </div>
+            </div>
+
+            <div className="bookings-list">
+              {filteredBookings.length === 0 ? (
+                <div className="no-bookings">
+                  <div className="no-bookings-icon">📋</div>
+                  <h3>No bookings found</h3>
+                  <p>No bookings found for the selected status</p>
+                </div>
+              ) : (
+                filteredBookings.map((booking) => (
+                  <div key={booking._id} className="booking-card">
+                    <div className="booking-header">
+                      <div className="booking-info">
+                        <h4>Booking #{booking._id.slice(-8)}</h4>
+                        <span 
+                          className="status-badge"
+                          style={{ backgroundColor: getStatusColor(booking.bookingStatus) }}
+                        >
+                          {booking.bookingStatus}
+                        </span>
+                      </div>
+                      <div className="booking-date">
+                        {formatDate(booking.createdAt)}
+                      </div>
+                    </div>
+
+                    <div className="booking-details">
+                      <div className="route-info">
+                        <div className="route-point">
+                          <strong>From:</strong> {booking.pickupLocation}
+                        </div>
+                        <div className="route-arrow">→</div>
+                        <div className="route-point">
+                          <strong>To:</strong> {booking.dropoffLocation}
+                        </div>
+                      </div>
+
+                      <div className="passenger-info">
+                        <p><strong>Passenger:</strong> {booking.passengerId?.name || 'N/A'}</p>
+                        <p><strong>Phone:</strong> {booking.passengerId?.phone || 'N/A'}</p>
+                        <p><strong>Seats:</strong> {booking.numberOfSeats}</p>
+                      </div>
+
+                      <div className="driver-info">
+                        <p><strong>Driver:</strong> {booking.driverName || 'N/A'}</p>
+                        <p><strong>Phone:</strong> {booking.driverPhoneNumber || 'N/A'}</p>
+                        <p><strong>Type:</strong> {booking.isSelfDriver ? 'Self-Driving' : 'Assigned Driver'}</p>
+                      </div>
+
+                      <div className="price-info">
+                        <p><strong>Price:</strong> ₹{booking.paymentAmount}</p>
+                        <p><strong>Payment:</strong> {booking.paymentStatus}</p>
+                        <p><strong>Method:</strong> {booking.paymentMethod}</p>
+                      </div>
+                    </div>
+
+                    {booking.bookingStatus === "PENDING" && (
+                      <div className="booking-actions">
+                        <button
+                          className="accept-btn"
+                          onClick={() => handleAccept(booking._id)}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="reject-btn"
+                          onClick={() => handleRejectClick(booking)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+
+                    {booking.bookingStatus === "ACCEPTED" && (booking.assignedDriverId === user?._id || booking.assignedDriverId === user?.driverId) && (
+                      <div className="booking-actions">
+                        <button
+                          className="start-trip-btn"
+                          onClick={() => startTrip(booking._id)}
+                        >
+                          Start Trip
+                        </button>
+                        <button
+                          className="complete-btn"
+                          onClick={() => completeTrip(booking._id)}
+                        >
+                          Complete Trip
+                        </button>
+                      </div>
+                    )}
+
+                    {booking.bookingStatus === "IN_PROGRESS" && (booking.assignedDriverId === user?._id || booking.assignedDriverId === user?.driverId) && (
+                      <div className="booking-actions">
+                        <button
+                          className="complete-btn"
+                          onClick={() => completeTrip(booking._id)}
+                        >
+                          Complete Trip
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Reject Modal */}
+            {showRejectModal && selectedBooking && (
+              <div className="modal-overlay">
+                <div className="reject-modal">
+                  <div className="modal-header">
+                    <h3>Reject Booking</h3>
+                    <button 
+                      className="close-btn"
+                      onClick={() => {
+                        setShowRejectModal(false);
+                        setSelectedBooking(null);
+                        setRejectionReason("");
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="modal-body">
+                    <p>Are you sure you want to reject this booking?</p>
+                    <div className="form-group">
+                      <label>Reason for rejection:</label>
+                      <textarea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Enter reason for rejection..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    <button
+                      className="cancel-btn"
+                      onClick={() => {
+                        setShowRejectModal(false);
+                        setSelectedBooking(null);
+                        setRejectionReason("");
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="confirm-reject-btn"
+                      onClick={handleRejectSubmit}
+                      disabled={!rejectionReason.trim()}
+                    >
+                      Reject Booking
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeMainTab === "location" && (
+          <div className="location-section">
+            <h3>Live Location Tracking</h3>
+            <div className="location-info">
+              <p>
+                <strong>Status:</strong>{" "}
+                {isSharingLocation ? (
+                  <span style={{ color: "#28a745" }}>
+                    🟢 Actively sharing location
+                  </span>
+                ) : (
+                  <span style={{ color: "#ffc107" }}>
+                    🟡 Not sharing location
+                  </span>
+                )}
+              </p>
+              {liveLocation && (
+                <>
+                  <p>
+                    <strong>Current Location:</strong>{" "}
+                    {liveLocation.lat?.toFixed(6)},{" "}
+                    {liveLocation.lng?.toFixed(6)}
+                  </p>
+                  <p>
+                    <strong>Last Updated:</strong>{" "}
+                    {new Date(liveLocation.timestamp).toLocaleTimeString()}
+                  </p>
+                </>
+              )}
+              {activeTrip && (
+                <p>
+                  <strong>Active Trip:</strong> {activeTrip.pickupLocation} →{" "}
+                  {activeTrip.dropoffLocation}
+                </p>
+              )}
+            </div>
+
+            <div className="location-map">
+              {liveLocation ? (
+                <iframe
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${liveLocation.lng - 0.01},${liveLocation.lat - 0.01},${liveLocation.lng + 0.01},${liveLocation.lat + 0.01}&layer=mapnik&marker=${liveLocation.lat},${liveLocation.lng}`}
+                  className="live-map"
+                  width="100%"
+                  height="400"
+                  frameBorder="0"
+                  allowFullScreen
+                  title="Driver Live Location"
+                />
+              ) : (
+                <div className="no-location">
+                  <p>No location data available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default B2CPartnerDriverDashboard;
