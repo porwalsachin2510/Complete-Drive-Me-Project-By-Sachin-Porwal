@@ -86,6 +86,27 @@ export const checkAdminRole = (req, res, next) => {
     next()
 }
 
+export const checkDriverRole = (req, res, next) => {
+    const driverRoles = ["B2C_DRIVER", "B2B_DRIVER", "CORPORATE_DRIVER"];
+    if (!driverRoles.includes(req.userRole)) {
+        return res.status(403).json({
+            success: false,
+            message: "Access denied. Only drivers can access this resource.",
+        })
+    }
+    next()
+}
+
+export const checkCorporateEmployeeRole = (req, res, next) => {
+    if (req.userRole !== "CORPORATE_EMPLOYEE") {
+        return res.status(403).json({
+            success: false,
+            message: "Access denied. Only corporate employees can access this resource.",
+        })
+    }
+    next()
+}
+
 export const requireRole = (roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.userRole)) {

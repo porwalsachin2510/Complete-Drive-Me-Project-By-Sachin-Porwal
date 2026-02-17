@@ -34,7 +34,7 @@ function NotificationIcon() {
       socket.emit('join_user_room', user._id);
       
       socket.on('new_notification', (notification) => {
-        dispatch(addRealTimeNotification(notification));
+        dispatch(addRealtimeNotification(notification));
         
         // Show browser notification if permission granted
         if (Notification.permission === 'granted') {
@@ -47,7 +47,7 @@ function NotificationIcon() {
       });
 
       socket.on('wallet_update', (data) => {
-        dispatch(addRealTimeNotification({
+        dispatch(addRealtimeNotification({
           _id: `wallet_${Date.now()}`,
           type: 'WALLET_UPDATED',
           title: 'Wallet Updated',
@@ -58,7 +58,7 @@ function NotificationIcon() {
       });
 
       socket.on('trip_update', (data) => {
-        dispatch(addRealTimeNotification({
+        dispatch(addRealtimeNotification({
           _id: `trip_${Date.now()}`,
           type: 'TRIP_UPDATE',
           title: data.title,

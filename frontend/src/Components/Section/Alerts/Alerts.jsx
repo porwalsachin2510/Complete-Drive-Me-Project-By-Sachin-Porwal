@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import "./alerts.css";
 import api from "../../../utils/api";
 
 export default function Alerts() {
+  const { user } = useSelector((state) => state.auth);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("all");
@@ -12,8 +14,10 @@ export default function Alerts() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [filterType]);
+    if (user?._id) {
+      fetchNotifications();
+    }
+  }, [filterType, user?._id]);
 
   const fetchNotifications = async (reset = true) => {
     try {
@@ -26,7 +30,7 @@ export default function Alerts() {
       }
       
       const currentPage = reset ? 1 : page;
-      const response = await api.get('/notifications/user', {
+      const response = await api.get(`/notifications/user/${user._id}`, {
         params: {
           page: currentPage,
           limit: 20,
@@ -57,7 +61,7 @@ export default function Alerts() {
 
   const markAsRead = async (notificationId) => {
     try {
-      await api.put(`/notifications/${notificationId}/read`);
+      await api.patch(`/notifications/${notificationId}/read`);
       setNotifications(prev =>
         prev.map(notif =>
           notif._id === notificationId ? { ...notif, isRead: true } : notif
@@ -70,7 +74,7 @@ export default function Alerts() {
 
   const markAllAsRead = async () => {
     try {
-      await api.put('/notifications/read-all');
+      await api.patch(`/notifications/user/${user._id}/read-all`);
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, isRead: true }))
       );

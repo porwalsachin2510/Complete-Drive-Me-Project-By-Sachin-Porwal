@@ -55,7 +55,8 @@ export default function EmployeeDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get("/notifications/user");
+      if (!user?._id) return;
+      const response = await api.get(`/notifications/user/${user._id}`);
       setNotifications(response.data?.data?.notifications || response.data?.notifications || []);
     } catch (err) {
       console.error("[v0] Error fetching notifications:", err);
