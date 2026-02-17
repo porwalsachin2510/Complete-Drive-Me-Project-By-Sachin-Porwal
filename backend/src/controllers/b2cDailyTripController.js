@@ -395,8 +395,6 @@ const calculateTripStatistics = async (tripId) => {
         // Get trip details
         const trip = await B2CPartnerTrip.findById(tripId);
 
-        const stats = await calculateTripStatistics(tripId);
-
         return {
             monthlyPassengers: monthlyBookings,
             oneTimePassengers: oneTimeBookings,

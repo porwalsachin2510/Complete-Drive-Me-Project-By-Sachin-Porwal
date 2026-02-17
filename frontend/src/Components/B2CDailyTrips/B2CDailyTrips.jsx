@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './B2CDailyTrips.css';
 
 const B2CDailyTrips = () => {
@@ -22,25 +23,11 @@ const B2CDailyTrips = () => {
 
   const fetchTodayTrips = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view trips');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/b2c-daily-trips/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setTodayTrips(data.data.trips || []);
+      const response = await api.get('/b2c-daily-trips/today');
+      if (response.data.success) {
+        setTodayTrips(response.data.data?.trips || []);
       } else {
-        setError(data.message || 'Failed to fetch today\'s trips');
+        setError(response.data.message || 'Failed to fetch today\'s trips');
       }
     } catch (error) {
       console.error('Error fetching today trips:', error);
@@ -50,20 +37,11 @@ const B2CDailyTrips = () => {
 
   const fetchUpcomingTrips = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/b2c-daily-trips/upcoming?days=7', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setUpcomingTrips(data.data.trips || []);
+      const response = await api.get('/b2c-daily-trips/upcoming', { params: { days: 7 } });
+      if (response.data.success) {
+        setUpcomingTrips(response.data.data?.trips || []);
       } else {
-        console.error('Failed to fetch upcoming trips:', data.message);
+        console.error('Failed to fetch upcoming trips:', response.data.message);
       }
     } catch (error) {
       console.error('Error fetching upcoming trips:', error);
@@ -72,20 +50,9 @@ const B2CDailyTrips = () => {
 
   const updateTripStatus = async (tripId, status) => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/b2c-daily-trips/status/${tripId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
+      const response = await api.put(`/b2c-daily-trips/status/${tripId}`, { status });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         const updateTrips = (trips) => 
           trips.map(trip => 
             trip._id === tripId 
@@ -96,7 +63,7 @@ const B2CDailyTrips = () => {
         setTodayTrips(updateTrips);
         setUpcomingTrips(updateTrips);
       } else {
-        setError(data.message || 'Failed to update trip status');
+        setError(response.data.message || 'Failed to update trip status');
       }
     } catch (error) {
       console.error('Error updating trip status:', error);
@@ -118,20 +85,9 @@ const B2CDailyTrips = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/b2c-daily-trips/seats/${selectedTrip._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(seatUpdate)
-      });
+      const response = await api.put(`/b2c-daily-trips/seats/${selectedTrip._id}`, seatUpdate);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         const updateTrips = (trips) => 
           trips.map(trip => 
             trip._id === selectedTrip._id 
@@ -149,7 +105,7 @@ const B2CDailyTrips = () => {
         setShowSeatModal(false);
         setSelectedTrip(null);
       } else {
-        setError(data.message || 'Failed to update seats');
+        setError(response.data.message || 'Failed to update seats');
       }
     } catch (error) {
       console.error('Error updating seats:', error);

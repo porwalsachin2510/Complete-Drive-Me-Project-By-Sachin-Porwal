@@ -13,10 +13,14 @@ import {
     updateB2CPartnerDriver,
     deleteB2CPartnerDriver,
 } from "../controllers/driverController.js"
+import { getCorporateStats } from "../controllers/corporateStatsController.js"
 import { verifyToken, checkFleetOwnerRole, checkCorporateOwnerRole, checkB2CPartnerRole } from "../middleware/auth.js"
 import { uploadDriverDocuments, handleMulterError } from "../Config/multerConfig.js"
 
 const router = express.Router()
+
+// Corporate stats endpoint (used by CorporateProfilePage)
+router.get("/stats", verifyToken, getCorporateStats)
 
 router.post("/", verifyToken, checkFleetOwnerRole, uploadDriverDocuments, handleMulterError, createDriver)
 

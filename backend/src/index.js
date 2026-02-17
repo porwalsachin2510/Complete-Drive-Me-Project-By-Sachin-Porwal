@@ -408,6 +408,7 @@ app.use("/api/no-show", noShowRoutes)
 app.use("/api/subscription-settings", subscriptionSettingsRoutes)
 app.use("/api/travel-history", travelHistoryRoutes)
 app.use("/api/settlement", settlementRoutes)
+app.use("/api/corporate-operations", corporateOperationsRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

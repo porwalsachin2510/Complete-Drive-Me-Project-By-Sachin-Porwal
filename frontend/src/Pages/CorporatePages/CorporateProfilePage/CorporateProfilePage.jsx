@@ -58,6 +58,25 @@ export default function CorporateProfilePage() {
     fetchCorporateStats();
   }, []);
   
+  const renderContent = () => {
+    switch (corporateactiveTab) {
+      case "company-profile":
+        return <CompanyProfile />;
+      case "contracts":
+        return <CorporateContractPage />;
+      case "employee-management":
+        return <CorporateEmployeeManagement />;
+      case "employee-bookings":
+        return <CorporateEmployeeBookingsPage />;
+      case "requirement-management":
+        return <RequirementManagement />;
+      case "account-settings":
+        return <AccountSettings />;
+      default:
+        return <CompanyProfile />;
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const token = localStorage.getItem("token");
