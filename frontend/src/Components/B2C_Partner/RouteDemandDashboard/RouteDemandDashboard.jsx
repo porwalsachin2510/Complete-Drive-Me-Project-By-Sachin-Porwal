@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../utils/api';
 import './RouteDemandDashboard.css';
 
 const RouteDemandDashboard = () => {
@@ -28,25 +29,12 @@ const RouteDemandDashboard = () => {
 
   const fetchDemandData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view demand data');
-        setLoading(false);
-        return;
-      }
+      const response = await api.get('/b2c-partners/route-requests/demand');
 
-      const response = await fetch('/api/b2c-partners/route-requests/demand', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setDemandData(data.data);
+      if (response.data.success) {
+        setDemandData(response.data.data);
       } else {
-        setError(data.message || 'Failed to fetch demand data');
+        setError(response.data.message || 'Failed to fetch demand data');
       }
     } catch (error) {
       console.error('Error fetching demand data:', error);
@@ -60,20 +48,9 @@ const RouteDemandDashboard = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/b2c-partners/route-requests/respond/${selectedRequest._id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(responseData)
-      });
+      const response = await api.post(`/b2c-partners/route-requests/respond/${selectedRequest._id}`, responseData);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setShowResponseModal(false);
         setSelectedRequest(null);
         setResponseData({
@@ -82,13 +59,15 @@ const RouteDemandDashboard = () => {
           estimatedStartDate: '',
           proposedPrice: ''
         });
+        
+        // Refresh demand data
         fetchDemandData();
       } else {
-        setError(data.message || 'Failed to respond to request');
+        alert(response.data.message || 'Failed to submit response');
       }
     } catch (error) {
-      console.error('Error responding to request:', error);
-      setError('Network error. Please try again.');
+      console.error('Error submitting response:', error);
+      alert('Error submitting response');
     }
   };
 

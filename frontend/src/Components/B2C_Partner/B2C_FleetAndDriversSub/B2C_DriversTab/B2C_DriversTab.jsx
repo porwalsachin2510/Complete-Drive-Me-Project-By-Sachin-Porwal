@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import api from "../../../../utils/api";
 import B2C_DriverCard from "../B2C_DriverCard/B2C_DriverCard";
 import "./b2c_driverstab.css";
 
@@ -15,22 +16,13 @@ function B2C_DriversTab() {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/b2c-partner/drivers', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await api.get('/b2c-partner/drivers');
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setDrivers(data.drivers || []);
-        console.log('Fetched B2C drivers:', data.drivers);
+      if (response.data.success) {
+        setDrivers(response.data.drivers || []);
+        console.log('Fetched B2C drivers:', response.data.drivers);
       } else {
-        console.error('Failed to fetch drivers:', data.message);
+        console.error('Failed to fetch drivers:', response.data.message);
       }
     } catch (error) {
       console.error('Error fetching drivers:', error);

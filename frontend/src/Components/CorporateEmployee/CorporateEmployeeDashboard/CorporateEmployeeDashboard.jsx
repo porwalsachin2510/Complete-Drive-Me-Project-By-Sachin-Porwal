@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../utils/api';
 import './CorporateEmployeeDashboard.css';
 
 const CorporateEmployeeDashboard = () => {
@@ -18,25 +19,12 @@ const CorporateEmployeeDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view dashboard');
-        setLoading(false);
-        return;
-      }
+      const response = await api.get('/corporate-employees/dashboard');
 
-      const response = await fetch('/api/corporate-employees/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setDashboardData(data.data);
+      if (response.data.success) {
+        setDashboardData(response.data.data);
       } else {
-        setError(data.message || 'Failed to fetch dashboard data');
+        setError(response.data.message || 'Failed to fetch dashboard data');
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

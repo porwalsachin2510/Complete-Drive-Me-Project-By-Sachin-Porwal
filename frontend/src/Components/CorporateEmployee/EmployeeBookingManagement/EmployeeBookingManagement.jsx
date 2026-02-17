@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../utils/api';
 import './EmployeeBookingManagement.css';
 
 const EmployeeBookingManagement = () => {
@@ -18,25 +19,12 @@ const EmployeeBookingManagement = () => {
 
   const fetchCurrentBookings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view bookings');
-        setLoading(false);
-        return;
-      }
+      const response = await api.get('/corporate-employees/bookings/current');
 
-      const response = await fetch('/api/corporate-employees/bookings/current', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setBookings(data.data.bookings || []);
+      if (response.data.success) {
+        setBookings(response.data.data.bookings || []);
       } else {
-        setError(data.message || 'Failed to fetch current bookings');
+        setError(response.data.message || 'Failed to fetch current bookings');
       }
     } catch (error) {
       console.error('Error fetching current bookings:', error);
@@ -48,20 +36,12 @@ const EmployeeBookingManagement = () => {
 
   const fetchUpcomingBookings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/corporate-employees/bookings/upcoming?days=30', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/corporate-employees/bookings/upcoming', { params: { days: 30 } });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setUpcomingBookings(data.data.bookings || []);
+      if (response.data.success) {
+        setUpcomingBookings(response.data.data.bookings || []);
       } else {
-        console.error('Failed to fetch upcoming bookings:', data.message);
+        console.error('Failed to fetch upcoming bookings:', response.data.message);
       }
     } catch (error) {
       console.error('Error fetching upcoming bookings:', error);
@@ -72,37 +52,28 @@ const EmployeeBookingManagement = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('token');
-      
       const endpoint = bookingAction === 'book' 
-        ? '/api/corporate-employees/bookings/book'
-        : '/api/corporate-employees/bookings/cancel';
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          date: selectedDate,
-          tripType: activeTab === 'current' ? 'today' : 'upcoming'
-        })
+        ? '/corporate-employees/bookings/book'
+        : '/corporate-employees/bookings/cancel';
+      
+      const response = await api[bookingAction === 'book' ? 'post' : 'put'](endpoint, {
+        bookingDate: selectedDate
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
+        // Success - refresh data and close modal
         setShowBookingModal(false);
         setSelectedDate('');
+        
+        // Refresh bookings
         fetchCurrentBookings();
         fetchUpcomingBookings();
       } else {
-        setError(data.message || `Failed to ${bookingAction} booking`);
+        alert(response.data.message || `Failed to ${bookingAction} booking`);
       }
     } catch (error) {
-      console.error('Error handling booking action:', error);
-      setError('Network error. Please try again.');
+      console.error('Error:', error);
+      alert(`Error trying to ${bookingAction} booking`);
     }
   };
 

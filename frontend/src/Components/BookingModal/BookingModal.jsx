@@ -428,23 +428,14 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
     });
 
     try {
-      const response = await fetch('/api/monthly-pass/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(bookingData)
-      });
+      const response = await api.post('/monthly-pass/create', bookingData);
 
-      const result = await response.json();
-
-      if (result.success) {
-        console.log("Monthly pass created successfully:", result.monthlyPass);
+      if (response.data.success) {
+        console.log("Monthly pass created successfully:", response.data.monthlyPass);
         
         // Handle payment redirect for STRIPE
-        if (method === "STRIPE" && result.paymentUrl) {
-          window.location.href = result.paymentUrl;
+        if (method === "STRIPE" && response.data.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
         } else if (method === "CASH") {
           // Show success message for cash payment
           setStep(3);
@@ -453,8 +444,8 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
           }, 2000);
         }
       } else {
-        console.error("Monthly pass creation failed:", result.message);
-        alert(result.message || "Failed to create monthly pass");
+        console.error("Monthly pass creation failed:", response.data.message);
+        alert(response.data.message || "Failed to create monthly pass");
       }
     } catch (err) {
       console.error("Booking error:", err);

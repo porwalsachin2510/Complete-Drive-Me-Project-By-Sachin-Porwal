@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../utils/api';
 import './EmployeeNoShow.css';
 
 const EmployeeNoShow = () => {
@@ -19,25 +20,12 @@ const EmployeeNoShow = () => {
 
   const fetchTodayBookings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view bookings');
-        setLoading(false);
-        return;
-      }
+      const response = await api.get('/corporate-employees/bookings/today');
 
-      const response = await fetch('/api/corporate-employees/bookings/today', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setTodayBookings(data.data.bookings || []);
+      if (response.data.success) {
+        setTodayBookings(response.data.data.bookings || []);
       } else {
-        setError(data.message || 'Failed to fetch today\'s bookings');
+        setError(response.data.message || 'Failed to fetch today\'s bookings');
       }
     } catch (error) {
       console.error('Error fetching today bookings:', error);
@@ -49,20 +37,12 @@ const EmployeeNoShow = () => {
 
   const fetchNoShowHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/corporate-employees/no-show/history', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/corporate-employees/no-show/history');
 
-      const data = await response.json();
-
-      if (data.success) {
-        setNoShowHistory(data.data.noShows || []);
+      if (response.data.success) {
+        setNoShowHistory(response.data.data.noShows || []);
       } else {
-        console.error('Failed to fetch no-show history:', data.message);
+        console.error('Failed to fetch no-show history:', response.data.message);
       }
     } catch (error) {
       console.error('Error fetching no-show history:', error);
@@ -73,36 +53,29 @@ const EmployeeNoShow = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/corporate-employees/no-show/mark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          bookingId: selectedBooking._id,
-          reason: noShowReason,
-          notes: noShowNotes
-        })
+      const response = await api.post('/corporate-employees/no-show/mark', {
+        bookingId: selectedBooking._id,
+        reason: noShowReason,
+        notes: noShowNotes
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
+        // Success - refresh data and close modal
         setShowNoShowModal(false);
         setSelectedBooking(null);
         setNoShowReason('');
         setNoShowNotes('');
+        
+        // Refresh the data
         fetchTodayBookings();
         fetchNoShowHistory();
       } else {
-        setError(data.message || 'Failed to mark no-show');
+        console.error('Failed to mark no-show:', response.data.message);
+        alert(response.data.message || 'Failed to mark no-show');
       }
     } catch (error) {
       console.error('Error marking no-show:', error);
-      setError('Network error. Please try again.');
+      alert('Error marking no-show');
     }
   };
 

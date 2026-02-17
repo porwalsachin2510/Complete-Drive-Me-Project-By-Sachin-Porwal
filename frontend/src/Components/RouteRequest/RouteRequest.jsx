@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../utils/api';
 import './RouteRequest.css';
 
 const RouteRequest = ({ isOpen, onClose, searchParams, onRequestSubmitted }) => {
@@ -30,32 +31,16 @@ const RouteRequest = ({ isOpen, onClose, searchParams, onRequestSubmitted }) => 
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to submit route request');
-        setLoading(false);
-        return;
-      }
+      const response = await api.post('/route-requests/request', formData);
 
-      const response = await fetch('/api/route-requests/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setSuccess('Route request submitted successfully! We will notify you when this route becomes available.');
         setTimeout(() => {
           onRequestSubmitted();
           onClose();
         }, 2000);
       } else {
-        setError(data.message || 'Failed to submit route request');
+        setError(response.data.message || 'Failed to submit route request');
       }
     } catch (error) {
       console.error('Error submitting route request:', error);

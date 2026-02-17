@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './SubscriptionSettings.css';
 
 const SubscriptionSettings = () => {
@@ -21,24 +22,12 @@ const SubscriptionSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view subscription settings');
-        return;
-      }
+      const response = await api.get('/subscription-settings/settings');
 
-      const response = await fetch('/api/subscription-settings/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSettings(data.data.settings);
+      if (response.data.success) {
+        setSettings(response.data.data.settings);
       } else {
-        setError(data.message || 'Failed to fetch settings');
+        setError(response.data.message || 'Failed to fetch settings');
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -52,24 +41,13 @@ const SubscriptionSettings = () => {
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/subscription-settings/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(settings)
-      });
+      const response = await api.put('/subscription-settings/settings', settings);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setSuccess('Settings updated successfully!');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(data.message || 'Failed to update settings');
+        setError(response.data.message || 'Failed to update settings');
       }
     } catch (error) {
       console.error('Error updating settings:', error);
@@ -86,18 +64,9 @@ const SubscriptionSettings = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/subscription-settings/cancel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ reason: cancelReason })
-      });
+      const response = await api.post('/subscription-settings/cancel', { reason: cancelReason });
 
-      const data = await response.json();
+      if (response.data.success) {
 
       if (data.success) {
         setSuccess('Subscription cancelled successfully');

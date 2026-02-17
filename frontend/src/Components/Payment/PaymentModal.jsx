@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import api from "../../utils/api";
 import "./PaymentModal.css";
 
 function PaymentModal({ isOpen, onClose, amount, currency, onPaymentSuccess }) {
@@ -91,13 +92,7 @@ function PaymentModal({ isOpen, onClose, amount, currency, onPaymentSuccess }) {
 
     try {
       // Create payment session with backend
-      const response = await fetch('/api/wallet/create-payment-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
+      const response = await api.post('/wallet/create-payment-session', {
           amount: parseFloat(amount),
           paymentMethod: selectedMethod,
           currency: currency,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import api from "../../../utils/api";
 import { getWalletBalance } from "../../../Redux/slices/walletSlice";
 import LoadingSpinner from "../../../Components/LoadingSpinner/LoadingSpinner";
 import "./WalletPaymentCallback.css";
@@ -36,24 +37,15 @@ const WalletPaymentCallback = () => {
       if (status === "success" && paymentId) {
         try {
           // Call wallet add funds with payment verification
-          const response = await fetch('/api/wallet/add-funds', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-              amount: 0, // Will be determined from payment session
-              paymentMethod: "card",
-              paymentDetails: {},
-              paymentSessionId: paymentId
-            })
+          const response = await api.post('/wallet/add-funds', {
+            amount: 0, // Will be determined from payment session
+            paymentMethod: "card",
+            paymentDetails: {},
+            paymentSessionId: paymentId
           });
 
-          const data = await response.json();
-
-          if (data.success) {
-            console.log("[Wallet] Payment verified and funds added:", data);
+          if (response.data.success) {
+            console.log("[Wallet] Payment verified and funds added:", response.data);
             
             setVerificationStatus("success");
             setMessage("Payment completed successfully! Funds have been added to your wallet.");
@@ -66,9 +58,9 @@ const WalletPaymentCallback = () => {
               navigate("/wallet");
             }, 3000);
           } else {
-            console.error("[Wallet] Payment verification failed:", data.message);
+            console.error("[Wallet] Payment verification failed:", response.data.message);
             setVerificationStatus("failed");
-            setMessage(data.message || "Payment verification failed. Please contact support.");
+            setMessage(response.data.message || "Payment verification failed. Please contact support.");
           }
         } catch (error) {
           console.error("[Wallet] Payment verification error:", error);

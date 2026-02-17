@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './WalletRechargeModal.css';
 
 const WalletRechargeModal = ({ 
@@ -59,23 +60,14 @@ const WalletRechargeModal = ({
       const selectedMethod = paymentMethods.find(method => method.id === selectedPaymentMethod);
       
       // Create payment session based on gateway
-      const response = await fetch('/api/wallet/create-payment-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          amount: parseFloat(amount),
-          currency: currency,
-          paymentMethod: selectedPaymentMethod,
-          country: country
-        })
+      const response = await api.post('/wallet/create-payment-session', {
+        amount: parseFloat(amount),
+        currency: currency,
+        paymentMethod: selectedPaymentMethod,
+        country: country
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         // Redirect to payment gateway or handle payment
         if (data.paymentUrl) {
           window.location.href = data.paymentUrl;

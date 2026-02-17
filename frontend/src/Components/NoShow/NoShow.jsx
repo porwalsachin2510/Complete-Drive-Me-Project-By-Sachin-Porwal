@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './NoShow.css';
 
 const NoShow = ({ tripId, onNoShowMarked }) => {
@@ -37,35 +38,19 @@ const NoShow = ({ tripId, onNoShowMarked }) => {
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to mark no-show');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/no-show/mark', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          tripId,
-          ...formData
-        })
+      const response = await api.post('/no-show/mark', {
+        tripId,
+        ...formData
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setSuccess('No-show marked successfully. Your seat has been released for today.');
         setTimeout(() => {
           setShowModal(false);
           onNoShowMarked && onNoShowMarked();
         }, 2000);
       } else {
-        setError(data.message || 'Failed to mark no-show');
+        setError(response.data.message || 'Failed to mark no-show');
       }
     } catch (error) {
       console.error('Error marking no-show:', error);
