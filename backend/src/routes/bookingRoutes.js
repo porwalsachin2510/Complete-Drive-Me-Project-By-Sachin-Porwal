@@ -21,6 +21,7 @@ import {
     getCorporateDriverBookings,
     startCorporateTrip,
     completeCorporateBooking,
+    getDailyTripsForBooking,
 } from "../controllers/bookingController.js"
 
 const router = express.Router()
@@ -45,6 +46,9 @@ router.put("/:bookingId/accept", verifyToken, acceptB2CBooking)
 router.put("/:bookingId/reject", verifyToken, rejectB2CBooking)
 router.put("/:bookingId/start", verifyToken, startB2CTrip)
 router.put("/:bookingId/complete", verifyToken, completeB2CTrip)
+
+// Daily trips for a booking
+router.get("/:bookingId/daily-trips", verifyToken, getDailyTripsForBooking)
 
 // Corporate owner routes
 router.get("/corporate-owner", verifyToken, getCorporateOwnerBookings)

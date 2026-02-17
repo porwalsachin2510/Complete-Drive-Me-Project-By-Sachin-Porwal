@@ -6,6 +6,7 @@ import { getPassengerBookings } from "../../../Redux/slices/bookingSlice";
 import { useSocket } from "../../../hooks/useSocket";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
+import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import "./commutermybookingspage.css";
 
 const CommuterMyBookingsPage = () => {
@@ -868,6 +869,21 @@ const CommuterMyBookingsPage = () => {
                         <button className="btn-cancel">Cancel Booking</button>
                       )}
                   </div>
+
+                  {/* Daily Trips for this Booking */}
+                  {(booking.bookingStatus === "CONFIRMED" || 
+                    booking.bookingStatus === "IN_PROGRESS" ||
+                    booking.bookingStatus === "ACTIVE") && (
+                    <DailyTripsInBooking 
+                      booking={booking}
+                      userRole={userType}
+                      onTripStatusChange={(status, tripId) => {
+                        console.log(`Trip ${tripId} status changed to: ${status}`);
+                        // Refresh bookings after trip status change
+                        dispatch(getPassengerBookings());
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}

@@ -2076,4 +2076,59 @@ export const completeCorporateBooking = async (req, res) => {
     }
 }
 
+// Get Daily Trips for a specific booking
+export const getDailyTripsForBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params
+        const userId = req.userId
+
+        // Find the booking
+        const booking = await B2CBooking.findById(bookingId).lean()
+        
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+                data: []
+            })
+        }
+
+        // Verify user has access to this booking
+        const isPassenger = booking.passengerId?.toString() === userId
+        const isPartner = booking.b2cPartnerId?.toString() === userId
+        const isDriver = booking.driverId?.toString() === userId || booking.assignedDriverId?.toString() === userId
+
+        if (!isPassenger && !isPartner && !isDriver) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized access to this booking",
+                data: []
+            })
+        }
+
+        // Get trips for this booking
+        const Trip = require("../models/Trip.js").default || require("../models/Trip.js")
+        
+        const dailyTrips = await Trip.find({
+            bookingId: bookingId,
+        }).lean()
+
+        console.log(`[v0] Retrieved ${dailyTrips.length} daily trips for booking ${bookingId}`)
+
+        res.status(200).json({
+            success: true,
+            data: dailyTrips || [],
+            message: "Daily trips retrieved successfully",
+            count: (dailyTrips || []).length
+        })
+    } catch (error) {
+        console.error("[v0] Error fetching daily trips:", error)
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch daily trips",
+            data: [],
+            error: error.message
+        })
+    }
+}
 

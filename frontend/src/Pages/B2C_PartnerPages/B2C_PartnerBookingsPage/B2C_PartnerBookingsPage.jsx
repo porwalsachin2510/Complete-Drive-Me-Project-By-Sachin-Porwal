@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../../hooks/useSocket";
 import { getPartnerBookings, acceptBooking, rejectBooking, startB2CTrip, completeB2CTrip } from "../../../Redux/slices/bookingSlice";
+import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import api from "../../../utils/api";
 import WalletRechargeModal from "../../../Components/WalletRechargeModal/WalletRechargeModal";
 import "./b2c_partnerbookingspage.css";
@@ -418,6 +419,20 @@ const B2C_PartnerBookingsPage = () => {
                   </>
                 )}
               </div>
+
+              {/* Daily Trips for this Booking */}
+              {(booking.bookingStatus === "ACCEPTED" || 
+                booking.bookingStatus === "IN_PROGRESS") && (
+                <DailyTripsInBooking 
+                  booking={booking}
+                  userRole={auth.user?.role}
+                  onTripStatusChange={(status, tripId) => {
+                    console.log(`Trip ${tripId} status changed to: ${status}`);
+                    // Refresh bookings after trip status change
+                    dispatch(getPartnerBookings({ status: filterStatus }));
+                  }}
+                />
+              )}
             </div>
           ))
         )}

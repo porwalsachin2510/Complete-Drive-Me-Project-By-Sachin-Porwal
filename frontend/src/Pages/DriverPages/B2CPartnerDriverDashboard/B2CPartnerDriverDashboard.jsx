@@ -11,6 +11,7 @@ import {
   startB2CTrip,
   completeB2CTrip
 } from "../../../Redux/slices/bookingSlice";
+import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import api from "../../../utils/api";
 import "./B2CPartnerDriverDashboard.css";
 
@@ -577,6 +578,20 @@ function B2CPartnerDriverDashboard() {
                           Complete Trip
                         </button>
                       </div>
+                    )}
+
+                    {/* Daily Trips for this Booking */}
+                    {(booking.bookingStatus === "ACCEPTED" || 
+                      booking.bookingStatus === "IN_PROGRESS") && (
+                      <DailyTripsInBooking 
+                        booking={booking}
+                        userRole={user?.role}
+                        onTripStatusChange={(status, tripId) => {
+                          console.log(`Trip ${tripId} status changed to: ${status}`);
+                          // Refresh bookings after trip status change
+                          dispatch(getPartnerDriverBookings({ status: "ALL" }));
+                        }}
+                      />
                     )}
                   </div>
                 ))
