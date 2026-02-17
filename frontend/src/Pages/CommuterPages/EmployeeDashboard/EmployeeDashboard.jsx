@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import api from "../../../utils/api";
 import "./employeedashboard.css";
 
 export default function EmployeeDashboard() {
@@ -23,12 +24,9 @@ export default function EmployeeDashboard() {
 
   const fetchTripInfo = async () => {
     try {
-      const response = await fetch("/api/corporate-employees/my-route", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTripInfo(data.data);
+      const response = await api.get("/corporate-employees/my-route");
+      if (response.data?.data) {
+        setTripInfo(response.data.data);
       }
     } catch (err) {
       console.error("[v0] Error fetching trip info:", err);
@@ -37,13 +35,8 @@ export default function EmployeeDashboard() {
 
   const fetchMyBookings = async () => {
     try {
-      const response = await fetch(`/api/trips/my-bookings`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setMyBookings(data.data?.bookings || []);
-      }
+      const response = await api.get("/trips/my-bookings");
+      setMyBookings(response.data?.data?.bookings || []);
     } catch (err) {
       console.error("[v0] Error fetching bookings:", err);
     } finally {
@@ -53,13 +46,8 @@ export default function EmployeeDashboard() {
 
   const fetchTravelHistory = async () => {
     try {
-      const response = await fetch("/api/travel-history", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setHistory(data.data?.history || []);
-      }
+      const response = await api.get("/travel-history");
+      setHistory(response.data?.data?.history || []);
     } catch (err) {
       console.error("[v0] Error fetching history:", err);
     }
@@ -67,13 +55,8 @@ export default function EmployeeDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("/api/notifications", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.data?.notifications || []);
-      }
+      const response = await api.get("/notifications/user");
+      setNotifications(response.data?.data?.notifications || response.data?.notifications || []);
     } catch (err) {
       console.error("[v0] Error fetching notifications:", err);
     }
@@ -81,13 +64,8 @@ export default function EmployeeDashboard() {
 
   const handleCancelBooking = async (bookingId) => {
     try {
-      const response = await fetch(`/api/trips/${bookingId}/cancel`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (response.ok) {
-        setMyBookings(myBookings.filter((b) => b._id !== bookingId));
-      }
+      await api.delete(`/trips/${bookingId}/cancel`);
+      setMyBookings(myBookings.filter((b) => b._id !== bookingId));
     } catch (err) {
       console.error("[v0] Error canceling booking:", err);
     }

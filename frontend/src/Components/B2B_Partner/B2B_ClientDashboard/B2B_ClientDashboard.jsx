@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../utils/api';
 import './B2B_ClientDashboard.css';
 
 const B2B_ClientDashboard = () => {
@@ -28,20 +29,10 @@ const B2B_ClientDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view dashboard');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`/api/b2b-partners/dashboard?range=${dateRange}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await api.get(`/b2b-partner/dashboard`, {
+        params: { range: dateRange }
       });
-
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setDashboardData(data.data);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './TravelHistory.css';
 
 const TravelHistory = ({ userId }) => {
@@ -23,25 +24,13 @@ const TravelHistory = ({ userId }) => {
 
   const fetchTravelHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to view travel history');
-        setLoading(false);
-        return;
-      }
-
       const queryParams = new URLSearchParams({
         period: filter.period,
         status: filter.status !== 'all' ? filter.status : ''
       });
 
-      const response = await fetch(`/api/travel-history/my-history?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
+      const response = await api.get(`/travel-history/my-history?${queryParams}`);
+      const data = response.data;
 
       if (data.success) {
         setTravelHistory(data.data.history || []);
@@ -64,18 +53,8 @@ const TravelHistory = ({ userId }) => {
   const handleRatingSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/travel-history/rate/${selectedTrip._id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(ratingData)
-      });
-
-      const data = await response.json();
+      const response = await api.post(`/travel-history/rate/${selectedTrip._id}`, ratingData);
+      const data = response.data;
 
       if (data.success) {
         // Update the trip in the list

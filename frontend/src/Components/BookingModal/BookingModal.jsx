@@ -7,6 +7,7 @@ import {
   createCorporateBooking,
   clearBookingData,
 } from "../../Redux/slices/bookingSlice";
+import api from "../../utils/api";
 import {
   FaTimes,
   FaMapMarkerAlt,
@@ -75,27 +76,18 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       setLoadingSchedule(true);
       try {
         console.log("Fetching schedule for route:", route._id);
-        const response = await fetch(`/api/b2c-partner/routes/${route._id}/schedules`, {
-          headers: {
-            'Authorization': `Bearer ${user?.token}`
-          }
-        });
+        const response = await api.get(`/b2c-partner/routes/${route._id}/schedules`);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Schedule data fetched:", data);
-          
-          if (data.success && data.schedules && data.schedules.length > 0) {
-            // Use the first active schedule
-            const activeSchedule = data.schedules.find(s => s.isActive) || data.schedules[0];
-            setScheduleData(activeSchedule);
-            console.log("Active schedule set:", activeSchedule);
-          } else {
-            console.log("No schedules found for this route");
-            setScheduleData(null);
-          }
+        const data = response.data;
+        console.log("Schedule data fetched:", data);
+        
+        if (data.success && data.schedules && data.schedules.length > 0) {
+          // Use the first active schedule
+          const activeSchedule = data.schedules.find(s => s.isActive) || data.schedules[0];
+          setScheduleData(activeSchedule);
+          console.log("Active schedule set:", activeSchedule);
         } else {
-          console.error("Failed to fetch schedule:", response.statusText);
+          console.log("No schedules found for this route");
           setScheduleData(null);
         }
       } catch (error) {
@@ -126,25 +118,15 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
     
     try {
       // Use PUBLIC endpoint for commuters
-      const response = await fetch(`/api/b2c-partner/public/routes/${routeIdentifier}/trips/seat-availability`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`
-        }
-      });
+      const response = await api.get(`/b2c-partner/public/routes/${routeIdentifier}/trips/seat-availability`);
       
       console.log("[Frontend] Seat availability API response status:", response.status);
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Trip seat availability API Response:", data);
-        console.log("Seat availability object:", data.seatAvailability);
-        console.log("Available trip keys:", Object.keys(data.seatAvailability || {}));
-        setTripSeatAvailability(data.seatAvailability || {});
-      } else {
-        console.error("Seat availability API error:", response.status, response.statusText);
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-      }
+      const data = response.data;
+      console.log("Trip seat availability API Response:", data);
+      console.log("Seat availability object:", data.seatAvailability);
+      console.log("Available trip keys:", Object.keys(data.seatAvailability || {}));
+      setTripSeatAvailability(data.seatAvailability || {});
     } catch (error) {
       console.error("Error fetching seat availability:", error);
     }
