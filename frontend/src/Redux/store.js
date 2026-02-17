@@ -15,6 +15,8 @@ import corporateEmployeeReducer from "./slices/corporateEmployeeSlice"
 import b2bPartnerReducer from "./slices/b2bPartnerSlice"
 import commuterBookingReducer from "./slices/commuterBookingSlice"
 import adminDashboardReducer from "./slices/adminDashboardSlice"
+import commuterReducer from "./slices/commuterSlice"
+import corporateOperationsEnhancedReducer from "./slices/corporateOperationsSliceEnhanced"
 
 export const store = configureStore({
     reducer: {
@@ -34,6 +36,8 @@ export const store = configureStore({
         b2bPartner: b2bPartnerReducer,
         commuterBooking: commuterBookingReducer,
         adminDashboard: adminDashboardReducer,
+        commuter: commuterReducer,
+        corporateOpsEnhanced: corporateOperationsEnhancedReducer,
     },
 })
 

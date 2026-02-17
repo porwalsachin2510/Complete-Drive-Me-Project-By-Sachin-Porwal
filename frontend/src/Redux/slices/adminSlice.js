@@ -68,6 +68,71 @@ export const getAllContracts = createAsyncThunk(
     },
 )
 
+// Get B2C partners
+export const getB2CPartners = createAsyncThunk(
+    "admin/getB2CPartners",
+    async (filters = {}, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/b2c-partners", { params: filters })
+            return response.data.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch B2C partners")
+        }
+    }
+)
+
+// Get B2B clients
+export const getB2BClients = createAsyncThunk(
+    "admin/getB2BClients",
+    async (filters = {}, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/b2b-clients", { params: filters })
+            return response.data.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch B2B clients")
+        }
+    }
+)
+
+// Get all users
+export const getAllUsers = createAsyncThunk(
+    "admin/getAllUsers",
+    async (filters = {}, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/users", { params: filters })
+            return response.data.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch users")
+        }
+    }
+)
+
+// Get finance summary
+export const getFinanceSummary = createAsyncThunk(
+    "admin/getFinanceSummary",
+    async (dateRange = {}, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/finance/summary", { params: dateRange })
+            return response.data.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch finance summary")
+        }
+    }
+)
+
+// Get ride pooling stats
+export const getRidePoolingStats = createAsyncThunk(
+    "admin/getRidePoolingStats",
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await api.get("/admin/ride-pooling/stats")
+            return response.data.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch ride pooling stats")
+        }
+    }
+)
+
 const adminSlice = createSlice({
     name: "admin",
     initialState: {
@@ -75,6 +140,11 @@ const adminSlice = createSlice({
         pendingPayments: [],
         selectedPayment: null,
         contracts: [],
+        b2cPartners: [],
+        b2bClients: [],
+        users: [],
+        financeSummary: null,
+        ridePoolingStats: null,
         pagination: null,
         loading: false,
         error: null,
@@ -127,8 +197,82 @@ const adminSlice = createSlice({
                 state.contracts = action.payload.contracts
                 state.pagination = action.payload.pagination
             })
+            // B2C Partners
+            .addCase(getB2CPartners.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(getB2CPartners.fulfilled, (state, action) => {
+                state.loading = false
+                state.b2cPartners = action.payload
+            })
+            .addCase(getB2CPartners.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // B2B Clients
+            .addCase(getB2BClients.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(getB2BClients.fulfilled, (state, action) => {
+                state.loading = false
+                state.b2bClients = action.payload
+            })
+            .addCase(getB2BClients.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Users
+            .addCase(getAllUsers.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(getAllUsers.fulfilled, (state, action) => {
+                state.loading = false
+                state.users = action.payload
+            })
+            .addCase(getAllUsers.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Finance Summary
+            .addCase(getFinanceSummary.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(getFinanceSummary.fulfilled, (state, action) => {
+                state.loading = false
+                state.financeSummary = action.payload
+            })
+            .addCase(getFinanceSummary.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Ride Pooling Stats
+            .addCase(getRidePoolingStats.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(getRidePoolingStats.fulfilled, (state, action) => {
+                state.loading = false
+                state.ridePoolingStats = action.payload
+            })
+            .addCase(getRidePoolingStats.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
     },
 })
 
 export const { clearError, clearSelectedPayment } = adminSlice.actions
+
+// Selectors
+export const selectStats = (state) => state.admin.stats
+export const selectPendingPayments = (state) => state.admin.pendingPayments
+export const selectSelectedPayment = (state) => state.admin.selectedPayment
+export const selectContracts = (state) => state.admin.contracts
+export const selectB2CPartners = (state) => state.admin.b2cPartners
+export const selectB2BClients = (state) => state.admin.b2bClients
+export const selectUsers = (state) => state.admin.users
+export const selectFinanceSummary = (state) => state.admin.financeSummary
+export const selectRidePoolingStats = (state) => state.admin.ridePoolingStats
+export const selectAdminLoading = (state) => state.admin.loading
+export const selectAdminError = (state) => state.admin.error
+
 export default adminSlice.reducer
