@@ -45,6 +45,10 @@ import WalletPaymentCallback from "./Pages/CommuterPages/WalletPage/WalletPaymen
 import CorporateEmployeeDashboard from "./Pages/CommuterPages/CorporateEmployeeDashboard/CorporateEmployeeDashboard";
 import CorporateEmployeeManagementPage from "./Pages/CorporatePages/CorporateEmployeeManagementPage/CorporateEmployeeManagementPage";
 import EmployeeDashboard from "./Pages/CommuterPages/EmployeeDashboard/EmployeeDashboard";
+import B2CPartnerDriverDashboard from "./Pages/DriverPages/B2CPartnerDriverDashboard/B2CPartnerDriverDashboard";
+import B2BPartnerDriverDashboard from "./Pages/DriverPages/B2BPartnerDriverDashboard/B2BPartnerDriverDashboard";
+import CorporateDriverDashboard from "./Pages/DriverPages/CorporateDriverDashboard/CorporateDriverDashboard";
+import DriverLocationTracking from "./Pages/DriverPages/DriverLocationTracking/DriverLocationTracking";
 
 function App() {
   return (
@@ -258,43 +262,51 @@ function App() {
             }
           />
           <Route
+            path="/b2c-partner-profile"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER"]}>
+                <B2C_PartnerProfilePage />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
             path="/b2c-partner/bookings"
             element={
-              <ProtectedRoute allowedRoles={["B2C_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER"]}>
                 <B2C_PartnerBookingsPage />
-              </ProtectedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route
             path="/b2c-partner-profile/contract"
             element={
-              <ProtectedRoute allowedRoles={["B2C_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER"]}>
                 <B2C_PartnerContractPage />
-              </ProtectedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
-          {/* <Route
-          path="/b2b-partner-profile"
-          element={
-            <ProtectedRoute allowedRoles={["B2B_PARTNER"]}>
-              <B2B_PartnerProfilePage />
-            </ProtectedRoute>
-          }
-        /> */}
+          <Route
+            path="/b2b-partner-profile"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
+                <B2B_PartnerProfilePage />
+              </ProtectedRoleBasedRoute>
+            }
+          />
           <Route
             path="/b2b-partner/contracts"
             element={
-              <ProtectedRoute allowedRoles={["B2B_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
                 <B2B_PartnerContractPage />
-              </ProtectedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route
             path="/b2b-partner/contracts/:id"
             element={
-              <ProtectedRoute allowedRoles={["B2B_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
                 <B2B_PartnerContractDetails />
-              </ProtectedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route
@@ -373,25 +385,57 @@ function App() {
           <Route
             path="/b2b-partner/vehicle-assignment"
             element={
-              <ProtectedAdminRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
                 <B2B_PartnerAssignmentUI />
-              </ProtectedAdminRoleBasedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route
             path="/b2b-partner/vehicle-assignmentlist"
             element={
-              <ProtectedAdminRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
                 <B2B_PartnerVehicleAssignmentList />
-              </ProtectedAdminRoleBasedRoute>
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route
             path="/b2b-partner/vehicle-assignmentform"
             element={
-              <ProtectedAdminRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER"]}>
                 <B2B_PartnerVehicleAssignmentForm />
-              </ProtectedAdminRoleBasedRoute>
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/driver/b2c-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_DRIVER"]}>
+                <B2CPartnerDriverDashboard />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/driver/b2b-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_DRIVER"]}>
+                <B2BPartnerDriverDashboard />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/driver/corporate-dashboard"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["CORPORATE_DRIVER"]}>
+                <CorporateDriverDashboard />
+              </ProtectedRoleBasedRoute>
+            }
+          />
+          <Route
+            path="/driver/location-tracking"
+            element={
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_DRIVER", "B2B_DRIVER", "CORPORATE_DRIVER"]}>
+                <DriverLocationTracking />
+              </ProtectedRoleBasedRoute>
             }
           />
           <Route path="/payment/callback" element={<PaymentCallback />} />

@@ -3068,42 +3068,37 @@ export const createB2CPartnerTrip = async (req, res) => {
 // Get Commuter routes
 export const getCommuterRoutes = async (req, res) => {
     try {
-        const routes = [
-            {
-                _id: 'route-001',
-                name: 'Kuwait City to Salmiya Express',
-                startPoint: 'Kuwait City',
-                endPoint: 'Salmiya',
-                distance: '15 km',
-                estimatedTime: '25 mins',
-                price: 2.5,
-                status: 'active',
-                partnerName: 'Kuwait Transport Co.',
-                departureTime: '08:00 AM',
-                arrivalTime: '08:25 AM',
-                createdAt: new Date()
-            },
-            {
-                _id: 'route-002',
-                name: 'Airport to Hawally Shuttle',
-                startPoint: 'Kuwait International Airport',
-                endPoint: 'Hawally',
-                distance: '20 km',
-                estimatedTime: '30 mins',
-                price: 3.0,
-                status: 'inactive',
-                partnerName: 'Airport Express',
-                departureTime: '06:00 AM',
-                arrivalTime: '06:30 AM',
-                createdAt: new Date()
-            }
-        ];
+        // Fetch real active B2C routes from database
+        const routes = await B2CPartnerRoute.find({ status: 'Active' })
+            .populate('partnerId', 'fullName companyName email')
+            .sort({ createdAt: -1 });
+
+        const formattedRoutes = routes.map(route => ({
+            _id: route._id,
+            name: route.routeName || `${route.startLocation?.address || 'Unknown'} to ${route.endLocation?.address || 'Unknown'}`,
+            startPoint: route.startLocation?.address || 'N/A',
+            endPoint: route.endLocation?.address || 'N/A',
+            distance: route.distance || 'N/A',
+            estimatedTime: route.estimatedDuration || 'N/A',
+            price: route.monthlySubscriptionPrice || route.pricePerSeat || 0,
+            status: route.status?.toLowerCase() || 'inactive',
+            partnerName: route.partnerId?.companyName || route.partnerId?.fullName || 'Unknown',
+            departureTime: route.departureTime || 'N/A',
+            arrivalTime: route.arrivalTime || 'N/A',
+            totalSeats: route.totalSeats || 0,
+            availableSeats: route.availableSeats || 0,
+            stops: route.stops || [],
+            tripType: route.tripType || 'one-way',
+            operatingDays: route.operatingDays || [],
+            createdAt: route.createdAt
+        }));
 
         res.status(200).json({ 
             success: true, 
-            routes 
+            routes: formattedRoutes 
         });
     } catch (error) {
+        console.error("[v0] Error fetching commuter routes:", error);
         res.status(500).json({ 
             success: false, 
             message: "Error fetching commuter routes" 
@@ -3393,19 +3388,35 @@ export const leaveRoute = async (req, res) => {
 // Get Commuter profile
 export const getCommuterProfile = async (req, res) => {
     try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
         const profile = {
-            fullName: 'Ahmed Khalid',
-            email: 'ahmed@commuter.com',
-            phone: '+965 22334455',
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.whatsappNumber,
             language: 'en',
-            currency: 'KWD'
+            currency: 'KWD',
+            country: user.country,
+            membershipType: user.level?.toLowerCase() || 'standard',
+            avatar: user.companyLogo || null,
+            status: user.status,
+            createdAt: user.createdAt
         };
 
         const preferences = {
-            pushNotifications: true,
-            marketingEmails: false,
-            tripReminders: true,
-            promotionalOffers: true
+            pushNotifications: user.notifications?.emailNotifications ?? true,
+            marketingEmails: user.notifications?.smsNotifications ?? false,
+            tripReminders: user.notifications?.bookingAlerts ?? true,
+            promotionalOffers: user.notifications?.paymentAlerts ?? true
         };
 
         res.status(200).json({ 
@@ -3414,9 +3425,52 @@ export const getCommuterProfile = async (req, res) => {
             preferences 
         });
     } catch (error) {
+        console.error("[v0] Error fetching commuter profile:", error);
         res.status(500).json({ 
             success: false, 
             message: "Error fetching commuter profile" 
+        });
+    }
+};
+
+// Get Commuter Stats - real data from database
+export const getCommuterStats = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        // Count total completed bookings
+        const totalRides = await B2CPassengerBooking.countDocuments({
+            passengerId: userId,
+            status: { $in: ['completed', 'Completed', 'COMPLETED'] }
+        });
+
+        // Estimate CO2 saved (average 2.3kg CO2 saved per shared ride vs personal car)
+        const co2PerRide = 2.3;
+        const savedCO2 = (totalRides * co2PerRide).toFixed(1);
+
+        // Count active subscriptions
+        const activeSubscriptions = await B2CPassengerBooking.countDocuments({
+            passengerId: userId,
+            status: { $in: ['active', 'Active', 'ACTIVE', 'confirmed', 'Confirmed'] }
+        });
+
+        // Get user level
+        const user = await User.findById(userId).select('level');
+
+        res.status(200).json({
+            success: true,
+            stats: {
+                totalRides,
+                savedCO2: `${savedCO2}kg`,
+                activeSubscriptions,
+                isPremium: user?.level === 'PREMIUM' || user?.level === 'VIP'
+            }
+        });
+    } catch (error) {
+        console.error("[v0] Error fetching commuter stats:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching commuter stats"
         });
     }
 };
@@ -3703,18 +3757,35 @@ export const changeCommuterPassword = async (req, res) => {
 // Get B2C partner profile
 export const getB2CPartnerProfile = async (req, res) => {
     try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
         const profile = {
-            fullName: 'Ahmed Khalid',
-            email: 'ahmed@b2cpartner.com',
-            phone: '+965 22334455',
-            company: 'Kuwait Transport Co.',
-            licenseNumber: 'B2C-LIC-001'
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            phone: user.whatsappNumber,
+            company: user.companyName || '',
+            licenseNumber: user.driverInfo?.licenseNumber || '',
+            serviceType: user.serviceType,
+            yearsOfExperience: user.yearsOfExperience,
+            serviceDescription: user.serviceDescription,
+            country: user.country,
+            status: user.status,
+            createdAt: user.createdAt
         };
 
         const preferences = {
-            newTripAlerts: true,
-            dailyEarnings: true,
-            promotionalOffers: false,
+            newTripAlerts: user.notifications?.bookingAlerts ?? true,
+            dailyEarnings: user.notifications?.paymentAlerts ?? true,
+            promotionalOffers: user.notifications?.smsNotifications ?? false,
         };
 
         res.status(200).json({ 
@@ -3723,6 +3794,7 @@ export const getB2CPartnerProfile = async (req, res) => {
             preferences 
         });
     } catch (error) {
+        console.error("[v0] Error fetching B2C profile:", error);
         res.status(500).json({ 
             success: false, 
             message: "Error fetching B2C profile" 

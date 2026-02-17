@@ -27,12 +27,22 @@ export default function Sidebar() {
       const walletResponse = await api.get('/wallet/balance');
       setWalletData(walletResponse.data.wallet);
       
-      // Fetch stats (mock data for now, can be enhanced with real stats API)
-      setStats({
-        totalRides: 124,
-        savedCO2: "45kg",
-        isPremium: profileResponse.data.profile?.membershipType === 'premium'
-      });
+      // Fetch real stats from backend
+      try {
+        const statsResponse = await api.get('/commuter/stats');
+        setStats({
+          totalRides: statsResponse.data.stats?.totalRides || 0,
+          savedCO2: statsResponse.data.stats?.savedCO2 || "0kg",
+          isPremium: statsResponse.data.stats?.isPremium || false
+        });
+      } catch (statsError) {
+        console.error("Error fetching stats:", statsError);
+        setStats({
+          totalRides: 0,
+          savedCO2: "0kg",
+          isPremium: profileResponse.data.profile?.membershipType === 'premium'
+        });
+      }
       
     } catch (error) {
       console.error("Error fetching sidebar data:", error);
