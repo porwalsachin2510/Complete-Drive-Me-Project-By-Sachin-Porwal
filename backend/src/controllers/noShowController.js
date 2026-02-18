@@ -10,11 +10,11 @@ export const markNoShow = async (req, res) => {
         const { tripId, monthlyPassId, reason, customReason, date } = req.body;
         const passengerId = req.userId;
 
-        // Validate required fields
-        if (!tripId || !monthlyPassId || !reason || !date) {
+        // Validate required fields (monthlyPassId is optional for single bookings)
+        if (!tripId || !reason || !date) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields for no-show marking"
+                message: "Missing required fields for no-show marking (tripId, reason, date)"
             });
         }
 
@@ -27,13 +27,16 @@ export const markNoShow = async (req, res) => {
             });
         }
 
-        // Verify monthly pass exists and belongs to passenger
-        const monthlyPass = await B2CMonthlyPass.findById(monthlyPassId);
-        if (!monthlyPass || monthlyPass.passengerId.toString() !== passengerId) {
-            return res.status(404).json({
-                success: false,
-                message: "Monthly pass not found or unauthorized"
-            });
+        // Verify monthly pass if provided
+        let monthlyPass = null;
+        if (monthlyPassId) {
+            monthlyPass = await B2CMonthlyPass.findById(monthlyPassId);
+            if (monthlyPass && monthlyPass.passengerId.toString() !== passengerId) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Monthly pass does not belong to you"
+                });
+            }
         }
 
         // Check if no-show already exists for this trip and date

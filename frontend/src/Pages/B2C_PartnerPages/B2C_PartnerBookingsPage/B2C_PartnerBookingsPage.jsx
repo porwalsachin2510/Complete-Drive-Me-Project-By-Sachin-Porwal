@@ -25,18 +25,10 @@ const B2C_PartnerBookingsPage = () => {
   const [walletBalance, setWalletBalance] = useState(0);
 
   useEffect(() => {
-    console.log("[B2C_PartnerBookingsPage] useEffect triggered:", {
-      userRole: auth.user?.role,
-      filterStatus,
-      shouldFetch: auth.user?.role === "B2C_PARTNER"
-    });
-    
     if (auth.user?.role === "B2C_PARTNER") {
-      console.log("[B2C_PartnerBookingsPage] Fetching partner bookings...");
       dispatch(getPartnerBookings({ status: filterStatus }));
       fetchWalletBalance();
     } else {
-      console.log("[B2C_PartnerBookingsPage] User not B2C_PARTNER, navigating away...");
       navigate("/");
     }
   }, [dispatch, auth.user, filterStatus, navigate]);
@@ -50,21 +42,8 @@ const B2C_PartnerBookingsPage = () => {
 
   const fetchWalletBalance = async () => {
     try {
-      console.log("[B2C_PartnerBookingsPage] Fetching wallet balance...");
       const response = await api.get("/wallet/balance");
-      console.log("[B2C_PartnerBookingsPage] Wallet balance response:", response.data);
-      console.log("[B2C_PartnerBookingsPage] Response structure:", {
-        balance: response.data.balance,
-        wallet: response.data.wallet,
-        data: response.data.data,
-        keys: Object.keys(response.data)
-      });
-      
-      // Backend returns: {success: true, data: {wallet: {...}, balance: 5000}}
-      // So we need to access: response.data.data.balance
       const balance = response.data.data?.balance || 0;
-                     
-      console.log("[B2C_PartnerBookingsPage] Setting wallet balance to:", balance);
       setWalletBalance(balance);
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
@@ -73,22 +52,9 @@ const B2C_PartnerBookingsPage = () => {
   };
 
   const handleAccept = (booking) => {
-    console.log("[B2C_PartnerBookingsPage] handleAccept called:", {
-      booking,
-      walletBalance,
-      paymentMethod: booking.paymentMethod,
-      adminCommissionAmount: booking.adminCommissionAmount
-    });
-    
     // Check wallet balance for cash bookings
     if (booking.paymentMethod === "CASH") {
       const adminCommission = booking.adminCommissionAmount || 0;
-      console.log("[B2C_PartnerBookingsPage] Wallet check:", {
-        walletBalance,
-        adminCommission,
-        isSufficient: walletBalance >= adminCommission
-      });
-      
       if (walletBalance < adminCommission) {
         setSelectedBooking(booking);
         setShowWalletWarning(true);
