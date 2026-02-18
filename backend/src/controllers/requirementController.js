@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Requirement from "../models/Requirement.js";
 import Quotation from "../models/Quotation.js";
 import User from "../models/User.js";

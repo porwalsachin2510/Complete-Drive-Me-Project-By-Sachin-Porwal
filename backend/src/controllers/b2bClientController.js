@@ -28,7 +28,7 @@ export const createClientInquiry = async (req, res) => {
 
         // Create requirement record
         const requirement = new Requirement({
-            b2bPartnerId,
+            corporateId: b2bPartnerId,
             companyName,
             contactPerson,
             email,
@@ -85,7 +85,7 @@ export const getClientRequirements = async (req, res) => {
             search 
         } = req.query;
 
-        const query = { b2bPartnerId };
+        const query = { corporateId: b2bPartnerId };
         
         if (status) query.status = status.toUpperCase();
         if (priority) query.priority = priority.toUpperCase();

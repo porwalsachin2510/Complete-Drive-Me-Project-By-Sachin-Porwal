@@ -6,12 +6,20 @@ import { sendEmail } from "../Services/emailService.js";
 import csv from "csv-parser";
 import fs from "fs";
 
+// Helper to resolve companyId from the authenticated user
+const resolveCompanyId = async (userId) => {
+    const user = await User.findById(userId).select("companyId role");
+    if (!user) throw new Error("User not found");
+    // For CORPORATE users, the companyId is their own _id (they ARE the company)
+    return user.companyId || userId;
+};
+
 // Bulk upload employees
 export const bulkUploadEmployees = async (req, res) => {
     try {
         const { employees } = req.body;
         const managerId = req.userId;
-        const companyId = req.user.companyId;
+        const companyId = await resolveCompanyId(req.userId);
 
         if (!employees || !Array.isArray(employees)) {
             return res.status(400).json({
@@ -127,7 +135,7 @@ export const bulkUploadEmployees = async (req, res) => {
 export const uploadEmployeesFromCSV = async (req, res) => {
     try {
         const managerId = req.userId;
-        const companyId = req.user.companyId;
+        const companyId = await resolveCompanyId(req.userId);
 
         if (!req.file) {
             return res.status(400).json({
@@ -189,7 +197,7 @@ export const uploadEmployeesFromCSV = async (req, res) => {
 export const getEmployees = async (req, res) => {
     try {
         const managerId = req.userId;
-        const companyId = req.user.companyId;
+        const companyId = await resolveCompanyId(req.userId);
         const { 
             page = 1, 
             limit = 20, 
@@ -344,7 +352,7 @@ export const deleteEmployee = async (req, res) => {
 export const getEmployeeAttendance = async (req, res) => {
     try {
         const managerId = req.userId;
-        const companyId = req.user.companyId;
+        const companyId = await resolveCompanyId(req.userId);
         const { 
             startDate, 
             endDate, 
@@ -397,7 +405,7 @@ export const getEmployeeAttendance = async (req, res) => {
 export const getRouteUtilization = async (req, res) => {
     try {
         const managerId = req.userId;
-        const companyId = req.user.companyId;
+        const companyId = await resolveCompanyId(req.userId);
         const { 
             startDate, 
             endDate, 
@@ -592,21 +600,124 @@ const sendEmployeeApproval = async (employee) => {
 };
 
 const getAttendanceData = async (query, page, limit) => {
-    // This would integrate with actual attendance tracking system
-    // For now, return mock data structure
-    return {
-        attendance: [],
-        total: 0
-    };
+    try {
+        // Build CorporateBooking query for attendance from real booking data
+        const bookingQuery = { corporateOwnerId: query.companyId || query.managerId };
+
+        if (query.date) {
+            bookingQuery.travelDate = query.date;
+        } else {
+            // Default to last 30 days
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            bookingQuery.travelDate = { $gte: thirtyDaysAgo };
+        }
+
+        if (query.employeeId) bookingQuery.passengerId = query.employeeId;
+
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+        const total = await CorporateBooking.countDocuments(bookingQuery);
+        const bookings = await CorporateBooking.find(bookingQuery)
+            .populate("passengerId", "fullName email")
+            .populate("routeId", "fromLocation toLocation")
+            .sort({ travelDate: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const attendance = bookings.map(b => ({
+            _id: b._id,
+            employee: b.passengerId,
+            route: b.routeId,
+            date: b.travelDate,
+            status: b.status,
+            pickupTime: b.pickupTime,
+            dropoffTime: b.dropoffTime,
+            noShow: b.status === "NO_SHOW" || b.status === "CANCELLED",
+        }));
+
+        return { attendance, total };
+    } catch (error) {
+        console.error("Error in getAttendanceData:", error);
+        return { attendance: [], total: 0 };
+    }
 };
 
 const getRouteUtilizationData = async (query, page, limit) => {
-    // This would integrate with actual trip/booking data
-    // For now, return mock data structure
-    return {
-        utilization: [],
-        total: 0
-    };
+    try {
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+        const corporateOwnerId = query.companyId || query.managerId;
+
+        // Aggregate bookings by route to get utilization data
+        const matchStage = { corporateOwnerId: (await import("mongoose")).default.Types.ObjectId.createFromHexString(corporateOwnerId.toString()) };
+
+        if (query.date) {
+            matchStage.travelDate = query.date;
+        } else {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            matchStage.travelDate = { $gte: thirtyDaysAgo };
+        }
+
+        if (query.routeId) {
+            matchStage.routeId = (await import("mongoose")).default.Types.ObjectId.createFromHexString(query.routeId.toString());
+        }
+
+        const utilization = await CorporateBooking.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: "$routeId",
+                    totalTrips: { $sum: 1 },
+                    completedTrips: { $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] } },
+                    cancelledTrips: { $sum: { $cond: [{ $in: ["$status", ["CANCELLED", "NO_SHOW"]] }, 1, 0] } },
+                    uniquePassengers: { $addToSet: "$passengerId" },
+                }
+            },
+            {
+                $lookup: {
+                    from: "routes",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "route"
+                }
+            },
+            { $unwind: { path: "$route", preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    routeId: "$_id",
+                    routeName: { $concat: [{ $ifNull: ["$route.fromLocation", "Unknown"] }, " -> ", { $ifNull: ["$route.toLocation", "Unknown"] }] },
+                    totalTrips: 1,
+                    completedTrips: 1,
+                    cancelledTrips: 1,
+                    uniquePassengers: { $size: "$uniquePassengers" },
+                    utilizationRate: {
+                        $cond: [
+                            { $gt: ["$totalTrips", 0] },
+                            { $multiply: [{ $divide: ["$completedTrips", "$totalTrips"] }, 100] },
+                            0
+                        ]
+                    }
+                }
+            },
+            { $sort: { totalTrips: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit * 1 }
+        ]);
+
+        const totalRoutes = await CorporateBooking.aggregate([
+            { $match: matchStage },
+            { $group: { _id: "$routeId" } },
+            { $count: "total" }
+        ]);
+
+        return {
+            utilization,
+            total: totalRoutes[0]?.total || 0
+        };
+    } catch (error) {
+        console.error("Error in getRouteUtilizationData:", error);
+        return { utilization: [], total: 0 };
+    }
 };
 
 // Assign pickup and dropoff stops to employee

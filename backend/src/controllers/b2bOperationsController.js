@@ -22,7 +22,7 @@ export const createDedicatedRoutes = async (req, res) => {
         // Verify contract exists and belongs to this partner
         const contract = await Contract.findOne({
             _id: contractId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         if (!contract) {
@@ -116,7 +116,7 @@ export const getVehicleSeatMap = async (req, res) => {
         // Verify vehicle belongs to this partner
         const vehicle = await Vehicle.findOne({
             _id: vehicleId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         if (!vehicle) {
@@ -129,7 +129,7 @@ export const getVehicleSeatMap = async (req, res) => {
         // Get seat assignments for this vehicle
         const seatAssignments = await VehicleAssignment.find({
             vehicleId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         })
         .populate('contractId', 'contractNumber')
         .populate('driverId', 'fullName contactNumber')
@@ -184,12 +184,12 @@ export const allocateEmployeesToSeats = async (req, res) => {
         // Verify contract and vehicle
         const contract = await Contract.findOne({
             _id: contractId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         const vehicle = await Vehicle.findOne({
             _id: vehicleId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         if (!contract || !vehicle) {
@@ -266,7 +266,7 @@ export const handleTemporaryTransfer = async (req, res) => {
         // Get current assignment
         const currentAssignment = await VehicleAssignment.findOne({
             employeeId,
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             status: "ALLOCATED"
         }).sort({ assignedAt: -1 });
 
@@ -345,13 +345,13 @@ export const getOperationsDashboard = async (req, res) => {
 
         // Get all active contracts
         const activeContracts = await Contract.find({
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             status: "ACTIVE"
         });
 
         // Get vehicle assignments for today
         const todayAssignments = await VehicleAssignment.find({
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             assignedAt: {
                 $gte: startOfDay,
                 $lt: endOfDay
@@ -365,7 +365,7 @@ export const getOperationsDashboard = async (req, res) => {
 
         // Get vehicles and their status
         const vehicles = await Vehicle.find({
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         const vehicleStatus = vehicles.map(vehicle => {
@@ -436,7 +436,7 @@ export const generateClientReports = async (req, res) => {
         // Verify contract
         const contract = await Contract.findOne({
             _id: contractId,
-            b2bPartnerId
+            fleetOwnerId: b2bPartnerId
         });
 
         if (!contract) {
@@ -519,7 +519,7 @@ const generateSeatConfiguration = (capacity) => {
 
 const notifyClientOperationsStart = async (contract) => {
     try {
-        const client = await User.findById(contract.clientId);
+        const client = await User.findById(contract.corporateOwnerId);
         if (client) {
             await sendEmail({
                 to: client.email,
@@ -560,45 +560,130 @@ const notifyEmployeeTransfer = async (assignment, transfer) => {
 };
 
 const generateAttendanceReport = async (contractId, startDate, endDate) => {
-    // This would integrate with actual attendance tracking
-    return {
-        totalDays: 30,
-        presentDays: 28,
-        absentDays: 2,
-        attendanceRate: 93.33,
-        details: []
-    };
+    try {
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+        const bookings = await CorporateBooking.find({
+            contractId,
+            travelDate: { $gte: new Date(startDate), $lte: new Date(endDate) }
+        }).populate("passengerId", "fullName email");
+
+        const totalTrips = bookings.length;
+        const completedTrips = bookings.filter(b => b.status === "COMPLETED").length;
+        const noShowTrips = bookings.filter(b => b.status === "NO_SHOW").length;
+        const cancelledTrips = bookings.filter(b => b.status === "CANCELLED").length;
+        const attendanceRate = totalTrips > 0 ? ((completedTrips / totalTrips) * 100).toFixed(2) : 0;
+
+        return {
+            totalTrips,
+            completedTrips,
+            noShowTrips,
+            cancelledTrips,
+            attendanceRate: parseFloat(attendanceRate),
+            details: bookings.slice(0, 50).map(b => ({
+                employee: b.passengerId?.fullName || "Unknown",
+                date: b.travelDate,
+                status: b.status
+            }))
+        };
+    } catch (err) {
+        console.error("Error generating attendance report:", err);
+        return { totalTrips: 0, completedTrips: 0, noShowTrips: 0, cancelledTrips: 0, attendanceRate: 0, details: [] };
+    }
 };
 
 const generateRouteEfficiencyReport = async (contractId, startDate, endDate) => {
-    // This would integrate with actual route tracking
-    return {
-        totalRoutes: 5,
-        onTimeRoutes: 4,
-        averageDelay: 3.5,
-        efficiencyScore: 85.5,
-        details: []
-    };
+    try {
+        const Route = (await import("../models/Route.js")).default;
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+
+        const bookings = await CorporateBooking.find({
+            contractId,
+            travelDate: { $gte: new Date(startDate), $lte: new Date(endDate) }
+        }).populate("routeId", "fromLocation toLocation");
+
+        const routeMap = {};
+        bookings.forEach(b => {
+            const key = b.routeId?._id?.toString() || "unknown";
+            if (!routeMap[key]) {
+                routeMap[key] = {
+                    routeName: b.routeId ? `${b.routeId.fromLocation} -> ${b.routeId.toLocation}` : "Unknown",
+                    totalTrips: 0,
+                    onTime: 0,
+                    delayed: 0
+                };
+            }
+            routeMap[key].totalTrips++;
+            if (b.status === "COMPLETED") routeMap[key].onTime++;
+            else routeMap[key].delayed++;
+        });
+
+        const details = Object.values(routeMap);
+        const totalRoutes = details.length;
+        const totalOnTime = details.reduce((s, r) => s + r.onTime, 0);
+        const totalTrips = details.reduce((s, r) => s + r.totalTrips, 0);
+
+        return {
+            totalRoutes,
+            onTimeRate: totalTrips > 0 ? ((totalOnTime / totalTrips) * 100).toFixed(2) : 0,
+            details
+        };
+    } catch (err) {
+        console.error("Error generating route efficiency report:", err);
+        return { totalRoutes: 0, onTimeRate: 0, details: [] };
+    }
 };
 
 const generateVehicleUtilizationReport = async (contractId, startDate, endDate) => {
-    // This would integrate with actual vehicle tracking
-    return {
-        totalVehicles: 10,
-        activeVehicles: 8,
-        averageUtilization: 75.5,
-        fuelEfficiency: 8.2,
-        details: []
-    };
+    try {
+        const assignments = await VehicleAssignment.find({ contractId })
+            .populate("vehicleId", "vehicleNumber capacity type");
+
+        const totalVehicles = assignments.length;
+        const activeVehicles = assignments.filter(a => a.status === "ACTIVE" || a.status === "ASSIGNED").length;
+
+        return {
+            totalVehicles,
+            activeVehicles,
+            averageUtilization: totalVehicles > 0 ? ((activeVehicles / totalVehicles) * 100).toFixed(2) : 0,
+            details: assignments.map(a => ({
+                vehicleNumber: a.vehicleId?.vehicleNumber,
+                type: a.vehicleId?.type,
+                capacity: a.vehicleId?.capacity,
+                status: a.status
+            }))
+        };
+    } catch (err) {
+        console.error("Error generating vehicle utilization report:", err);
+        return { totalVehicles: 0, activeVehicles: 0, averageUtilization: 0, details: [] };
+    }
 };
 
 const generateEmployeeFeedbackReport = async (contractId, startDate, endDate) => {
-    // This would integrate with actual feedback system
-    return {
-        totalEmployees: 50,
-        responsesReceived: 45,
-        averageRating: 4.2,
-        commonIssues: ["Punctuality", "Vehicle Cleanliness"],
-        details: []
-    };
+    try {
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+        const bookings = await CorporateBooking.find({
+            contractId,
+            travelDate: { $gte: new Date(startDate), $lte: new Date(endDate) },
+            "feedback.rating": { $exists: true, $gt: 0 }
+        }).populate("passengerId", "fullName");
+
+        const totalFeedback = bookings.length;
+        const avgRating = totalFeedback > 0
+            ? (bookings.reduce((s, b) => s + (b.feedback?.rating || 0), 0) / totalFeedback).toFixed(1)
+            : 0;
+
+        return {
+            totalFeedback,
+            averageRating: parseFloat(avgRating),
+            details: bookings.slice(0, 50).map(b => ({
+                employee: b.passengerId?.fullName,
+                rating: b.feedback?.rating,
+                comment: b.feedback?.comment,
+                date: b.travelDate
+            }))
+        };
+    } catch (err) {
+        console.error("Error generating feedback report:", err);
+        return { totalFeedback: 0, averageRating: 0, details: [] };
+    }
 };

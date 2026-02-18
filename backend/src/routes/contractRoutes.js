@@ -31,6 +31,11 @@ router.post("/create-from-quotation", verifyToken, checkCorporateOwnerRole, crea
 // @access  Private (CORPORATE only)
 router.get("/corporate/all", verifyToken, checkCorporateOwnerRole, getCorporateContracts)
 
+// @route   GET /api/contracts/fleet/all
+// @desc    Get all contracts for fleet owner
+// @access  Private (B2B_PARTNER only)
+router.get("/fleet/all", verifyToken, checkFleetOwnerRole, getFleetOwnerContracts)
+
 // @route   GET /api/contracts/:contractId
 // @desc    Get contract details
 // @access  Private (CORPORATE or B2B_PARTNER)
@@ -86,10 +91,5 @@ router.post("/assign-route/:contractId/:assignedVehicleId", verifyToken, checkCo
 
 // Get contract routes
 router.get("/routes/:contractId", verifyToken, checkCorporateOwnerRole, getContractRoutes)
-
-// @route   GET /api/contracts/fleet/all
-// @desc    Get all contracts for fleet owner
-// @access  Private (B2B_PARTNER only)
-router.get("/fleet/all", verifyToken, checkFleetOwnerRole, getFleetOwnerContracts)
 
 export default router

@@ -8,36 +8,35 @@ export const getCorporateStats = async (req, res) => {
     try {
         const corporateId = req.userId
 
-        // Count active contracts for this corporate
+        // Count active contracts for this corporate (Contract model uses corporateOwnerId)
         const activeContracts = await Contract.countDocuments({
-            $or: [
-                { corporateId: corporateId },
-                { clientId: corporateId }
-            ],
+            corporateOwnerId: corporateId,
             status: { $in: ["ACTIVE", "active", "Active"] }
         })
 
-        // Count total employees
+        // Count total employees (CorporateEmployee model uses companyId)
         const totalEmployees = await CorporateEmployee.countDocuments({
-            corporateId: corporateId
+            companyId: corporateId
         })
 
-        // Count active vehicle assignments (routes)
+        // Count active vehicle assignments via contracts
+        const corporateContracts = await Contract.find(
+            { corporateOwnerId: corporateId, status: { $in: ["ACTIVE", "active", "Active"] } },
+            { _id: 1 }
+        )
+        const contractIds = corporateContracts.map(c => c._id)
         const activeRoutes = await VehicleAssignment.countDocuments({
-            $or: [
-                { corporateId: corporateId },
-                { assignedBy: corporateId }
-            ],
+            contractId: { $in: contractIds },
             status: { $in: ["ACTIVE", "active", "Active", "ASSIGNED", "assigned"] }
         })
 
-        // Count monthly bookings
+        // Count monthly bookings (CorporateBooking model uses corporateOwnerId)
         const startOfMonth = new Date()
         startOfMonth.setDate(1)
         startOfMonth.setHours(0, 0, 0, 0)
 
         const monthlyBookings = await CorporateBooking.countDocuments({
-            corporateId: corporateId,
+            corporateOwnerId: corporateId,
             createdAt: { $gte: startOfMonth }
         })
 
