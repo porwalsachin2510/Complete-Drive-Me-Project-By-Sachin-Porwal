@@ -106,7 +106,7 @@ export const checkAdminRole = (req, res, next) => {
 }
 
 export const checkDriverRole = (req, res, next) => {
-    const driverRoles = ["B2C_DRIVER", "B2B_DRIVER", "CORPORATE_DRIVER"];
+    const driverRoles = ["B2C_PARTNER_DRIVER", "B2B_PARTNER_DRIVER", "CORPORATE_DRIVER"];
     if (!driverRoles.includes(req.userRole)) {
         return res.status(403).json({
             success: false,

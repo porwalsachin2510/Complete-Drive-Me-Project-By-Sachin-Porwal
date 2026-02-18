@@ -409,7 +409,7 @@ function App() {
           <Route
             path="/driver/b2c-dashboard"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["B2C_DRIVER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER_DRIVER"]}>
                 <B2CPartnerDriverDashboard />
               </ProtectedRoleBasedRoute>
             }
@@ -417,7 +417,7 @@ function App() {
           <Route
             path="/driver/b2b-dashboard"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["B2B_DRIVER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2B_PARTNER_DRIVER"]}>
                 <B2BPartnerDriverDashboard />
               </ProtectedRoleBasedRoute>
             }
@@ -433,7 +433,7 @@ function App() {
           <Route
             path="/driver/location-tracking"
             element={
-              <ProtectedRoleBasedRoute allowedRoles={["B2C_DRIVER", "B2B_DRIVER", "CORPORATE_DRIVER"]}>
+              <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER_DRIVER", "B2B_PARTNER_DRIVER", "CORPORATE_DRIVER"]}>
                 <DriverLocationTracking />
               </ProtectedRoleBasedRoute>
             }

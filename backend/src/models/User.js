@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema(
     {
         role: {
             type: String,
-            enum: ["COMMUTER", "CORPORATE", "B2C_PARTNER", "B2B_PARTNER", "B2B_PARTNER_DRIVER", "CORPORATE_DRIVER", "CORPORATE_EMPLOYEE", "B2C_PARTNER_DRIVER"],
+            enum: ["COMMUTER", "CORPORATE", "B2C_PARTNER", "B2B_PARTNER", "B2B_PARTNER_DRIVER", "CORPORATE_DRIVER", "CORPORATE_EMPLOYEE", "B2C_PARTNER_DRIVER", "ADMIN"],
             required: true,
         },
         fullName: {
