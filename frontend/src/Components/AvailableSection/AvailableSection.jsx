@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import BookingModal from "../BookingModal/BookingModal";
 import { normalizeTime } from "../../utils/helperutility";
 import "./availablesection.css";
@@ -13,15 +14,11 @@ const AvailableSection = ({
   searchParams,
   currentFilterType,
 }) => {
-  console.log("Available Section search Params", searchParams);
-  console.log("Data Getting", routes);
+  const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState("All");
-
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const auth = useSelector((state) => state.auth);
-
-  console.log("selectedRoute", selectedRoute);
   const filterOptions = [
     "All",
     "Budget Friendly",
@@ -117,7 +114,6 @@ const AvailableSection = ({
       return false;
     }
 
-    console.log("route.availableDays", route.availableDays);
     // Check if today is an available day
     if (route.availableDays && !route.availableDays.includes(todayDay)) {
       return false;
@@ -127,21 +123,14 @@ const AvailableSection = ({
   };
 
   const handleBookRoute = (route) => {
-    console.log("[AvailableSection] handleBookRoute called with route:", route);
-    console.log("[AvailableSection] route._id:", route?._id);
-    console.log("[AvailableSection] route.fromLocation:", route?.fromLocation);
-    console.log("[AvailableSection] route.toLocation:", route?.toLocation);
-    
     if (!auth.user) {
-      alert("Please login to book a route");
+      // Redirect unauthenticated users to login, then back to homepage
+      navigate("/login", { state: { returnTo: "/", message: "Please login to book a route" } });
       return;
     }
 
     setSelectedRoute(route);
     setShowBookingModal(true);
-    
-    console.log("[AvailableSection] selectedRoute set to:", route);
-    console.log("[AvailableSection] showBookingModal set to: true");
   };
 
    const handleCloseBookingModal = () => {
@@ -227,8 +216,20 @@ const AvailableSection = ({
                   <h6>AVAILABLE SEATS: {route.availableSeats}</h6>
 
                   <div className="price-section">
-                    <p className="price-label">MONTHLY PRICE</p>
-                    <p className="price-value">{route.monthlyPrice}</p>
+                    {route.oneWayPrice && (
+                      <div style={{ marginBottom: "4px" }}>
+                        <p className="price-label">ONE WAY</p>
+                        <p className="price-value" style={{ fontSize: "14px" }}>
+                          {route.oneWayPrice} KWD
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="price-label">MONTHLY</p>
+                      <p className="price-value">
+                        {route.monthlyPrice ? `${route.monthlyPrice} KWD` : "N/A"}
+                      </p>
+                    </div>
                   </div>
                 </div>
 

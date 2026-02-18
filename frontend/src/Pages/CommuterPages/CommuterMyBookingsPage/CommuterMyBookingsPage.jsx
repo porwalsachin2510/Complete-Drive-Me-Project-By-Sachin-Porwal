@@ -641,15 +641,6 @@ const CommuterMyBookingsPage = () => {
                               ? `${booking.routeId?.fromLocation || booking.pickupLocation} → ${booking.routeId?.toLocation || booking.dropoffLocation}`
                               : `${booking.pickupLocation || 'N/A'} → ${booking.dropoffLocation || 'N/A'}`;
                           
-                          console.log("🛣️ Route Display:", {
-                            bookingId: booking._id,
-                            type: booking.type,
-                            pickupLocation: booking.pickupLocation,
-                            dropoffLocation: booking.dropoffLocation,
-                            routeId: booking.routeId,
-                            finalRoute: titleRoute
-                          });
-                          
                           return titleRoute;
                         })()}
                       </h3>
@@ -682,14 +673,6 @@ const CommuterMyBookingsPage = () => {
                               const driverId = booking.assignedDriverId || 
                                                booking.b2cPartnerId?._id || 
                                                booking.b2cPartnerId;
-                              
-                              console.log("🔍 B2C Driver Status Check:", {
-                                bookingId: booking._id,
-                                assignedDriverId: booking.assignedDriverId,
-                                b2cPartnerId: booking.b2cPartnerId?._id,
-                                finalDriverId: driverId,
-                                isOnline: driverId ? isDriverOnline(driverId) : false
-                              });
                               
                               return driverId ? (
                                 isDriverOnline(driverId) ? (
@@ -1194,7 +1177,7 @@ const CommuterMyBookingsPage = () => {
                         animation: "float 3s ease-in-out infinite",
                       }}
                     >
-                      🗺️
+                      ����️
                     </div>
                     <h3 style={{ margin: "0 0 8px 0", fontSize: "18px" }}>
                       {driverId

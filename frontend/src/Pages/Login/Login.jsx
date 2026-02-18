@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   loginSuccess,
   authStart,
@@ -30,6 +30,9 @@ const Login = () => {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo;
+  const loginMessage = location.state?.message;
 
   const dispatch = useDispatch();
 
@@ -90,7 +93,8 @@ const Login = () => {
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
         const userRole = response.data.user?.role;
-        const redirectPath = roleRedirectMap[userRole] || "/login";
+        // If user came from a booking attempt, redirect back there
+        const redirectPath = returnTo || roleRedirectMap[userRole] || "/";
         navigate(redirectPath);
       }
     } catch (err) {
@@ -115,6 +119,20 @@ const Login = () => {
             <p className="login-subtitle">Sign in to your account</p>
           </div>
 
+          {loginMessage && (
+            <div className="login-info-message" style={{
+              padding: "12px 16px",
+              marginBottom: "16px",
+              borderRadius: "8px",
+              backgroundColor: "#e0f2fe",
+              color: "#0369a1",
+              fontSize: "14px",
+              fontWeight: "500",
+              border: "1px solid #bae6fd",
+            }}>
+              {loginMessage}
+            </div>
+          )}
           {error && <div className="login-error-message">{error}</div>}
 
           <form onSubmit={handleSubmit}>

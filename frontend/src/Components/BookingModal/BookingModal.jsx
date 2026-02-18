@@ -66,19 +66,13 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       
       setLoadingSchedule(true);
       try {
-        console.log("Fetching schedule for route:", route._id);
         const response = await api.get(`/b2c-partner/routes/${route._id}/schedules`);
-        
         const data = response.data;
-        console.log("Schedule data fetched:", data);
         
         if (data.success && data.schedules && data.schedules.length > 0) {
-          // Use the first active schedule
           const activeSchedule = data.schedules.find(s => s.isActive) || data.schedules[0];
           setScheduleData(activeSchedule);
-          console.log("Active schedule set:", activeSchedule);
         } else {
-          console.log("No schedules found for this route");
           setScheduleData(null);
         }
       } catch (error) {
@@ -179,17 +173,10 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
 
   // MONTHLY PASS PRICING LOGIC
   const getMonthlyPrice = () => {
-    console.log("Route pricing data:", route.pricing);
-    console.log("Selected pass type:", selectedPassType);
-    
     if (selectedPassType === "ONE_WAY") {
-      const oneWayPrice = route.pricing?.monthlyOneWayPrice || route.monthlyPrice || 3000;
-      console.log("One way price:", oneWayPrice);
-      return oneWayPrice;
+      return route.pricing?.monthlyOneWayPrice || route.monthlyPrice || 3000;
     } else {
-      const roundTripPrice = route.pricing?.monthlyRoundTripPrice || 6000;
-      console.log("Round trip price:", roundTripPrice);
-      return roundTripPrice;
+      return route.pricing?.monthlyRoundTripPrice || 6000;
     }
   };
 
@@ -202,12 +189,6 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
   // Get available trips from schedule data
   const availableTrips = route.upcomingTrips || [];
   const tripTimes = scheduleData?.tripTimes || route.tripTimes || [];
-
-  console.log("Debug - Schedule data:", scheduleData);
-  console.log("Debug - Available trips:", availableTrips);
-  console.log("Debug - Trip times from schedule:", tripTimes);
-  console.log("Debug - Route fromLocation:", route.fromLocation);
-  console.log("Debug - Route toLocation:", route.toLocation);
 
   // Create trip options from schedule data
   // For ONE_WAY: Show all One Way trips
@@ -265,10 +246,6 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
   const eveningTrips = allTrips.filter(trip => 
     trip.direction === 'return' && trip.departureTime && trip.departureTime.includes('AM')
   );
-
-  console.log("Debug - All trips (split from round trip):", allTrips);
-  console.log("Debug - Morning trips (outbound):", morningTrips);
-  console.log("Debug - Evening trips (return):", eveningTrips);
 
   // Get pickup/dropoff points from selected trip
   const getPickupPoints = () => {
@@ -355,22 +332,10 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       notes: notes
     };
 
-    console.log("Monthly Pass Booking Data:", bookingData);
-    console.log("User data:", user);
-    console.log("Route data:", route);
-    console.log("Route driver info:", {
-      assignedDriverId: route.assignedDriverId,
-      assignedDriver: route.assignedDriver,
-      driverName: route.assignedDriver?.name || route.assignedDriverId?.name,
-      driverPhone: route.assignedDriver?.phoneNumber || route.assignedDriverId?.phoneNumber
-    });
-
     try {
       const response = await api.post('/monthly-pass/create', bookingData);
 
       if (response.data.success) {
-        console.log("Monthly pass created successfully:", response.data.monthlyPass);
-        
         // Handle payment redirect for STRIPE
         if (method === "STRIPE" && response.data.paymentUrl) {
           window.location.href = response.data.paymentUrl;
