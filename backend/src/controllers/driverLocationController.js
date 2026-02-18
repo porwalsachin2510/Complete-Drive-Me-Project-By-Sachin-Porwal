@@ -1,5 +1,11 @@
 import B2CPartnerTrip from "../models/B2CPartnerTrip.js";
-import { locationTrackingService } from "../Services/locationTrackingService.js";
+import {
+    updateTripLocation,
+    startTrip as startTripService,
+    completeTrip as completeTripService,
+    reportEmergency as reportEmergencyService,
+    reportTripDelay,
+} from "../Services/locationTrackingService.js";
 
 // Get active trip for driver
 export const getActiveTrip = async (req, res) => {
@@ -44,16 +50,12 @@ export const updateLocation = async (req, res) => {
         const driverId = req.userId;
 
         // Update trip location
-        const result = await locationTrackingService.updateLocation(
+        const result = await updateTripLocation(
             tripId,
-            driverId,
-            {
-                latitude,
-                longitude,
-                address,
-                speed,
-                timestamp: timestamp || new Date().toISOString()
-            }
+            latitude,
+            longitude,
+            address,
+            speed
         );
 
         res.json({
@@ -77,7 +79,7 @@ export const startTrip = async (req, res) => {
         const { tripId } = req.params;
         const driverId = req.userId;
 
-        const result = await locationTrackingService.startTrip(tripId, driverId);
+        const result = await startTripService(tripId, driverId);
 
         res.json({
             success: true,
@@ -100,7 +102,7 @@ export const completeTrip = async (req, res) => {
         const { tripId } = req.params;
         const driverId = req.userId;
 
-        const result = await locationTrackingService.completeTrip(tripId, driverId);
+        const result = await completeTripService(tripId);
 
         res.json({
             success: true,
@@ -124,9 +126,8 @@ export const reportEmergency = async (req, res) => {
         const { emergencyType, message, location } = req.body;
         const driverId = req.userId;
 
-        const result = await locationTrackingService.reportEmergency(
+        const result = await reportEmergencyService(
             tripId,
-            driverId,
             emergencyType,
             message,
             location
@@ -154,9 +155,8 @@ export const delayTrip = async (req, res) => {
         const { delayMinutes, reason } = req.body;
         const driverId = req.userId;
 
-        const result = await locationTrackingService.delayTrip(
+        const result = await reportTripDelay(
             tripId,
-            driverId,
             delayMinutes,
             reason
         );
