@@ -43,3 +43,46 @@ export const getCurrentUser = async (req, res) => {
         })
     }
 }
+
+export const updateUserProfile = async (req, res) => {
+    try {
+        const userId = req.userId
+        const allowedFields = [
+            "fullName", "whatsappNumber", "companyName", "companyAddress",
+            "serviceType", "yearsOfExperience", "serviceDescription",
+            "address", "city", "country", "profileImage"
+        ]
+
+        const updateData = {}
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field]
+            }
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select("-password")
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user,
+        })
+    } catch (error) {
+        console.error("Update profile error:", error)
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        })
+    }
+}

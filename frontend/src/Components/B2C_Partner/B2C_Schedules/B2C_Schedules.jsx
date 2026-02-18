@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import "./b2c_schedules.css";
 import api from "../../../../utils/api";
+import B2C_AddScheduleModal from "./B2C_AddScheduleModal/B2C_AddScheduleModal";
 
 function B2C_Schedules() {
   const [schedules, setSchedules] = useState([]);
@@ -18,7 +19,8 @@ function B2C_Schedules() {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/b2c-trips/schedules');
+      // Backend: GET /api/b2c-schedules/schedules (b2cScheduleRoutes.js)
+      const response = await api.get('/b2c-schedules/schedules');
       setSchedules(response.data.schedules || []);
     } catch (error) {
       console.error("Error fetching schedules:", error);
@@ -29,7 +31,8 @@ function B2C_Schedules() {
 
   const fetchRoutes = async () => {
     try {
-      const response = await api.get('/b2c-trips/routes');
+      // Backend: GET /api/b2c-schedules/routes (b2cScheduleRoutes.js)
+      const response = await api.get('/b2c-schedules/routes');
       setRoutes(response.data.routes || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
@@ -38,7 +41,8 @@ function B2C_Schedules() {
 
   const handleAddSchedule = async (scheduleData) => {
     try {
-      await api.post('/b2c-trips/schedules', scheduleData);
+      // Backend: POST /api/b2c-schedules/schedules (b2cScheduleRoutes.js)
+      await api.post('/b2c-schedules/schedules', scheduleData);
       setShowAddScheduleModal(false);
       fetchSchedules();
     } catch (error) {
@@ -49,7 +53,8 @@ function B2C_Schedules() {
   const handleDeleteSchedule = async (scheduleId) => {
     if (window.confirm("Are you sure you want to delete this schedule?")) {
       try {
-        await api.delete(`/b2c-trips/schedules/${scheduleId}`);
+        // Backend: DELETE /api/b2c-schedules/schedules/:scheduleId (b2cScheduleRoutes.js)
+        await api.delete(`/b2c-schedules/schedules/${scheduleId}`);
         fetchSchedules();
       } catch (error) {
         console.error("Error deleting schedule:", error);

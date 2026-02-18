@@ -11,81 +11,88 @@ export const getDashboardStats = async () => {
   }
 };
 
-// B2C Management
+// B2C Management - Backend: /api/admin/providers/b2c (adminRoutes.js)
 export const getB2CPartners = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/b2c-partners", {
+    const response = await api.get("/admin/providers/b2c", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching B2C partners:", error);
+    console.error("Error fetching B2C partners:", error);
     throw error;
   }
 };
 
 export const getB2CPartnerDetails = async (partnerId) => {
   try {
-    const response = await api.get(`/admin/b2c-partners/${partnerId}`);
+    const response = await api.get(`/admin/providers/b2c`, {
+      params: { partnerId }
+    });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching B2C partner details:", error);
+    console.error("Error fetching B2C partner details:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/providers/b2c/:providerId/activate (adminRoutes.js)
 export const approveB2CPartner = async (partnerId) => {
   try {
-    const response = await api.post(`/admin/b2c-partners/${partnerId}/approve`);
+    const response = await api.put(`/admin/providers/b2c/${partnerId}/activate`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error approving B2C partner:", error);
+    console.error("Error approving B2C partner:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/providers/b2c/:providerId/suspend (adminRoutes.js)
 export const rejectB2CPartner = async (partnerId, reason) => {
   try {
-    const response = await api.post(
-      `/admin/b2c-partners/${partnerId}/reject`,
+    const response = await api.put(
+      `/admin/providers/b2c/${partnerId}/suspend`,
       { reason }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error rejecting B2C partner:", error);
+    console.error("Error rejecting B2C partner:", error);
     throw error;
   }
 };
 
-// B2B Management
+// B2B Management - Backend: /api/admin/b2b/providers (adminRoutes.js)
 export const getB2BClients = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/b2b-clients", {
+    const response = await api.get("/admin/b2b/providers", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching B2B clients:", error);
+    console.error("Error fetching B2B clients:", error);
     throw error;
   }
 };
 
 export const getB2BClientDetails = async (clientId) => {
   try {
-    const response = await api.get(`/admin/b2b-clients/${clientId}`);
+    const response = await api.get(`/admin/b2b/providers`, {
+      params: { clientId }
+    });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching B2B client details:", error);
+    console.error("Error fetching B2B client details:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/b2b/providers/:providerId/activate (adminRoutes.js)
 export const approveB2BClient = async (clientId) => {
   try {
-    const response = await api.post(`/admin/b2b-clients/${clientId}/approve`);
+    const response = await api.put(`/admin/b2b/providers/${clientId}/activate`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error approving B2B client:", error);
+    console.error("Error approving B2B client:", error);
     throw error;
   }
 };
@@ -113,146 +120,157 @@ export const getUserDetails = async (userId) => {
   }
 };
 
+// Backend: PUT /api/admin/users/:userId/suspend (adminRoutes.js)
 export const blockUser = async (userId, reason) => {
   try {
-    const response = await api.post(`/admin/users/${userId}/block`, {
+    const response = await api.put(`/admin/users/${userId}/suspend`, {
       reason
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error blocking user:", error);
+    console.error("Error blocking user:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/users/:userId/activate (adminRoutes.js)
 export const unblockUser = async (userId) => {
   try {
-    const response = await api.post(`/admin/users/${userId}/unblock`);
+    const response = await api.put(`/admin/users/${userId}/activate`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error unblocking user:", error);
+    console.error("Error unblocking user:", error);
     throw error;
   }
 };
 
 // Payment Verification
+// Backend: GET /api/admin/payments/pending (adminRoutes.js)
 export const getPendingPayments = async () => {
   try {
-    const response = await api.get("/admin/pending-payments");
+    const response = await api.get("/admin/payments/pending");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching pending payments:", error);
+    console.error("Error fetching pending payments:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/payments/:paymentId/verify (adminRoutes.js)
 export const verifyPayment = async (paymentId) => {
   try {
-    const response = await api.post(
-      `/admin/payments/${paymentId}/verify`
+    const response = await api.put(
+      `/admin/payments/${paymentId}/verify`,
+      { status: "verified" }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error verifying payment:", error);
+    console.error("Error verifying payment:", error);
     throw error;
   }
 };
 
+// Backend: PUT /api/admin/payments/:paymentId/verify with rejected status (adminRoutes.js)
 export const rejectPayment = async (paymentId, reason) => {
   try {
-    const response = await api.post(
-      `/admin/payments/${paymentId}/reject`,
-      { reason }
+    const response = await api.put(
+      `/admin/payments/${paymentId}/verify`,
+      { status: "rejected", reason }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error rejecting payment:", error);
+    console.error("Error rejecting payment:", error);
     throw error;
   }
 };
 
 // Finance & Reports
+// Backend: GET /api/admin/finance/metrics (adminRoutes.js)
 export const getFinanceSummary = async (dateRange = {}) => {
   try {
-    const response = await api.get("/admin/finance/summary", {
+    const response = await api.get("/admin/finance/metrics", {
       params: dateRange
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching finance summary:", error);
+    console.error("Error fetching finance summary:", error);
     throw error;
   }
 };
 
+// Backend: GET /api/admin/finance/transactions (adminRoutes.js)
 export const getTransactionHistory = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/transactions", {
+    const response = await api.get("/admin/finance/transactions", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching transactions:", error);
+    console.error("Error fetching transactions:", error);
     throw error;
   }
 };
 
+// Backend: GET /api/admin/reports (adminRoutes.js)
 export const getReports = async (reportType, filters = {}) => {
   try {
-    const response = await api.get(`/admin/reports/${reportType}`, {
-      params: filters
+    const response = await api.get(`/admin/reports`, {
+      params: { ...filters, type: reportType }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching reports:", error);
+    console.error("Error fetching reports:", error);
     throw error;
   }
 };
 
-// Analytics
+// Analytics - Backend: GET /api/admin/b2b/analytics (adminRoutes.js)
 export const getAnalytics = async (period = "monthly") => {
   try {
-    const response = await api.get("/admin/analytics", {
+    const response = await api.get("/admin/b2b/analytics", {
       params: { period }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching analytics:", error);
+    console.error("Error fetching analytics:", error);
     throw error;
   }
 };
 
 // Ride Pooling Management
+// Backend: GET /api/admin/ride-pooling/stats (adminRoutes.js)
 export const getRidePoolingStats = async () => {
   try {
     const response = await api.get("/admin/ride-pooling/stats");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching ride pooling stats:", error);
+    console.error("Error fetching ride pooling stats:", error);
     throw error;
   }
 };
 
+// Backend: GET /api/admin/ride-pooling/passenger-interests (adminRoutes.js)
 export const getRidePoolingTrips = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/ride-pooling/trips", {
+    const response = await api.get("/admin/ride-pooling/passenger-interests", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching ride pooling trips:", error);
+    console.error("Error fetching ride pooling trips:", error);
     throw error;
   }
 };
 
-// Communications
+// Communications - Backend: GET /api/admin/comm/messages (adminRoutes.js)
 export const getComplaints = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/complaints", {
+    const response = await api.get("/admin/comm/messages", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching complaints:", error);
+    console.error("Error fetching complaints:", error);
     throw error;
   }
 };
@@ -260,53 +278,53 @@ export const getComplaints = async (filters = {}) => {
 export const resolveComplaint = async (complaintId, resolution) => {
   try {
     const response = await api.post(
-      `/admin/complaints/${complaintId}/resolve`,
-      { resolution }
+      `/admin/comm/email/send`,
+      { complaintId, resolution }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error resolving complaint:", error);
+    console.error("Error resolving complaint:", error);
     throw error;
   }
 };
 
-// Advertisements
+// Advertisements - Backend: /api/admin/ads/campaigns (adminRoutes.js)
 export const getAdvertisements = async () => {
   try {
-    const response = await api.get("/admin/advertisements");
+    const response = await api.get("/admin/ads/campaigns");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching advertisements:", error);
+    console.error("Error fetching advertisements:", error);
     throw error;
   }
 };
 
 export const createAdvertisement = async (adData) => {
   try {
-    const response = await api.post("/admin/advertisements", adData);
+    const response = await api.post("/admin/ads/campaigns", adData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error creating advertisement:", error);
+    console.error("Error creating advertisement:", error);
     throw error;
   }
 };
 
 export const updateAdvertisement = async (adId, adData) => {
   try {
-    const response = await api.put(`/admin/advertisements/${adId}`, adData);
+    const response = await api.put(`/admin/ads/campaigns/${adId}`, adData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating advertisement:", error);
+    console.error("Error updating advertisement:", error);
     throw error;
   }
 };
 
 export const deleteAdvertisement = async (adId) => {
   try {
-    const response = await api.delete(`/admin/advertisements/${adId}`);
+    const response = await api.delete(`/admin/ads/campaigns/${adId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error deleting advertisement:", error);
+    console.error("Error deleting advertisement:", error);
     throw error;
   }
 };

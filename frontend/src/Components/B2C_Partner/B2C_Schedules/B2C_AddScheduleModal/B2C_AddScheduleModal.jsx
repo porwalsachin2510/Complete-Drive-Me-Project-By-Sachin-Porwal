@@ -99,7 +99,7 @@ function B2C_AddScheduleModal({ onClose, onSave, routes }) {
         assignedDriver: formData.assignedDriver || null,
       };
       
-      await api.post('/b2c-trips/schedules', scheduleData);
+      await api.post('/b2c-schedules/schedules', scheduleData);
       onSave(scheduleData);
     } catch (error) {
       console.error("Error creating schedule:", error);

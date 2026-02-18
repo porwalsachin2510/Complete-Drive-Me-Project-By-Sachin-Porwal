@@ -22,12 +22,15 @@ export const b2bPartnerAPI = {
    * @param {string} date - Date in YYYY-MM-DD format
    * @returns {Promise} - Daily trips
    */
+  // Backend: GET /api/b2b-operations/dashboard (b2bOperationsRoutes.js)
   getDailyTrips: async (date) => {
     try {
-      const response = await api.get(`/b2b-operations/daily-trips?date=${date}`);
+      const response = await api.get(`/b2b-operations/dashboard`, {
+        params: { date }
+      });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching daily trips:", error.message);
+      console.error("Error fetching daily trips:", error.message);
       throw error;
     }
   },
@@ -128,12 +131,14 @@ export const b2bPartnerAPI = {
    * @param {string} status - New status
    * @returns {Promise} - Updated trip
    */
+  // Backend: POST /api/trips/:tripId/start (tripRoutes.js)
   updateTripStatus: async (tripId, status) => {
     try {
-      const response = await api.patch(`/trips/${tripId}/status`, { status });
+      const endpoint = status === 'completed' ? 'complete' : 'start';
+      const response = await api.post(`/trips/${tripId}/${endpoint}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error updating trip status:", error.message);
+      console.error("Error updating trip status:", error.message);
       throw error;
     }
   },
@@ -144,12 +149,13 @@ export const b2bPartnerAPI = {
    * @param {object} completionData - Completion details
    * @returns {Promise} - Completed trip
    */
+  // Backend: POST /api/trips/:tripId/complete (tripRoutes.js)
   completeTrip: async (tripId, completionData) => {
     try {
       const response = await api.post(`/trips/${tripId}/complete`, completionData);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error completing trip:", error.message);
+      console.error("Error completing trip:", error.message);
       throw error;
     }
   },
