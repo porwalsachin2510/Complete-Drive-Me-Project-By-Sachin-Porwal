@@ -39,7 +39,7 @@ function AdminSettlement() {
         setError(null);
       }
     } catch (err) {
-      console.error("[v0] Error fetching settlements:", err);
+      console.error("Error fetching settlements:", err);
       setError("Failed to load settlements");
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ function AdminSettlement() {
         fetchSettlements();
       }
     } catch (err) {
-      console.error("[v0] Error processing settlement:", err);
+      console.error("Error processing settlement:", err);
       alert("Failed to process settlement");
     } finally {
       setActionLoading(false);
@@ -81,7 +81,7 @@ function AdminSettlement() {
         fetchSettlements();
       }
     } catch (err) {
-      console.error("[v0] Error processing auto-debit:", err);
+      console.error("Error processing auto-debit:", err);
       alert("Failed to process auto-debit");
     } finally {
       setActionLoading(false);
@@ -111,7 +111,7 @@ function AdminSettlement() {
         fetchSettlements();
       }
     } catch (err) {
-      console.error("[v0] Error processing payout:", err);
+      console.error("Error processing payout:", err);
       alert("Failed to process payout");
     } finally {
       setActionLoading(false);

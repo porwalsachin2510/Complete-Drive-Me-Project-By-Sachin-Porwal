@@ -192,7 +192,7 @@ const B2B_AddVehicleModal = ({ onClose }) => {
       return;
     }
 
-    console.log("[v0] Preparing form submission...");
+    console.log("Preparing form submission...");
     const submitData = new FormData();
 
     submitData.append("vehicleName", formData.vehicleName);
@@ -213,10 +213,10 @@ const B2B_AddVehicleModal = ({ onClose }) => {
     submitData.append("kmLimits", JSON.stringify(formData.kmLimits));
     submitData.append("availability", JSON.stringify(formData.availability));
 
-    console.log(`[v0] Appending ${images.length} images...`);
+    console.log(`Appending ${images.length} images...`);
     images.forEach((image, index) => {
       console.log(
-        `[v0] Image ${index + 1}:`,
+        `Image ${index + 1}:`,
         image.name,
         image.type,
         image.size
@@ -234,18 +234,18 @@ const B2B_AddVehicleModal = ({ onClose }) => {
       submitData.append("inspection", documents.inspection);
     }
 
-    console.log("[v0] FormData prepared, dispatching...");
+    console.log("FormData prepared, dispatching...");
 
     console.log("submitData", submitData);
 
     const result = await dispatch(addVehicle(submitData));
 
     if (addVehicle.fulfilled.match(result)) {
-      console.log("[v0] Vehicle added successfully!");
+      console.log("Vehicle added successfully!");
       alert("Vehicle added successfully!");
       navigate("/fleet/vehicles");
     } else {
-      console.error("[v0] Vehicle addition failed:", result.payload);
+      console.error("Vehicle addition failed:", result.payload);
       alert(result.payload || "Failed to add vehicle");
     }
   };

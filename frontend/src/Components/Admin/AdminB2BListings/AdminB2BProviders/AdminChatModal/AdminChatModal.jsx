@@ -8,7 +8,7 @@ function AdminChatModal({ provider, onClose }) {
 
   const handleSend = () => {
     if (message.trim()) {
-      console.log("[v0] Sending message to provider:", provider.name, message)
+      console.log("Sending message to provider:", provider.name, message)
       setMessage("")
       onClose()
     }

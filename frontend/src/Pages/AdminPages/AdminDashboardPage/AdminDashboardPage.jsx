@@ -68,7 +68,7 @@ const renderContent = () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        console.log("[v0] No token found, redirecting to login");
+        console.log("No token found, redirecting to login");
         navigate("/login");
         return;
       }
@@ -91,12 +91,12 @@ const renderContent = () => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      console.log("[v0] User logged out successfully");
+      console.log("User logged out successfully");
 
       // Redirect to login page
       navigate("/admin-login");
     } catch (err) {
-      console.error("[v0] Logout error:", err);
+      console.error("Logout error:", err);
 
       localStorage.removeItem("token");
       localStorage.removeItem("user");

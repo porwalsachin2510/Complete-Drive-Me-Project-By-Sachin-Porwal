@@ -43,7 +43,7 @@ const ContractRequestModal = ({ quotation, onClose, onSuccess }) => {
        alert("Failed to create contract request. Please try again.");
      }
     } catch (error) {
-      console.error("[v0] Contract creation error:", error);
+      console.error("Contract creation error:", error);
       alert("An error occurred. Please try again.");
     } finally {
       setLoading(false);

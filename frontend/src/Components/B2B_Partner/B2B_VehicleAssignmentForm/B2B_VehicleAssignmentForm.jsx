@@ -156,7 +156,7 @@ const B2B_VehicleAssignmentForm = ({ contract, onComplete, onCancel }) => {
 
       onComplete(vehicleAssignments);
     } catch (error) {
-      console.error("[v0] Error submitting assignment:", error);
+      console.error("Error submitting assignment:", error);
       alert("Error assigning vehicles");
     } finally {
       setLoading(false);

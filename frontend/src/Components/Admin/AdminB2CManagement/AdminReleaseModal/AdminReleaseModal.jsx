@@ -8,7 +8,7 @@ const AdminReleaseModal = ({ provider, onClose }) => {
   const [note, setNote] = useState("")
 
   const handleConfirm = () => {
-    console.log("[v0] Releasing funds:", { provider, amount, note })
+    console.log("Releasing funds:", { provider, amount, note })
     onClose()
   }
 

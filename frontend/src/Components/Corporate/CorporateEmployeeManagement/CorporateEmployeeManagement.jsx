@@ -51,7 +51,8 @@ function CorporateEmployeeManagement() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/employees/corporate', {
+      // Backend: GET /api/corporate-employees (corporateEmployeeRoutes.js)
+      const response = await api.get('/corporate-employees', {
         params: {
           page: currentPage,
           limit: 10,
@@ -70,7 +71,8 @@ function CorporateEmployeeManagement() {
 
   const fetchAvailableRoutes = async () => {
     try {
-      const response = await api.get('/employees/routes/available');
+      // Backend: GET /api/corporate-operations/assigned-routes-status
+      const response = await api.get('/corporate-operations/assigned-routes-status');
       setAvailableRoutes(response.data.data);
     } catch (error) {
       console.error("Error fetching routes:", error);
@@ -81,7 +83,8 @@ function CorporateEmployeeManagement() {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.post('/employees/add', employeeForm);
+      // Backend: POST /api/corporate-employee-users/register
+      await api.post('/corporate-employee-users/register', employeeForm);
       setShowAddModal(false);
       resetEmployeeForm();
       fetchEmployees();
@@ -98,7 +101,8 @@ function CorporateEmployeeManagement() {
     e.preventDefault();
     try {
       setLoading(true);
-      const response = await api.post('/employees/bulk-upload', bulkUploadData);
+      // Backend: POST /api/corporate-employees/bulk-upload
+      const response = await api.post('/corporate-employees/bulk-upload', bulkUploadData);
       setShowBulkUploadModal(false);
       setBulkUploadData({ employees: [] });
       fetchEmployees();

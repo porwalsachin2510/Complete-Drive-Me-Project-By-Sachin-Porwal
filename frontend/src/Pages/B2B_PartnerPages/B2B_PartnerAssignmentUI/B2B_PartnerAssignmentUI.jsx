@@ -34,7 +34,7 @@ const B2B_PartnerAssignmentUI = ({ contractId, contract }) => {
         setAssignedVehicles(assignmentsRes.data.assignments);
       }
     } catch (error) {
-      console.error("[v0] Error fetching vehicles:", error);
+      console.error("Error fetching vehicles:", error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ const B2B_PartnerAssignmentUI = ({ contractId, contract }) => {
         alert("Vehicles assigned successfully!");
       }
     } catch (error) {
-      console.error("[v0] Error assigning vehicles:", error);
+      console.error("Error assigning vehicles:", error);
       alert(error.response?.data?.message || "Failed to assign vehicles");
     } finally {
       setLoading(false);

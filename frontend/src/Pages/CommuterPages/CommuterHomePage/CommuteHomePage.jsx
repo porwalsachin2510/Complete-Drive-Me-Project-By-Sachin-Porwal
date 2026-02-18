@@ -55,7 +55,7 @@ export default function CommuterHomePage() {
       if (hasDetectedRef.current) return;
 
       try {
-        console.log("[v0] Detecting user location...");
+        console.log("Detecting user location...");
         // Call backend API to detect location (no CORS issues)
         const response = await api.get("/location/detect", {
           withCredentials: true,
@@ -67,7 +67,7 @@ export default function CommuterHomePage() {
         if (response.data.success) {
           const countryName = response.data.nationality;
 
-          console.log("[v0] Detected country:", countryName);
+          console.log("Detected country:", countryName);
 
           let nationality = countryName;
 
@@ -80,10 +80,10 @@ export default function CommuterHomePage() {
           setUserNationality(nationality);
           hasDetectedRef.current = true;
 
-          console.log("[v0] User nationality set to:", nationality);
+          console.log("User nationality set to:", nationality);
         }
       } catch (error) {
-        console.error("[v0] Error detecting location:", error);
+        console.error("Error detecting location:", error);
         // Default to Kuwait if error occurs
         setUserNationality(null);
       }
@@ -170,7 +170,7 @@ export default function CommuterHomePage() {
           );
         if (userNationality) {
           queryParams.append("nationality", userNationality);
-          console.log("[v0] Fetching routes for nationality:", userNationality);
+          console.log("Fetching routes for nationality:", userNationality);
         }
 
         const response = await api.get(

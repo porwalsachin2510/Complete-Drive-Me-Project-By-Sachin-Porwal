@@ -16,7 +16,7 @@ const AdminReassignModal = ({ passenger, onClose }) => {
   ]
 
   const handleConfirm = () => {
-    console.log("[v0] Reassigning passenger:", { passenger, selectedRoute, reason })
+    console.log("Reassigning passenger:", { passenger, selectedRoute, reason })
     onClose()
   }
 

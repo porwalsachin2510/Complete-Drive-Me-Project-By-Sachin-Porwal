@@ -77,7 +77,7 @@ const QuotationResponseModal = ({
         return;
       }
 
-      console.log("[v0] Response data before calculation:", responseData);
+      console.log("Response data before calculation:", responseData);
 
       let totalVehicleRental = 0;
       let totalDriverCharges = 0;
@@ -103,7 +103,7 @@ const QuotationResponseModal = ({
         totalDriverCharges += driverTotal;
         totalFuelCharges += fuelTotal;
 
-        console.log("[v0] Vehicle breakdown calculation:", {
+        console.log("Vehicle breakdown calculation:", {
           vehicleName: vehicle.vehicleName,
           quantity: vehicle.quantity,
           rentalDays: vehicle.rentalDays,
@@ -138,8 +138,8 @@ const QuotationResponseModal = ({
         perVehicleBreakdown: perVehicleBreakdown,
       };
 
-      console.log("[v0] Quoted price object:", quotedPriceData);
-      console.log("[v0] Total breakdown:", {
+      console.log("Quoted price object:", quotedPriceData);
+      console.log("Total breakdown:", {
         totalVehicleRental,
         totalDriverCharges,
         totalFuelCharges,
@@ -153,7 +153,7 @@ const QuotationResponseModal = ({
         quotedPrice: quotedPriceData,
       };
 
-      console.log("[v0] Sending approval data:", approvalData);
+      console.log("Sending approval data:", approvalData);
 
       onSubmit(quotation._id, approvalData);
     }

@@ -30,11 +30,12 @@ const EmployeeFeedback = () => {
       setLoading(true);
       setError('');
       
-      const response = await api.get('/corporate-employees/dashboard');
+      // Backend: GET /api/corporate-employee-users/dashboard
+      const response = await api.get('/corporate-employee-users/dashboard');
       
       if (response.data.success) {
         // Extract completed trips from dashboard data
-        const trips = response.data.data.travelHistory?.trips || [];
+        const trips = response.data.data?.travelHistory?.trips || response.data.data?.todayTrips || [];
         setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
       } else {
         setError(response.data.message || 'Failed to fetch completed trips');
@@ -51,10 +52,11 @@ const EmployeeFeedback = () => {
     try {
       setLoading(true);
       
-      const response = await api.get('/corporate-employees/feedback-history');
+      // Backend: GET /api/travel-history/my-history (travelHistoryRoutes.js)
+      const response = await api.get('/travel-history/my-history');
       
       if (response.data.success) {
-        setFeedbackHistory(response.data.data.feedbacks || []);
+        setFeedbackHistory(response.data.data?.feedbacks || response.data.history || []);
       } else {
         setError(response.data.message || 'Failed to fetch feedback history');
       }
@@ -73,7 +75,8 @@ const EmployeeFeedback = () => {
       setLoading(true);
       setError('');
       
-      const response = await api.post('/corporate-employees/rate-trip', {
+      // Backend: POST /api/corporate-employee-users/rate-trip
+      const response = await api.post('/corporate-employee-users/rate-trip', {
         tripId: selectedTrip._id,
         ...feedbackData
       });

@@ -19,10 +19,11 @@ const EmployeeBookingManagement = () => {
 
   const fetchCurrentBookings = async () => {
     try {
-      const response = await api.get('/corporate-employees/bookings/current');
+      // Backend: GET /api/corporate-employee-users/dashboard
+      const response = await api.get('/corporate-employee-users/dashboard');
 
       if (response.data.success) {
-        setBookings(response.data.data.bookings || []);
+        setBookings(response.data.data?.todayTrips || response.data.data?.bookings || []);
       } else {
         setError(response.data.message || 'Failed to fetch current bookings');
       }
@@ -36,10 +37,11 @@ const EmployeeBookingManagement = () => {
 
   const fetchUpcomingBookings = async () => {
     try {
-      const response = await api.get('/corporate-employees/bookings/upcoming', { params: { days: 30 } });
+      // Backend: GET /api/corporate-employee-users/dashboard (includes upcoming trips)
+      const response = await api.get('/corporate-employee-users/dashboard');
 
       if (response.data.success) {
-        setUpcomingBookings(response.data.data.bookings || []);
+        setUpcomingBookings(response.data.data?.upcomingTrips || response.data.data?.bookings || []);
       } else {
         console.error('Failed to fetch upcoming bookings:', response.data.message);
       }
@@ -52,11 +54,9 @@ const EmployeeBookingManagement = () => {
     e.preventDefault();
     
     try {
-      const endpoint = bookingAction === 'book' 
-        ? '/corporate-employees/bookings/book'
-        : '/corporate-employees/bookings/cancel';
-      
-      const response = await api[bookingAction === 'book' ? 'post' : 'put'](endpoint, {
+      // Backend: POST /api/corporate-employee-users/booking (manageBooking)
+      const response = await api.post('/corporate-employee-users/booking', {
+        action: bookingAction,
         bookingDate: selectedDate
       });
 

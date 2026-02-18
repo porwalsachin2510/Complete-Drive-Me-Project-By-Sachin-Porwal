@@ -140,7 +140,7 @@ const B2B_Quotation = () => {
   };
 
   const handleSubmitResponse = async (quotationId, approvalData) => {
-    console.log("[v0] handleSubmitResponse called with:", {
+    console.log("handleSubmitResponse called with:", {
       quotationId,
       approvalData,
     });
@@ -152,7 +152,7 @@ const B2B_Quotation = () => {
       })
     );
 
-    console.log("[v0] Dispatch result:", result);
+    console.log("Dispatch result:", result);
 
     if (result.type === "quotation/respondToQuotation/fulfilled") {
       alert("Quotation response submitted successfully");
@@ -164,7 +164,7 @@ const B2B_Quotation = () => {
         result.payload ||
         result.error?.message ||
         "Failed to respond to quotation";
-      console.error("[v0] Error submitting quotation:", errorMessage);
+      console.error("Error submitting quotation:", errorMessage);
       alert(`Error: ${errorMessage}`);
     }
   };

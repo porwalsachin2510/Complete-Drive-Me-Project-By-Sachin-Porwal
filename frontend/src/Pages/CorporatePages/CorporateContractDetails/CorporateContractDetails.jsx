@@ -73,8 +73,8 @@ const CorporateContractDetails = () => {
 
   const contract = currentContract?.data?.contract;
 
-  console.log("[v0] CorporateContractDetails - Contract:", contract);
-  console.log("[v0] CorporateContractDetails - Payment:", currentPayment);
+  console.log("CorporateContractDetails - Contract:", contract);
+  console.log("CorporateContractDetails - Payment:", currentPayment);
 
 
   const [showSignModal, setShowSignModal] = useState(false);
@@ -107,7 +107,7 @@ const CorporateContractDetails = () => {
   };
 
    const handleSelectPaymentMethod = async (paymentMethod) => {
-     console.log("[v0] Selected payment method:", paymentMethod);
+     console.log("Selected payment method:", paymentMethod);
      setShowPaymentMethodModal(false);
      setProcessingPayment(true);
 
@@ -117,7 +117,7 @@ const CorporateContractDetails = () => {
          paymentType = "final";
        }
 
-       console.log("[v0] Payment type:", paymentType);
+       console.log("Payment type:", paymentType);
 
        const result = await dispatch(
          createPayment({
@@ -128,11 +128,11 @@ const CorporateContractDetails = () => {
          })
        ).unwrap();
 
-       console.log("[v0] Payment creation result:", result);
+       console.log("Payment creation result:", result);
 
        if (result.data.paymentUrl) {
          console.log(
-           "[v0] Redirecting to payment gateway:",
+           "Redirecting to payment gateway:",
            result.data.provider
          );
          window.location.href = result.data.paymentUrl;
@@ -149,7 +149,7 @@ const CorporateContractDetails = () => {
          dispatch(getContractById(id));
        }
      } catch (error) {
-       console.error("[v0] Payment error:", error);
+       console.error("Payment error:", error);
        alert(error || "Failed to initiate payment");
      } finally {
        setProcessingPayment(false);

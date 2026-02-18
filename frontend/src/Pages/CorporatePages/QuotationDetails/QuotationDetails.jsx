@@ -27,10 +27,10 @@ const QuotationDetails = () => {
 
   useEffect(() => {
     if (id && id !== "undefined" && id !== "null") {
-      console.log("[v0] Fetching quotation with ID:", id);
+      console.log("Fetching quotation with ID:", id);
       dispatch(getQuotationById(id));
     } else {
-      console.error("[v0] Invalid or missing quotation ID in URL params:", id);
+      console.error("Invalid or missing quotation ID in URL params:", id);
     }
   }, [id, dispatch]);
 

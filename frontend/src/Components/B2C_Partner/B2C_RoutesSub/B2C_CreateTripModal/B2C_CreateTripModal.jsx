@@ -99,7 +99,8 @@ function B2C_CreateTripModal({ route, onClose }) {
         pricing: route.pricing,
       };
       
-      const response = await api.post('/b2c-trips/schedules', {
+      // Backend: POST /api/b2c-schedules/schedules (b2cScheduleRoutes.js)
+      const response = await api.post('/b2c-schedules/schedules', {
         b2cPartnerId: null, // Will be set by middleware
         routeId: route._id,
         scheduleTime: formData.startTime,

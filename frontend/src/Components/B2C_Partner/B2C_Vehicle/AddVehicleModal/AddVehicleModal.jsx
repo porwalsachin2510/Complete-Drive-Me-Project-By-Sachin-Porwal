@@ -20,7 +20,7 @@ function AddVehicleModal({ onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("[v0] Form submitted:", formData);
+    console.log("Form submitted:", formData);
     onClose();
   };
 

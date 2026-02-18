@@ -29,7 +29,7 @@ export default function EmployeeDashboard() {
         setTripInfo(response.data.data);
       }
     } catch (err) {
-      console.error("[v0] Error fetching trip info:", err);
+      console.error("Error fetching trip info:", err);
     }
   };
 
@@ -38,7 +38,7 @@ export default function EmployeeDashboard() {
       const response = await api.get("/trips/my-bookings");
       setMyBookings(response.data?.data?.bookings || []);
     } catch (err) {
-      console.error("[v0] Error fetching bookings:", err);
+      console.error("Error fetching bookings:", err);
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function EmployeeDashboard() {
       const response = await api.get("/travel-history");
       setHistory(response.data?.data?.history || []);
     } catch (err) {
-      console.error("[v0] Error fetching history:", err);
+      console.error("Error fetching history:", err);
     }
   };
 
@@ -59,7 +59,7 @@ export default function EmployeeDashboard() {
       const response = await api.get(`/notifications/user/${user._id}`);
       setNotifications(response.data?.data?.notifications || response.data?.notifications || []);
     } catch (err) {
-      console.error("[v0] Error fetching notifications:", err);
+      console.error("Error fetching notifications:", err);
     }
   };
 
@@ -68,7 +68,7 @@ export default function EmployeeDashboard() {
       await api.delete(`/trips/${bookingId}/cancel`);
       setMyBookings(myBookings.filter((b) => b._id !== bookingId));
     } catch (err) {
-      console.error("[v0] Error canceling booking:", err);
+      console.error("Error canceling booking:", err);
     }
   };
 

@@ -8,7 +8,7 @@ const AdminHoldModal = ({ provider, onClose }) => {
   const [note, setNote] = useState("")
 
   const handleConfirm = () => {
-    console.log("[v0] Holding funds:", { provider, amount, note })
+    console.log("Holding funds:", { provider, amount, note })
     onClose()
   }
 

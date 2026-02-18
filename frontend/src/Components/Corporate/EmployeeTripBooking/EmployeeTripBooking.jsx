@@ -30,8 +30,9 @@ function EmployeeTripBooking() {
   const fetchAvailableTrips = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/trips/available");
-      setTrips(response.data.data.trips);
+      // Backend: GET /api/b2c-trips/trips/available (b2cTripRoutes.js)
+      const response = await api.get("/b2c-trips/trips/available");
+      setTrips(response.data.data?.trips || response.data.trips || []);
     } catch (error) {
       console.error("Error fetching trips:", error);
     } finally {
@@ -42,8 +43,9 @@ function EmployeeTripBooking() {
   const fetchMyBookings = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/trips/my-bookings");
-      setMyBookings(response.data.data.bookings);
+      // Backend: GET /api/b2c-trips/bookings (b2cTripRoutes.js)
+      const response = await api.get("/b2c-trips/bookings");
+      setMyBookings(response.data.data?.bookings || response.data.bookings || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
     } finally {
@@ -54,8 +56,10 @@ function EmployeeTripBooking() {
   const fetchMonthlyPasses = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/monthly-pass/employee/${api.getUserId()}`);
-      setMonthlyPasses(response.data.data.passes);
+      // Backend: GET /api/monthly-pass/user/:userId (b2cMonthlyPassRoutes.js)
+      const userId = localStorage.getItem('userId') || '';
+      const response = await api.get(`/monthly-pass/user/${userId}`);
+      setMonthlyPasses(response.data.data?.passes || response.data.passes || []);
     } catch (error) {
       console.error("Error fetching monthly passes:", error);
     } finally {

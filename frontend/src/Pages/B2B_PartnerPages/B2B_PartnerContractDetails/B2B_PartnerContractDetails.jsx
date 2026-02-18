@@ -63,9 +63,9 @@ const B2B_PartnerContractDetails = () => {
         const response = await fetch("https://api.ipify.org?format=json");
         const data = await response.json();
         setUserIpAddress(data.ip);
-        console.log("[v0] User IP address:", data.ip);
+        console.log("User IP address:", data.ip);
       } catch (error) {
-        console.error("[v0] Failed to fetch IP address:", error);
+        console.error("Failed to fetch IP address:", error);
         setUserIpAddress("Unknown");
       }
     };
@@ -81,10 +81,10 @@ const B2B_PartnerContractDetails = () => {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
 
-    console.log("[v0] File selected:", file ? file.name : "No file");
-    console.log("[v0] File type:", file ? file.type : "N/A");
+    console.log("File selected:", file ? file.name : "No file");
+    console.log("File type:", file ? file.type : "N/A");
     console.log(
-      "[v0] File size:",
+      "File size:",
       file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "N/A"
     );
 
@@ -116,12 +116,12 @@ const B2B_PartnerContractDetails = () => {
       return;
     }
 
-    console.log("[v0] Starting document upload...");
-    console.log("[v0] Contract ID:", id);
-    console.log("[v0] Upload File:", uploadFile);
-    console.log("[v0] File name:", uploadFile.name);
-    console.log("[v0] File type:", uploadFile.type);
-    console.log("[v0] File size:", uploadFile.size, "bytes");
+    console.log("Starting document upload...");
+    console.log("Contract ID:", id);
+    console.log("Upload File:", uploadFile);
+    console.log("File name:", uploadFile.name);
+    console.log("File type:", uploadFile.type);
+    console.log("File size:", uploadFile.size, "bytes");
 
     setUploading(true);
 
@@ -131,10 +131,10 @@ const B2B_PartnerContractDetails = () => {
       formData.append("document", uploadFile);
 
       // Log FormData contents for debugging
-      console.log("[v0] FormData created");
-      console.log("[v0] FormData has document:", formData.has("document"));
+      console.log("FormData created");
+      console.log("FormData has document:", formData.has("document"));
       console.log(
-        "[v0] FormData entries:",
+        "FormData entries:",
         Array.from(formData.entries()).map(([key, value]) => ({
           key,
           value: value instanceof File ? `File: ${value.name}` : value,
@@ -145,7 +145,7 @@ const B2B_PartnerContractDetails = () => {
         uploadContractDocument({ contractId: id, formData })
       ).unwrap();
 
-      console.log("[v0] Upload result:", result);
+      console.log("Upload result:", result);
 
       alert("Contract document uploaded successfully!");
       setUploadFile(null);
@@ -159,7 +159,7 @@ const B2B_PartnerContractDetails = () => {
       // Refresh contract data
       dispatch(getContractById(id));
     } catch (error) {
-      console.error("[v0] Upload error:", error);
+      console.error("Upload error:", error);
       alert(`Failed to upload document: ${error}`);
     } finally {
       setUploading(false);
@@ -175,13 +175,13 @@ const B2B_PartnerContractDetails = () => {
         })
       ).unwrap();
 
-      console.log("[v0] Approval result:", result);
+      console.log("Approval result:", result);
       alert("Contract approved successfully!");
       setShowApprovalModal(false);
       setApprovalNotes("");
       dispatch(getContractById(id));
     } catch (error) {
-      console.error("[v0] Approval error:", error);
+      console.error("Approval error:", error);
       alert(error || "Failed to approve contract");
     }
   };
@@ -193,8 +193,8 @@ const B2B_PartnerContractDetails = () => {
     }
 
     try {
-      console.log("[v0] Signing contract with signature:", signature);
-      console.log("[v0] IP Address:", userIpAddress);
+      console.log("Signing contract with signature:", signature);
+      console.log("IP Address:", userIpAddress);
 
       const result = await dispatch(
         signContract({
@@ -204,19 +204,19 @@ const B2B_PartnerContractDetails = () => {
         })
       ).unwrap();
 
-      console.log("[v0] Sign result:", result);
+      console.log("Sign result:", result);
       alert("Contract signed successfully!");
       setShowSignModal(false);
       setSignature("");
       dispatch(getContractById(id));
     } catch (error) {
-      console.error("[v0] Sign error:", error);
+      console.error("Sign error:", error);
       alert(error || "Failed to sign contract");
     }
   };
 
   const handleViewDocument = () => {
-    console.log("[v0] Opening PDF viewer");
+    console.log("Opening PDF viewer");
     setShowPDFViewer(true);
   };
 
@@ -240,7 +240,7 @@ const B2B_PartnerContractDetails = () => {
 
   const handleVehicleAssignmentComplete = async (assignmentData) => {
     try {
-      console.log("[v0] Vehicle assignment data:", assignmentData);
+      console.log("Vehicle assignment data:", assignmentData);
       await dispatch(
         assignVehicles({
           contractId: id,
@@ -252,7 +252,7 @@ const B2B_PartnerContractDetails = () => {
       setShowVehicleAssignmentForm(false);
       dispatch(getContractById(id));
     } catch (error) {
-      console.error("[v0] Assignment error:", error);
+      console.error("Assignment error:", error);
       alert(error || "Failed to assign vehicles");
     }
   };

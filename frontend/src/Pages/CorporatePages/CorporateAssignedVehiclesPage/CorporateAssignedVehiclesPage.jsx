@@ -107,7 +107,7 @@ const CorporateAssignedVehiclesPage = () => {
       setError(
         err.response?.data?.message || "Error loading assigned vehicles"
       );
-      console.error("[v0] Error fetching assigned vehicles:", err);
+      console.error("Error fetching assigned vehicles:", err);
     } finally {
       setLoading(false);
     }
@@ -173,7 +173,7 @@ const CorporateAssignedVehiclesPage = () => {
       }
     } catch (err) {
       alert(err.response?.data?.message || `Failed to assign ${type}`);
-      console.error("[v0] Error updating assignment:", err);
+      console.error("Error updating assignment:", err);
     }
   };
 
@@ -198,7 +198,7 @@ const CorporateAssignedVehiclesPage = () => {
       }
     } catch (err) {
       alert(err.response?.data?.message || "Failed to assign route");
-      console.error("[v0] Error assigning route:", err);
+      console.error("Error assigning route:", err);
     }
   };
 

@@ -21,10 +21,7 @@ const PaymentCallback = () => {
       const sessionId = searchParams.get("session_id"); // Stripe
       const chargeId = searchParams.get("tap_id"); // Tap Payments
 
-      console.log("[v0] Payment callback - Status:", status);
-      console.log("[v0] Payment callback - Session ID:", sessionId);
-      console.log("[v0] Payment callback - Charge ID:", chargeId);
-      console.log("[v0] Payment callback - Contract ID:", contractId);
+
 
       // Determine payment provider based on query params
       let provider = "STRIPE";
@@ -44,8 +41,6 @@ const PaymentCallback = () => {
             })
           ).unwrap();
 
-          console.log("[v0] Payment verified:", result);
-
           setVerificationStatus("success");
           setMessage(
             "Payment completed successfully! Your contract is now active."
@@ -63,7 +58,7 @@ const PaymentCallback = () => {
             }
           }, 3000);
         } catch (error) {
-          console.error("[v0] Payment verification failed:", error);
+          console.error("Payment verification failed:", error);
           setVerificationStatus("failed");
           setMessage(
             error || "Payment verification failed. Please contact support."

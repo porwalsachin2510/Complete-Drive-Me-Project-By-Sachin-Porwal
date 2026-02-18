@@ -23,8 +23,9 @@ function CorporateTripManagement() {
   const fetchTrips = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/trips/corporate");
-      setTrips(response.data.data.trips);
+      // Backend: GET /api/corporate-operations/daily-trips
+      const response = await api.get("/corporate-operations/daily-trips");
+      setTrips(response.data.data?.trips || response.data.trips || []);
     } catch (error) {
       console.error("Error fetching trips:", error);
     } finally {
@@ -34,8 +35,9 @@ function CorporateTripManagement() {
 
   const fetchRoutes = async () => {
     try {
-      const response = await api.get("/routes/corporate");
-      setRoutes(response.data.data.routes);
+      // Backend: GET /api/corporate-operations/assigned-routes-status
+      const response = await api.get("/corporate-operations/assigned-routes-status");
+      setRoutes(response.data.data?.routes || response.data.routes || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
     }

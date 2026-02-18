@@ -35,7 +35,7 @@ function AdminVehicleApproval() {
         setError(null);
       }
     } catch (err) {
-      console.error("[v0] Error fetching vehicles:", err);
+      console.error("Error fetching vehicles:", err);
       setError("Failed to load pending vehicles");
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ function AdminVehicleApproval() {
         fetchPendingVehicles();
       }
     } catch (err) {
-      console.error("[v0] Error approving vehicle:", err);
+      console.error("Error approving vehicle:", err);
       alert("Failed to approve vehicle");
     } finally {
       setActionLoading(false);
@@ -81,7 +81,7 @@ function AdminVehicleApproval() {
         fetchPendingVehicles();
       }
     } catch (err) {
-      console.error("[v0] Error rejecting vehicle:", err);
+      console.error("Error rejecting vehicle:", err);
       alert("Failed to reject vehicle");
     } finally {
       setActionLoading(false);

@@ -76,19 +76,19 @@ const AdminB2CProviders = () => {
   }
 
   const handleApprove = (providerId) => {
-    console.log("[v0] Approving provider:", providerId)
+    console.log("Approving provider:", providerId)
     setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, status: "Approved" } : p)))
     setShowViewModal(false)
   }
 
   const handleReject = (providerId) => {
-    console.log("[v0] Rejecting provider:", providerId)
+    console.log("Rejecting provider:", providerId)
     setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, status: "Rejected" } : p)))
     setShowViewModal(false)
   }
 
   const handleRequestMoreDetails = (providerId) => {
-    console.log("[v0] Requesting more details from provider:", providerId)
+    console.log("Requesting more details from provider:", providerId)
     setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, status: "More Details Requested" } : p)))
     setShowViewModal(false)
   }

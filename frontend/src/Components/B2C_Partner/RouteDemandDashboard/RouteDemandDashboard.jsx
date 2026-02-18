@@ -29,7 +29,8 @@ const RouteDemandDashboard = () => {
 
   const fetchDemandData = async () => {
     try {
-      const response = await api.get('/b2c-partners/route-requests/demand');
+      // Backend: GET /api/route-requests (routeRequestRoutes.js)
+      const response = await api.get('/route-requests');
 
       if (response.data.success) {
         setDemandData(response.data.data);
@@ -48,7 +49,8 @@ const RouteDemandDashboard = () => {
     e.preventDefault();
     
     try {
-      const response = await api.post(`/b2c-partners/route-requests/respond/${selectedRequest._id}`, responseData);
+      // Backend: POST /api/route-requests/:requestId/respond (routeRequestRoutes.js)
+      const response = await api.post(`/route-requests/${selectedRequest._id}/respond`, responseData);
 
       if (response.data.success) {
         setShowResponseModal(false);

@@ -63,7 +63,7 @@ export default function CorporateEmployeeDashboard() {
 
       setLoading(false);
     } catch (error) {
-      console.error("[v0] Error fetching dashboard data:", error);
+      console.error("Error fetching dashboard data:", error);
       setError("Failed to load dashboard data. Please try again.");
       setLoading(false);
     }
@@ -78,27 +78,27 @@ export default function CorporateEmployeeDashboard() {
       });
 
       newSocket.on("connect", () => {
-        console.log("[v0] Connected to socket server");
+        console.log("Connected to socket server");
         newSocket.emit("join-notification-room", userId);
       });
 
       newSocket.on("location-update", (locationData) => {
-        console.log("[v0] Received driver location update:", locationData);
+        console.log("Received driver location update:", locationData);
         dispatch(setDriverLocation(locationData));
       });
 
       newSocket.on("trip-update", (tripData) => {
-        console.log("[v0] Trip update received:", tripData);
+        console.log("Trip update received:", tripData);
         dispatch(updateTripStatus({ tripId: tripData.tripId, status: tripData.status }));
       });
 
       newSocket.on("notification", (notificationData) => {
-        console.log("[v0] Received notification:", notificationData);
+        console.log("Received notification:", notificationData);
         dispatch(addNotification(notificationData));
       });
 
       newSocket.on("error", (error) => {
-        console.error("[v0] Socket error:", error);
+        console.error("Socket error:", error);
       });
 
       setSocket(newSocket);
@@ -107,7 +107,7 @@ export default function CorporateEmployeeDashboard() {
         newSocket.disconnect();
       };
     } catch (error) {
-      console.error("[v0] Error setting up socket connection:", error);
+      console.error("Error setting up socket connection:", error);
     }
     };
     
@@ -128,7 +128,7 @@ export default function CorporateEmployeeDashboard() {
       alert("Trip is already assigned to you. Please check in 15 minutes before departure.");
       fetchEmployeeDashboardData();
     } catch (error) {
-      console.error("[v0] Error handling trip:", error);
+      console.error("Error handling trip:", error);
     }
   };
 
@@ -144,7 +144,7 @@ export default function CorporateEmployeeDashboard() {
           alert(response.data.message || "Failed to cancel trip");
         }
       } catch (error) {
-        console.error("[v0] Error cancelling trip:", error);
+        console.error("Error cancelling trip:", error);
         alert(
           `Error cancelling trip: ${error.response?.data?.message || error.message}`,
         );

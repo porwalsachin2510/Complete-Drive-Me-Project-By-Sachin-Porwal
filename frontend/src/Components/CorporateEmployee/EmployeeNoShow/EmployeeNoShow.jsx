@@ -20,10 +20,11 @@ const EmployeeNoShow = () => {
 
   const fetchTodayBookings = async () => {
     try {
-      const response = await api.get('/corporate-employees/bookings/today');
+      // Backend: GET /api/corporate-employee-users/dashboard (for today's bookings)
+      const response = await api.get('/corporate-employee-users/dashboard');
 
       if (response.data.success) {
-        setTodayBookings(response.data.data.bookings || []);
+        setTodayBookings(response.data.data?.todayTrips || response.data.data?.bookings || []);
       } else {
         setError(response.data.message || 'Failed to fetch today\'s bookings');
       }
@@ -37,10 +38,11 @@ const EmployeeNoShow = () => {
 
   const fetchNoShowHistory = async () => {
     try {
-      const response = await api.get('/corporate-employees/no-show/history');
+      // Backend: GET /api/no-show/my-no-shows (noShowRoutes.js)
+      const response = await api.get('/no-show/my-no-shows');
 
       if (response.data.success) {
-        setNoShowHistory(response.data.data.noShows || []);
+        setNoShowHistory(response.data.data?.noShows || response.data.noShows || []);
       } else {
         console.error('Failed to fetch no-show history:', response.data.message);
       }
@@ -53,7 +55,8 @@ const EmployeeNoShow = () => {
     e.preventDefault();
     
     try {
-      const response = await api.post('/corporate-employees/no-show/mark', {
+      // Backend: POST /api/corporate-employee-users/not-traveling-today
+      const response = await api.post('/corporate-employee-users/not-traveling-today', {
         bookingId: selectedBooking._id,
         reason: noShowReason,
         notes: noShowNotes

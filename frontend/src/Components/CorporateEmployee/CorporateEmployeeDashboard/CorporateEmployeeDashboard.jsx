@@ -19,7 +19,8 @@ const CorporateEmployeeDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await api.get('/corporate-employees/dashboard');
+      // Backend: GET /api/corporate-employee-users/dashboard
+      const response = await api.get('/corporate-employee-users/dashboard');
 
       if (response.data.success) {
         setDashboardData(response.data.data);
