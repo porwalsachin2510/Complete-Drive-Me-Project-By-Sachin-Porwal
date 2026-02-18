@@ -6,7 +6,7 @@ export const getDashboardStats = async () => {
     const response = await api.get("/admin/dashboard/stats");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching dashboard stats:", error);
+    console.error("Error fetching dashboard stats:", error);
     throw error;
   }
 };
@@ -105,7 +105,7 @@ export const getAllUsers = async (filters = {}) => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching users:", error);
+    console.error("Error fetching users:", error);
     throw error;
   }
 };
@@ -115,7 +115,7 @@ export const getUserDetails = async (userId) => {
     const response = await api.get(`/admin/users/${userId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching user details:", error);
+    console.error("Error fetching user details:", error);
     throw error;
   }
 };

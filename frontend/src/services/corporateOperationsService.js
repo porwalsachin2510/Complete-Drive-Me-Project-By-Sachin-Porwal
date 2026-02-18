@@ -8,7 +8,7 @@ export const getDailyTrips = async (date) => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching daily trips:", error);
+    console.error("Error fetching daily trips:", error);
     throw error;
   }
 };
@@ -19,7 +19,7 @@ export const getTripDetails = async (tripId) => {
     const response = await api.get(`/corporate-operations/trips/${tripId}/details`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching trip details:", error);
+    console.error("Error fetching trip details:", error);
     throw error;
   }
 };
@@ -30,7 +30,7 @@ export const getAssignedVehicles = async () => {
     const response = await api.get("/corporate-operations/assigned-routes-status");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching assigned vehicles:", error);
+    console.error("Error fetching assigned vehicles:", error);
     throw error;
   }
 };
@@ -41,7 +41,7 @@ export const getVehicleDetails = async (vehicleId) => {
     const response = await api.get(`/vehicles/${vehicleId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching vehicle details:", error);
+    console.error("Error fetching vehicle details:", error);
     throw error;
   }
 };
@@ -52,7 +52,7 @@ export const getEmployeeRoutes = async () => {
     const response = await api.get("/corporate-operations/assigned-routes-status");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching employee routes:", error);
+    console.error("Error fetching employee routes:", error);
     throw error;
   }
 };
@@ -87,7 +87,7 @@ export const bulkUploadEmployees = async (employees) => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error uploading employees:", error);
+    console.error("Error uploading employees:", error);
     throw error;
   }
 };
@@ -98,18 +98,21 @@ export const getEmployees = async (filters = {}) => {
     const response = await api.get("/corporate-employees", { params: filters });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching employees:", error);
+    console.error("Error fetching employees:", error);
     throw error;
   }
 };
 
-// Get employee details
+// Get employee details - fetch all and filter
+// Backend: GET /api/corporate-employees/ (corporateEmployeeRoutes.js)
 export const getEmployeeDetails = async (employeeId) => {
   try {
-    const response = await api.get(`/corporate-employees/${employeeId}`);
+    const response = await api.get(`/corporate-employees`, {
+      params: { employeeId }
+    });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching employee details:", error);
+    console.error("Error fetching employee details:", error);
     throw error;
   }
 };
@@ -123,7 +126,7 @@ export const updateEmployee = async (employeeId, employeeData) => {
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating employee:", error);
+    console.error("Error updating employee:", error);
     throw error;
   }
 };
@@ -134,7 +137,7 @@ export const deleteEmployee = async (employeeId) => {
     const response = await api.delete(`/corporate-employees/${employeeId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error deleting employee:", error);
+    console.error("Error deleting employee:", error);
     throw error;
   }
 };
@@ -147,7 +150,7 @@ export const assignEmployeesToTrip = async (tripId, employeeIds) => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error assigning employees:", error);
+    console.error("Error assigning employees:", error);
     throw error;
   }
 };

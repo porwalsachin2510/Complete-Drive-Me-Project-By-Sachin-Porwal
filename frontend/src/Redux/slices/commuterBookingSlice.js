@@ -2,12 +2,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import commuterBookingAPI from "../../services/commuterBookingAPI";
 
 // Async thunks
+// Note: commuterBookingAPI methods already return response.data,
+// so we use the result directly (no .data access needed)
 export const fetchAvailableTrips = createAsyncThunk(
   "commuterBooking/fetchAvailableTrips",
   async (filters = {}, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.getAvailableTrips(filters);
-      return response.data;
+      const data = await commuterBookingAPI.getAvailableTrips(filters);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch available trips"
@@ -20,8 +22,8 @@ export const bookTripAction = createAsyncThunk(
   "commuterBooking/bookTrip",
   async ({ tripId, bookingData }, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.bookTrip(tripId, bookingData);
-      return response.data;
+      const data = await commuterBookingAPI.bookTrip(tripId, bookingData);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to book trip"
@@ -34,8 +36,8 @@ export const cancelBookingAction = createAsyncThunk(
   "commuterBooking/cancelBooking",
   async (bookingId, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.cancelBooking(bookingId);
-      return response.data;
+      const data = await commuterBookingAPI.cancelBooking(bookingId);
+      return { ...data, bookingId };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to cancel booking"
@@ -48,8 +50,8 @@ export const fetchMyBookings = createAsyncThunk(
   "commuterBooking/fetchMyBookings",
   async (status = null, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.getMyBookings(status);
-      return response.data;
+      const data = await commuterBookingAPI.getMyBookings(status);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch my bookings"
@@ -62,8 +64,8 @@ export const fetchTripLiveTracking = createAsyncThunk(
   "commuterBooking/fetchTripLiveTracking",
   async (tripId, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.getTripLiveTracking(tripId);
-      return response.data;
+      const data = await commuterBookingAPI.getTripLiveTracking(tripId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch live tracking"
@@ -74,10 +76,10 @@ export const fetchTripLiveTracking = createAsyncThunk(
 
 export const fetchMyMonthlyPasses = createAsyncThunk(
   "commuterBooking/fetchMyMonthlyPasses",
-  async (_, { rejectWithValue }) => {
+  async (userId, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.getMyMonthlyPasses();
-      return response.data;
+      const data = await commuterBookingAPI.getMyMonthlyPasses(userId);
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch monthly passes"
@@ -90,8 +92,8 @@ export const fetchWallet = createAsyncThunk(
   "commuterBooking/fetchWallet",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await commuterBookingAPI.getWallet();
-      return response.data;
+      const data = await commuterBookingAPI.getWallet();
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch wallet"

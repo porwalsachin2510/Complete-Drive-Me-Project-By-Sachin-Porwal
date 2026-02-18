@@ -1,185 +1,178 @@
 import api from "../utils/api";
 
 // Commuter Booking API Service - Real backend integration
+// Mapped to actual backend routes from index.js
 
 export const commuterBookingAPI = {
   /**
    * Get available trips for booking
-   * @param {object} filters - {date, fromLocation, toLocation}
-   * @returns {Promise} - Available trips
+   * Backend: GET /api/b2c-trips/trips/available (b2cTripRoutes.js -> passengerBookingController)
    */
   getAvailableTrips: async (filters = {}) => {
     try {
       const params = new URLSearchParams(filters).toString();
-      const response = await api.get(`/b2c-trips/available?${params}`);
+      const response = await api.get(`/b2c-trips/trips/available?${params}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching available trips:", error.message);
+      console.error("Error fetching available trips:", error.message);
       throw error;
     }
   },
 
   /**
    * Book a trip seat
-   * @param {string} tripId - Trip ID
-   * @param {object} bookingData - {seatNumber, pickupPoint, phoneNumber}
-   * @returns {Promise} - Booking confirmation
+   * Backend: POST /api/b2c-trips/bookings (b2cTripRoutes.js -> passengerBookingController)
    */
   bookTrip: async (tripId, bookingData) => {
     try {
-      const response = await api.post(`/b2c-bookings`, {
+      const response = await api.post(`/b2c-trips/bookings`, {
         tripId,
         ...bookingData
       });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error booking trip:", error.message);
+      console.error("Error booking trip:", error.message);
       throw error;
     }
   },
 
   /**
    * Cancel booking
-   * @param {string} bookingId - Booking ID
-   * @returns {Promise} - Cancellation confirmation
+   * Backend: PUT /api/b2c-bookings/booking/:bookingId/status (b2cBookingRoutes.js)
    */
   cancelBooking: async (bookingId) => {
     try {
-      const response = await api.delete(`/b2c-bookings/${bookingId}`);
+      const response = await api.put(`/b2c-bookings/booking/${bookingId}/status`, {
+        status: "cancelled"
+      });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error cancelling booking:", error.message);
+      console.error("Error cancelling booking:", error.message);
       throw error;
     }
   },
 
   /**
-   * Get my bookings
-   * @param {string} status - Filter by status
-   * @returns {Promise} - User's bookings
+   * Get my bookings (passenger bookings)
+   * Backend: GET /api/b2c-trips/bookings (b2cTripRoutes.js -> passengerBookingController)
    */
   getMyBookings: async (status = null) => {
     try {
-      let url = `/b2c-bookings/my-bookings`;
+      let url = `/b2c-trips/bookings`;
       if (status) {
         url += `?status=${status}`;
       }
       const response = await api.get(url);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching my bookings:", error.message);
+      console.error("Error fetching my bookings:", error.message);
       throw error;
     }
   },
 
   /**
    * Get booking details
-   * @param {string} bookingId - Booking ID
-   * @returns {Promise} - Full booking details
+   * Backend: GET /api/b2c-bookings/booking/:bookingId (b2cBookingRoutes.js)
    */
   getBookingDetails: async (bookingId) => {
     try {
-      const response = await api.get(`/b2c-bookings/${bookingId}`);
+      const response = await api.get(`/b2c-bookings/booking/${bookingId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching booking details:", error.message);
+      console.error("Error fetching booking details:", error.message);
       throw error;
     }
   },
 
   /**
-   * Get trip live tracking
-   * @param {string} tripId - Trip ID
-   * @returns {Promise} - Live trip data with driver location
+   * Get trip live tracking - uses driver location endpoint
+   * Backend: GET /api/driver/active-trip (driverLocationRoutes.js)
+   * Note: Real-time tracking is via Socket.io, this is for initial data
    */
   getTripLiveTracking: async (tripId) => {
     try {
-      const response = await api.get(`/b2c-trips/${tripId}/tracking`);
+      const response = await api.get(`/b2c-trips/trips/today`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching live tracking:", error.message);
+      console.error("Error fetching live tracking:", error.message);
       throw error;
     }
   },
 
   /**
    * Get available routes (for route selection)
-   * @param {object} filters - {fromLocation, toLocation, date}
-   * @returns {Promise} - Available routes
+   * Backend: GET /api/b2c-schedules/routes (b2cScheduleRoutes.js)
    */
   getAvailableRoutes: async (filters = {}) => {
     try {
       const params = new URLSearchParams(filters).toString();
-      const response = await api.get(`/b2c-routes?${params}`);
+      const response = await api.get(`/b2c-schedules/routes?${params}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching available routes:", error.message);
+      console.error("Error fetching available routes:", error.message);
       throw error;
     }
   },
 
   /**
-   * Get monthly passes
-   * @returns {Promise} - Available monthly passes
+   * Get monthly passes for a user
+   * Backend: GET /api/monthly-pass/user/:userId (b2cMonthlyPassRoutes.js)
    */
-  getMonthlyPasses: async () => {
+  getMonthlyPasses: async (userId) => {
     try {
-      const response = await api.get(`/monthly-pass`);
+      const response = await api.get(`/monthly-pass/user/${userId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching monthly passes:", error.message);
+      console.error("Error fetching monthly passes:", error.message);
       throw error;
     }
   },
 
   /**
-   * Buy monthly pass
-   * @param {object} passData - {passType, paymentMethod}
-   * @returns {Promise} - Purchase confirmation
+   * Buy/Create monthly pass
+   * Backend: POST /api/monthly-pass/create (b2cMonthlyPassRoutes.js)
    */
   buyMonthlyPass: async (passData) => {
     try {
-      const response = await api.post(`/monthly-pass/buy`, passData);
+      const response = await api.post(`/monthly-pass/create`, passData);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error buying monthly pass:", error.message);
+      console.error("Error buying monthly pass:", error.message);
       throw error;
     }
   },
 
   /**
    * Get my monthly passes
-   * @returns {Promise} - User's monthly passes
+   * Backend: GET /api/monthly-pass/user/:userId (b2cMonthlyPassRoutes.js)
    */
-  getMyMonthlyPasses: async () => {
+  getMyMonthlyPasses: async (userId) => {
     try {
-      const response = await api.get(`/monthly-pass/my-passes`);
+      const response = await api.get(`/monthly-pass/user/${userId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching my monthly passes:", error.message);
+      console.error("Error fetching my monthly passes:", error.message);
       throw error;
     }
   },
 
   /**
    * Rate trip
-   * @param {string} tripId - Trip ID
-   * @param {object} ratingData - {rating, review, driverId}
-   * @returns {Promise} - Rating confirmation
+   * Backend: POST /api/travel-history/rate/:travelId (travelHistoryRoutes.js)
    */
   rateTrip: async (tripId, ratingData) => {
     try {
-      const response = await api.post(`/trips/${tripId}/rate`, ratingData);
+      const response = await api.post(`/travel-history/rate/${tripId}`, ratingData);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error rating trip:", error.message);
+      console.error("Error rating trip:", error.message);
       throw error;
     }
   },
 
   /**
    * Get wallet balance
-   * @returns {Promise} - Wallet information
+   * Backend: GET /api/wallet/balance (walletRoutes.js)
    */
   getWallet: async () => {
     try {
@@ -193,8 +186,7 @@ export const commuterBookingAPI = {
 
   /**
    * Add funds to wallet via payment session
-   * @param {object} data - {amount, paymentMethod}
-   * @returns {Promise} - Payment session with redirect URL
+   * Backend: POST /api/wallet/create-payment-session (walletRoutes.js)
    */
   addFundsToWallet: async (data) => {
     try {

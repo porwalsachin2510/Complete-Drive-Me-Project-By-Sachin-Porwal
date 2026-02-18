@@ -29,7 +29,7 @@ export const adminDashboardAPI = {
       const response = await api.get(`/admin/users?${params}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching users:", error.message);
+      console.error("Error fetching users:", error.message);
       throw error;
     }
   },
@@ -44,7 +44,7 @@ export const adminDashboardAPI = {
       const response = await api.get(`/admin/users/${userId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching user details:", error.message);
+      console.error("Error fetching user details:", error.message);
       throw error;
     }
   },
@@ -261,7 +261,7 @@ export const adminDashboardAPI = {
       const response = await api.get(url);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching requirements:", error.message);
+      console.error("Error fetching requirements:", error.message);
       throw error;
     }
   },
@@ -275,7 +275,7 @@ export const adminDashboardAPI = {
       const response = await api.get("/admin/quotations?status=PENDING");
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching quotations:", error.message);
+      console.error("Error fetching quotations:", error.message);
       throw error;
     }
   },
@@ -290,7 +290,7 @@ export const adminDashboardAPI = {
       const response = await api.patch(`/admin/quotations/${quotationId}/approve`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error approving quotation:", error.message);
+      console.error("Error approving quotation:", error.message);
       throw error;
     }
   },
@@ -308,7 +308,7 @@ export const adminDashboardAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error rejecting quotation:", error.message);
+      console.error("Error rejecting quotation:", error.message);
       throw error;
     }
   },
@@ -330,7 +330,7 @@ export const adminDashboardAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error exporting report:", error.message);
+      console.error("Error exporting report:", error.message);
       throw error;
     }
   }

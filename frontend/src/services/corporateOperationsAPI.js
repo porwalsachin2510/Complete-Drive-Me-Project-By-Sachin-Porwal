@@ -11,7 +11,7 @@ export const getDailyTrips = async (date) => {
         const response = await api.get(`/corporate-operations/daily-trips?date=${date}`);
         return response.data;
     } catch (error) {
-        console.error("[v0] Error fetching daily trips:", error);
+        console.error("Error fetching daily trips:", error);
         throw error;
     }
 };
@@ -26,7 +26,7 @@ export const getEmployeeAssignedTrips = async (employeeId, date = null) => {
         const response = await api.get(url);
         return response.data;
     } catch (error) {
-        console.error("[v0] Error fetching employee trips:", error);
+        console.error("Error fetching employee trips:", error);
         throw error;
     }
 };
@@ -42,7 +42,7 @@ export const assignRouteToVehicle = async (routeId, vehicleId, driverId, corpora
         });
         return response.data;
     } catch (error) {
-        console.error("[v0] Error assigning route to vehicle:", error);
+        console.error("Error assigning route to vehicle:", error);
         throw error;
     }
 };
@@ -57,7 +57,7 @@ export const getAssignedRoutesStatus = async (routeId = null) => {
         const response = await api.get(url);
         return response.data;
     } catch (error) {
-        console.error("[v0] Error fetching routes status:", error);
+        console.error("Error fetching routes status:", error);
         throw error;
     }
 };
@@ -71,7 +71,7 @@ export const assignEmployeesToTrip = async (tripId, employees) => {
         );
         return response.data;
     } catch (error) {
-        console.error("[v0] Error assigning employees to trip:", error);
+        console.error("Error assigning employees to trip:", error);
         throw error;
     }
 };
@@ -82,7 +82,7 @@ export const getTripDetails = async (tripId) => {
         const response = await api.get(`/corporate-operations/trips/${tripId}/details`);
         return response.data;
     } catch (error) {
-        console.error("[v0] Error fetching trip details:", error);
+        console.error("Error fetching trip details:", error);
         throw error;
     }
 };

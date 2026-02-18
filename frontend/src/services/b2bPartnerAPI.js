@@ -12,7 +12,7 @@ export const b2bPartnerAPI = {
       const response = await api.get("/contracts/fleet/all");
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching contracts:", error.message);
+      console.error("Error fetching contracts:", error.message);
       throw error;
     }
   },
@@ -45,7 +45,7 @@ export const b2bPartnerAPI = {
       const response = await api.get(`/trips/${tripId}/driver-assignments`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching driver assignments:", error.message);
+      console.error("Error fetching driver assignments:", error.message);
       throw error;
     }
   },
@@ -62,7 +62,7 @@ export const b2bPartnerAPI = {
       );
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching vehicle assignments:", error.message);
+      console.error("Error fetching vehicle assignments:", error.message);
       throw error;
     }
   },
@@ -77,7 +77,7 @@ export const b2bPartnerAPI = {
       const response = await api.get(`/settlement?period=${period}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching earnings:", error.message);
+      console.error("Error fetching earnings:", error.message);
       throw error;
     }
   },
@@ -91,7 +91,7 @@ export const b2bPartnerAPI = {
       const response = await api.get("/vehicles/my/vehicles");
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching fleet:", error.message);
+      console.error("Error fetching fleet:", error.message);
       throw error;
     }
   },
@@ -105,7 +105,7 @@ export const b2bPartnerAPI = {
       const response = await api.get("/b2b/drivers");
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching drivers:", error.message);
+      console.error("Error fetching drivers:", error.message);
       throw error;
     }
   },
@@ -120,7 +120,7 @@ export const b2bPartnerAPI = {
       const response = await api.get(`/contracts/routes/${contractId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching routes:", error.message);
+      console.error("Error fetching routes:", error.message);
       throw error;
     }
   },
@@ -170,7 +170,7 @@ export const b2bPartnerAPI = {
       const response = await api.get(`/trips/${tripId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching trip details:", error.message);
+      console.error("Error fetching trip details:", error.message);
       throw error;
     }
   },
@@ -185,7 +185,7 @@ export const b2bPartnerAPI = {
       const response = await api.get(`/contracts/${contractId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching contract details:", error.message);
+      console.error("Error fetching contract details:", error.message);
       throw error;
     }
   },
@@ -204,7 +204,7 @@ export const b2bPartnerAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error generating report:", error.message);
+      console.error("Error generating report:", error.message);
       throw error;
     }
   }

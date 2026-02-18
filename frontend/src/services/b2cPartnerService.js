@@ -1,77 +1,85 @@
 import api from "../utils/api";
 
 // Get daily trips for B2C partner
+// Backend: GET /api/b2c-trips/trips/today (b2cTripRoutes.js)
 export const getDailyTrips = async (date) => {
   try {
-    const response = await api.get("/b2c-partner/daily-trips", {
+    const response = await api.get("/b2c-trips/trips/today", {
       params: { date }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching daily trips:", error);
+    console.error("Error fetching daily trips:", error);
     throw error;
   }
 };
 
-// Get trip details
+// Get trip details - via b2c-bookings
+// Backend: GET /api/b2c-bookings/booking/:bookingId (b2cBookingRoutes.js)
 export const getTripDetails = async (tripId) => {
   try {
-    const response = await api.get(`/b2c-partner/trips/${tripId}`);
+    const response = await api.get(`/b2c-bookings/booking/${tripId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching trip details:", error);
+    console.error("Error fetching trip details:", error);
     throw error;
   }
 };
 
 // Start trip
+// Backend: POST /api/driver/trips/:tripId/start (driverLocationRoutes.js)
 export const startTrip = async (tripId) => {
   try {
-    const response = await api.post(`/b2c-partner/trips/${tripId}/start`);
+    const response = await api.post(`/driver/trips/${tripId}/start`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error starting trip:", error);
+    console.error("Error starting trip:", error);
     throw error;
   }
 };
 
 // Complete trip
+// Backend: POST /api/driver/trips/:tripId/complete (driverLocationRoutes.js)
 export const completeTrip = async (tripId, completionData) => {
   try {
     const response = await api.post(
-      `/b2c-partner/trips/${tripId}/complete`,
+      `/driver/trips/${tripId}/complete`,
       completionData
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error completing trip:", error);
+    console.error("Error completing trip:", error);
     throw error;
   }
 };
 
 // Get drivers
+// Backend: GET /api/b2c-partner/drivers (b2cPartnerRoutes.js)
 export const getDrivers = async () => {
   try {
     const response = await api.get("/b2c-partner/drivers");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching drivers:", error);
+    console.error("Error fetching drivers:", error);
     throw error;
   }
 };
 
-// Get driver details
+// Get driver details - same endpoint, filter client-side
 export const getDriverDetails = async (driverId) => {
   try {
-    const response = await api.get(`/b2c-partner/drivers/${driverId}`);
-    return response.data;
+    const response = await api.get(`/b2c-partner/drivers`);
+    const drivers = response.data.drivers || response.data.data || [];
+    const driver = Array.isArray(drivers) ? drivers.find(d => d._id === driverId) : null;
+    return { success: true, driver };
   } catch (error) {
-    console.error("[v0] Error fetching driver details:", error);
+    console.error("Error fetching driver details:", error);
     throw error;
   }
 };
 
 // Get vehicles (fleet)
+// Backend: GET /api/b2c-partner/fleet (b2cPartnerRoutes.js)
 export const getVehicles = async () => {
   try {
     const response = await api.get("/b2c-partner/fleet");
@@ -83,6 +91,7 @@ export const getVehicles = async () => {
 };
 
 // Get vehicle details by ID
+// Backend: GET /api/vehicles/:vehicleId (vehicleRoutes.js)
 export const getVehicleDetails = async (vehicleId) => {
   try {
     const response = await api.get(`/vehicles/${vehicleId}`);
@@ -94,6 +103,7 @@ export const getVehicleDetails = async (vehicleId) => {
 };
 
 // Get routes
+// Backend: GET /api/b2c-partner/routes (b2cPartnerRoutes.js)
 export const getRoutes = async (filters = {}) => {
   try {
     const response = await api.get("/b2c-partner/routes", {
@@ -101,72 +111,77 @@ export const getRoutes = async (filters = {}) => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching routes:", error);
+    console.error("Error fetching routes:", error);
     throw error;
   }
 };
 
 // Create route
+// Backend: POST /api/b2c-partner/routes (b2cPartnerRoutes.js)
 export const createRoute = async (routeData) => {
   try {
     const response = await api.post("/b2c-partner/routes", routeData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error creating route:", error);
+    console.error("Error creating route:", error);
     throw error;
   }
 };
 
-// Update route
+// Update route - no PUT route exists, repost
 export const updateRoute = async (routeId, routeData) => {
   try {
-    const response = await api.put(
-      `/b2c-partner/routes/${routeId}`,
-      routeData
+    const response = await api.post(
+      `/b2c-partner/routes`,
+      { ...routeData, _id: routeId }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating route:", error);
+    console.error("Error updating route:", error);
     throw error;
   }
 };
 
 // Delete route
+// Backend: DELETE /api/b2c-partner/routes/:routeId (b2cPartnerRoutes.js)
 export const deleteRoute = async (routeId) => {
   try {
     const response = await api.delete(`/b2c-partner/routes/${routeId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error deleting route:", error);
+    console.error("Error deleting route:", error);
     throw error;
   }
 };
 
 // Get monthly pass subscriptions
-export const getMonthlyPassSubscriptions = async () => {
+// Backend: GET /api/monthly-pass/partner/:partnerId (b2cMonthlyPassRoutes.js)
+export const getMonthlyPassSubscriptions = async (partnerId) => {
   try {
-    const response = await api.get("/b2c-partner/monthly-passes");
+    const response = await api.get(`/monthly-pass/partner/${partnerId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching monthly passes:", error);
+    console.error("Error fetching monthly passes:", error);
     throw error;
   }
 };
 
-// Get route bookings
+// Get route bookings (partner bookings)
+// Backend: GET /api/b2c-bookings/partner/bookings (b2cBookingRoutes.js)
 export const getRouteBookings = async (routeId, dateRange = {}) => {
   try {
-    const response = await api.get(`/b2c-partner/routes/${routeId}/bookings`, {
-      params: dateRange
+    const response = await api.get(`/b2c-bookings/partner/bookings`, {
+      params: { routeId, ...dateRange }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching route bookings:", error);
+    console.error("Error fetching route bookings:", error);
     throw error;
   }
 };
 
 // Get earnings
+// Backend: GET /api/b2c-partner/earnings (b2cPartnerRoutes.js)
 export const getEarnings = async (period = "monthly") => {
   try {
     const response = await api.get("/b2c-partner/earnings", {
@@ -174,92 +189,98 @@ export const getEarnings = async (period = "monthly") => {
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching earnings:", error);
+    console.error("Error fetching earnings:", error);
     throw error;
   }
 };
 
-// Get earnings breakdown
+// Get earnings breakdown - via wallet statement
+// Backend: GET /api/wallet/statement (walletRoutes.js)
 export const getEarningsBreakdown = async (dateRange = {}) => {
   try {
-    const response = await api.get("/b2c-partner/earnings-breakdown", {
+    const response = await api.get("/wallet/statement", {
       params: dateRange
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching earnings breakdown:", error);
+    console.error("Error fetching earnings breakdown:", error);
     throw error;
   }
 };
 
-// Get analytics
+// Get analytics - use earnings as proxy
 export const getAnalytics = async (period = "monthly") => {
   try {
-    const response = await api.get("/b2c-partner/analytics", {
+    const response = await api.get("/b2c-partner/earnings", {
       params: { period }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching analytics:", error);
+    console.error("Error fetching analytics:", error);
     throw error;
   }
 };
 
 // Get B2C partner profile
+// Backend: GET /api/b2c-partner/profile (b2cPartnerRoutes.js)
 export const getProfile = async () => {
   try {
     const response = await api.get("/b2c-partner/profile");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching profile:", error);
+    console.error("Error fetching profile:", error);
     throw error;
   }
 };
 
 // Update B2C partner profile
+// Backend: PUT /api/b2c-partner/profile (b2cPartnerRoutes.js)
 export const updateProfile = async (profileData) => {
   try {
     const response = await api.put("/b2c-partner/profile", profileData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating profile:", error);
+    console.error("Error updating profile:", error);
     throw error;
   }
 };
 
-// Get account details
+// Get account details - use profile
+// Backend: GET /api/b2c-partner/profile (b2cPartnerRoutes.js)
 export const getAccountDetails = async () => {
   try {
-    const response = await api.get("/b2c-partner/account");
+    const response = await api.get("/b2c-partner/profile");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching account details:", error);
+    console.error("Error fetching account details:", error);
     throw error;
   }
 };
 
 // Get settlement details
+// Backend: GET /api/settlement (settlementRoutes.js)
 export const getSettlement = async (period = "monthly") => {
   try {
-    const response = await api.get("/b2c-partner/settlement", {
+    const response = await api.get("/settlement", {
       params: { period }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching settlement:", error);
+    console.error("Error fetching settlement:", error);
     throw error;
   }
 };
 
 // Get transaction history
+// Backend: GET /api/wallet/statement (walletRoutes.js)
 export const getTransactionHistory = async (filters = {}) => {
   try {
-    const response = await api.get("/b2c-partner/transactions", {
+    const response = await api.get("/wallet/statement", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching transaction history:", error);
+    console.error("Error fetching transaction history:", error);
     throw error;
   }
 };

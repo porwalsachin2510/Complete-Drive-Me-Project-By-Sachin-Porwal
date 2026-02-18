@@ -50,7 +50,7 @@ export const uploadContractDocument = createAsyncThunk(
 
             return response.data
         } catch (error) {
-            console.error("[v0] Redux: Upload error:", error)
+            console.error("Upload error:", error)
             return rejectWithValue(error.response?.data?.message || "Failed to upload contract document")
         }
     },
@@ -67,7 +67,7 @@ export const createPaymentSchedules = createAsyncThunk(
             })
             return response.data
         } catch (error) {
-            console.error("[v0] Error creating payment schedules:", error)
+            console.error("Error creating payment schedules:", error)
             return rejectWithValue(error.response?.data?.message || "Failed to create payment schedules")
         }
     },

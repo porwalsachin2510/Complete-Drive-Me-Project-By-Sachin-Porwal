@@ -4,134 +4,128 @@ import api from "../utils/api";
 
 export const corporateEmployeeAPI = {
   /**
-   * Get employee's assigned trips for a specific date
-   * @param {string} employeeId - Employee ID
-   * @param {string} date - Date in YYYY-MM-DD format
-   * @returns {Promise} - List of assigned trips
+   * Get employee's assigned trips - via corporate-employee-users dashboard
+   * Backend: GET /api/corporate-employee-users/dashboard (corporateEmployeeUserRoutes.js)
    */
   getEmployeeTrips: async (employeeId, date) => {
     try {
       const response = await api.get(
-        `/corporate-employees/${employeeId}/trips?date=${date}`
+        `/corporate-employee-users/dashboard`,
+        { params: { date } }
       );
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching employee trips:", error.message);
+      console.error("Error fetching employee trips:", error.message);
       throw error;
     }
   },
 
   /**
    * Get employee's assigned route information
-   * @param {string} employeeId - Employee ID
-   * @returns {Promise} - Route and bus details
+   * Backend: GET /api/corporate-employee-users/route (corporateEmployeeUserRoutes.js)
    */
   getEmployeeAssignedRoute: async (employeeId) => {
     try {
       const response = await api.get(
-        `/corporate-employees/${employeeId}/assigned-route`
+        `/corporate-employee-users/route`
       );
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching assigned route:", error.message);
+      console.error("Error fetching assigned route:", error.message);
       throw error;
     }
   },
 
   /**
-   * Get trip details with driver info and live location
-   * @param {string} tripId - Trip ID
-   * @returns {Promise} - Full trip details
+   * Get trip details with driver info
+   * Backend: GET /api/corporate-operations/trips/:tripId/details (corporateOperationsRoutes.js)
    */
   getTripDetails: async (tripId) => {
     try {
-      const response = await api.get(`/trips/${tripId}`);
+      const response = await api.get(`/corporate-operations/trips/${tripId}/details`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching trip details:", error.message);
+      console.error("Error fetching trip details:", error.message);
       throw error;
     }
   },
 
   /**
-   * Check in for a trip
-   * @param {string} tripId - Trip ID
-   * @returns {Promise} - Check-in confirmation
+   * Check in for a trip - manage booking
+   * Backend: POST /api/corporate-employee-users/booking (corporateEmployeeUserRoutes.js)
    */
   checkInTrip: async (tripId) => {
     try {
-      const response = await api.post(`/trips/${tripId}/check-in`, {});
+      const response = await api.post(`/corporate-employee-users/booking`, {
+        tripId,
+        action: 'check-in'
+      });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error checking in:", error.message);
+      console.error("Error checking in:", error.message);
       throw error;
     }
   },
 
   /**
    * Cancel trip assignment
-   * @param {string} tripId - Trip ID
-   * @returns {Promise} - Cancellation confirmation
+   * Backend: DELETE /api/trips/:tripId/cancel (tripRoutes.js)
    */
   cancelTrip: async (tripId) => {
     try {
       const response = await api.delete(`/trips/${tripId}/cancel`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error cancelling trip:", error.message);
+      console.error("Error cancelling trip:", error.message);
       throw error;
     }
   },
 
   /**
    * Get employee's no-show history
-   * @returns {Promise} - No-show records
+   * Backend: GET /api/no-show/my-no-shows (noShowRoutes.js)
    */
   getNoShowHistory: async () => {
     try {
       const response = await api.get(`/no-show/my-no-shows`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching no-show history:", error.message);
+      console.error("Error fetching no-show history:", error.message);
       throw error;
     }
   },
 
   /**
    * Get all notifications for employee
-   * @param {string} userId - User ID
-   * @returns {Promise} - List of notifications
+   * Backend: GET /api/notifications/user/:userId (notificationRoutes.js)
    */
   getNotifications: async (userId) => {
     try {
       const response = await api.get(`/notifications/user/${userId}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching notifications:", error.message);
+      console.error("Error fetching notifications:", error.message);
       throw error;
     }
   },
 
   /**
    * Mark notification as read
-   * @param {string} notificationId - Notification ID
-   * @returns {Promise} - Update confirmation
+   * Backend: PATCH /api/notifications/:notificationId/read (notificationRoutes.js)
    */
   markNotificationAsRead: async (notificationId) => {
     try {
       const response = await api.patch(`/notifications/${notificationId}/read`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error marking notification as read:", error.message);
+      console.error("Error marking notification as read:", error.message);
       throw error;
     }
   },
 
   /**
    * Get daily corporate trips (for corporate admin view)
-   * @param {string} date - Date in YYYY-MM-DD format
-   * @param {string} contractId - Optional contract ID filter
-   * @returns {Promise} - Daily trips
+   * Backend: GET /api/corporate-operations/daily-trips (corporateOperationsRoutes.js)
    */
   getDailyTrips: async (date, contractId = null) => {
     try {
@@ -142,15 +136,14 @@ export const corporateEmployeeAPI = {
       const response = await api.get(url);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching daily trips:", error.message);
+      console.error("Error fetching daily trips:", error.message);
       throw error;
     }
   },
 
   /**
    * Assign route to vehicle
-   * @param {object} assignmentData - {contractId, routeId, vehicleId, driverId}
-   * @returns {Promise} - Assignment confirmation
+   * Backend: POST /api/corporate-operations/assign-route-to-vehicle (corporateOperationsRoutes.js)
    */
   assignRouteToVehicle: async (assignmentData) => {
     try {
@@ -160,51 +153,53 @@ export const corporateEmployeeAPI = {
       );
       return response.data;
     } catch (error) {
-      console.error("[v0] Error assigning route to vehicle:", error.message);
+      console.error("Error assigning route to vehicle:", error.message);
       throw error;
     }
   },
 
   /**
    * Bulk assign employees to trips
-   * @param {array} assignments - Array of {tripId, employeeIds, pickupPoint}
-   * @returns {Promise} - Batch assignment result
+   * Backend: POST /api/corporate-operations/trips/:tripId/assign-employees (corporateOperationsRoutes.js)
    */
   bulkAssignEmployees: async (assignments) => {
     try {
-      const response = await api.post(
-        `/corporate-operations/trips/bulk-assign-employees`,
-        { assignments }
-      );
-      return response.data;
+      // Process each assignment individually since backend expects per-trip assignment
+      const results = [];
+      for (const assignment of assignments) {
+        const response = await api.post(
+          `/corporate-operations/trips/${assignment.tripId}/assign-employees`,
+          { employees: assignment.employeeIds, pickupPoint: assignment.pickupPoint }
+        );
+        results.push(response.data);
+      }
+      return { success: true, results };
     } catch (error) {
-      console.error("[v0] Error bulk assigning employees:", error.message);
+      console.error("Error bulk assigning employees:", error.message);
       throw error;
     }
   },
 
   /**
    * Generate daily trips from active routes
-   * @param {object} data - {contractId, date}
-   * @returns {Promise} - Generated trips
+   * Backend: POST /api/trips/create-from-route (tripRoutes.js)
    */
   generateDailyTrips: async (data) => {
     try {
       const response = await api.post(
-        `/corporate-operations/generate-daily-trips`,
+        `/trips/create-from-route`,
         data
       );
       return response.data;
     } catch (error) {
-      console.error("[v0] Error generating daily trips:", error.message);
+      console.error("Error generating daily trips:", error.message);
       throw error;
     }
   },
 
   /**
    * Get route assignment status
-   * @param {string} routeId - Route ID
-   * @returns {Promise} - Assignment status
+   * Backend: GET /api/corporate-operations/assigned-routes-status (corporateOperationsRoutes.js)
    */
   getRouteAssignmentStatus: async (routeId = null) => {
     try {
@@ -215,23 +210,22 @@ export const corporateEmployeeAPI = {
       const response = await api.get(url);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching route status:", error.message);
+      console.error("Error fetching route status:", error.message);
       throw error;
     }
   },
 
   /**
-   * Update trip status
-   * @param {string} tripId - Trip ID
-   * @param {string} status - New status
-   * @returns {Promise} - Updated trip
+   * Update trip status - use start or complete
+   * Backend: POST /api/trips/:tripId/start or /complete (tripRoutes.js)
    */
   updateTripStatus: async (tripId, status) => {
     try {
-      const response = await api.patch(`/trips/${tripId}/status`, { status });
+      const endpoint = status === 'completed' ? 'complete' : 'start';
+      const response = await api.post(`/trips/${tripId}/${endpoint}`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error updating trip status:", error.message);
+      console.error("Error updating trip status:", error.message);
       throw error;
     }
   }
