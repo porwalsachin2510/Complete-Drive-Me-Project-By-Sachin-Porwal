@@ -11,6 +11,7 @@ import CorporateEmployeeManagement from "../../../Components/Corporate/Corporate
 import RequirementManagement from "../../../Components/Corporate/RequirementManagement/RequirementManagement";
 import CorporateContractPage from "../CorporateContractPage/CorporateContractPage";
 import CorporateEmployeeBookingsPage from "../CorporateEmployeeBookingsPage/CorporateEmployeeBookingsPage";
+import CorporateBilling from "../../../Components/Corporate/CorporateBilling/CorporateBilling";
 import Footer from "../../../Components/Footer/Footer";
 import "./corporateprofilepage.css";
 
@@ -70,6 +71,8 @@ export default function CorporateProfilePage() {
         return <CorporateEmployeeBookingsPage />;
       case "requirement-management":
         return <RequirementManagement />;
+      case "billing":
+        return <CorporateBilling />;
       case "account-settings":
         return <AccountSettings />;
       default:
@@ -259,6 +262,16 @@ export default function CorporateProfilePage() {
               onClick={() => setCorporateActiveTab("requirement-management")}
             >
               Requirements
+            </button>
+            <button
+              className={`corporate-tab ${
+                corporateactiveTab === "billing"
+                  ? "corporate-active"
+                  : ""
+              }`}
+              onClick={() => setCorporateActiveTab("billing")}
+            >
+              Billing
             </button>
             <button
               className={`corporate-tab ${

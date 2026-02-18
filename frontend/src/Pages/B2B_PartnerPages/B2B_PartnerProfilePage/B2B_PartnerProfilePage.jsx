@@ -16,6 +16,7 @@ import B2B_Analytics from "../../../Components/B2B_Partner/B2B_Analytics/B2B_Ana
 import B2B_Settings from "../../../Components/B2B_Partner/B2B_Settings/B2B_Settings";
 import B2B_PartnerContractPage from "../B2B_ParnterContractPage/B2B_PartnerContractPage";
 import RequirementsView from "../../../Components/B2B_Partner/RequirementsView/RequirementsView";
+import B2B_Invoices from "../../../Components/B2B_Partner/B2B_Invoices/B2B_Invoices";
 
 
 function B2B_PartnerProfilePage() {
@@ -40,6 +41,8 @@ function B2B_PartnerProfilePage() {
 
       case "analytics":
         return <B2B_Analytics />;
+      case "invoices":
+        return <B2B_Invoices />;
       case "settings":
         return <B2B_Settings />;
       default:

@@ -297,17 +297,35 @@ export const markNotTravelingToday = async (req, res) => {
             });
         }
 
-        // Create no-show record
-        const noShowRecord = {
-            employeeId: employee._id,
-            date: new Date(date),
-            reason,
-            status: "REPORTED",
-            reportedAt: new Date()
-        };
+        // Cancel today's bookings for this employee
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // This would integrate with NoShow model
-        // For now, just return success
+        const cancelResult = await CorporateBooking.updateMany(
+            {
+                passengerId: employee._id,
+                travelDate: { $gte: today, $lt: tomorrow },
+                status: { $in: ["SCHEDULED", "CONFIRMED", "BOOKED"] }
+            },
+            {
+                $set: {
+                    status: "CANCELLED",
+                    cancellationReason: reason || "Employee reported not traveling",
+                    cancelledAt: new Date()
+                }
+            }
+        );
+
+        // Also record in the employee's attendance
+        if (!employee.attendanceLog) employee.attendanceLog = [];
+        employee.attendanceLog.push({
+            date: today,
+            status: "ABSENT",
+            reason: reason || "Reported not traveling"
+        });
+        await employee.save();
 
         // Notify manager
         await notifyManagerOfAbsence(employee, reason);
@@ -347,22 +365,39 @@ export const rateTrip = async (req, res) => {
             });
         }
 
-        // This would integrate with TravelHistory model
-        // For now, just return success
+        // Update the booking with feedback data
+        const booking = await CorporateBooking.findOneAndUpdate(
+            {
+                _id: tripId,
+                passengerId: employee._id
+            },
+            {
+                $set: {
+                    "feedback.rating": rating,
+                    "feedback.comment": feedback || "",
+                    "feedback.complaints": complaints || [],
+                    "feedback.ratedAt": new Date()
+                }
+            },
+            { new: true }
+        );
 
-        const ratingRecord = {
-            employeeId: employee._id,
-            tripId,
-            rating,
-            feedback,
-            complaints: complaints || [],
-            ratedAt: new Date()
-        };
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Trip not found or you are not the passenger"
+            });
+        }
 
         res.status(201).json({
             success: true,
             message: "Trip rated successfully",
-            data: ratingRecord
+            data: {
+                tripId: booking._id,
+                rating,
+                feedback,
+                ratedAt: new Date()
+            }
         });
 
     } catch (error) {

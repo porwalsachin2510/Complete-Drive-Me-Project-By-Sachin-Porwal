@@ -191,6 +191,51 @@ export const b2bPartnerAPI = {
   },
 
   /**
+   * Get seat map for a vehicle
+   * @param {string} vehicleId - Vehicle ID
+   * @returns {Promise} - Seat map data
+   */
+  getSeatMap: async (vehicleId) => {
+    try {
+      const response = await api.get(`/b2b-operations/vehicles/${vehicleId}/seat-map`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching seat map:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Allocate employees to seats
+   * @param {object} allocationData - {contractId, vehicleId, seatAllocations}
+   * @returns {Promise} - Allocation result
+   */
+  allocateSeats: async (allocationData) => {
+    try {
+      const response = await api.post("/b2b-operations/allocate-employees-to-seats", allocationData);
+      return response.data;
+    } catch (error) {
+      console.error("Error allocating seats:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get invoices for B2B partner
+   * @param {object} params - Filter params
+   * @returns {Promise} - Invoices data
+   */
+  getInvoices: async (params = {}) => {
+    try {
+      const response = await api.get("/b2b-partner/invoices", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching invoices:", error.message);
+      throw error;
+    }
+  },
+
+  /**
    * Generate reports
    * @param {string} reportType - Type of report
    * @param {object} filters - Report filters

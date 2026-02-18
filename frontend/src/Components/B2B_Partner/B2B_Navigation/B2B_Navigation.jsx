@@ -9,6 +9,7 @@ function B2B_Navigation({ b2bactiveTab, setB2BActiveTab }) {
     { id: "My Quotation", label: "My Quotation", icon: "📄" },
     { id: "requirements", label: "Requirements", icon: "📋" },
     { id: "analytics", label: "Analytics", icon: "📈" },
+    { id: "invoices", label: "Invoices", icon: "💰" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 

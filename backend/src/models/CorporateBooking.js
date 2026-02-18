@@ -78,6 +78,13 @@ const corporateBookingSchema = new mongoose.Schema(
         completedAt: Date,
         rating: Number,
         review: String,
+        feedback: {
+            rating: { type: Number, min: 1, max: 5 },
+            comment: String,
+            complaints: [String],
+            ratedAt: Date,
+        },
+        cancellationReason: String,
         createdAt: {
             type: Date,
             default: Date.now,

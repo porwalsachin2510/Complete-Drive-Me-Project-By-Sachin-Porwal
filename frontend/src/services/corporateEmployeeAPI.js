@@ -216,6 +216,76 @@ export const corporateEmployeeAPI = {
   },
 
   /**
+   * Get billing data for corporate
+   * Backend: GET /api/corporate/billing (corporateRoutes.js)
+   */
+  getBillingData: async (period = "current") => {
+    try {
+      const response = await api.get("/corporate/billing", { params: { period } });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching billing data:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get invoices for corporate
+   * Backend: GET /api/corporate/invoices (corporateRoutes.js)
+   */
+  getInvoices: async () => {
+    try {
+      const response = await api.get("/corporate/invoices");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching invoices:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Mark not traveling today for employee
+   * Backend: POST /api/corporate-employee-users/not-traveling-today
+   */
+  markNotTraveling: async (reason) => {
+    try {
+      const response = await api.post("/corporate-employee-users/not-traveling-today", { reason });
+      return response.data;
+    } catch (error) {
+      console.error("Error marking not traveling:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Rate a completed trip
+   * Backend: POST /api/corporate-employee-users/rate-trip
+   */
+  rateTrip: async (tripId, rating, feedback) => {
+    try {
+      const response = await api.post("/corporate-employee-users/rate-trip", { tripId, rating, feedback });
+      return response.data;
+    } catch (error) {
+      console.error("Error rating trip:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Request route change
+   * Backend: POST /api/corporate-employee-users/request-route-change
+   */
+  requestRouteChange: async (reason, preferredRoute) => {
+    try {
+      const response = await api.post("/corporate-employee-users/request-route-change", { reason, preferredRoute });
+      return response.data;
+    } catch (error) {
+      console.error("Error requesting route change:", error.message);
+      throw error;
+    }
+  },
+
+  /**
    * Update trip status - use start or complete
    * Backend: POST /api/trips/:tripId/start or /complete (tripRoutes.js)
    */

@@ -164,8 +164,8 @@ export const createProposal = async (req, res) => {
 
         // Create quotation/proposal
         const quotation = new Quotation({
-            b2bPartnerId,
-            clientId,
+            fleetOwnerId: b2bPartnerId,
+            corporateOwnerId: clientId,
             requirementId,
             proposalTitle,
             routePlans,
@@ -221,10 +221,10 @@ export const getProposals = async (req, res) => {
             endDate 
         } = req.query;
 
-        const query = { b2bPartnerId };
+        const query = { fleetOwnerId: b2bPartnerId };
         
         if (status) query.status = status.toUpperCase();
-        if (clientId) query.clientId = clientId;
+        if (clientId) query.corporateOwnerId = clientId;
         if (startDate && endDate) {
             query.createdAt = {
                 $gte: new Date(startDate),
@@ -233,7 +233,7 @@ export const getProposals = async (req, res) => {
         }
 
         const quotations = await Quotation.find(query)
-            .populate('clientId', 'companyName email contactPerson')
+            .populate('corporateOwnerId', 'companyName email fullName')
             .populate('requirementId', 'companyName transportRequirements')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
@@ -273,7 +273,7 @@ export const finalizeContract = async (req, res) => {
 
         // Get quotation details
         const quotation = await Quotation.findById(quotationId)
-            .populate('clientId', 'companyName email contactPerson')
+            .populate('corporateOwnerId', 'companyName email fullName')
             .populate('requirementId', 'transportRequirements');
 
         if (!quotation) {
@@ -285,8 +285,8 @@ export const finalizeContract = async (req, res) => {
 
         // Create contract
         const contract = new Contract({
-            b2bPartnerId,
-            clientId: quotation.clientId._id,
+            fleetOwnerId: b2bPartnerId,
+            corporateOwnerId: quotation.corporateOwnerId._id,
             quotationId: quotation._id,
             contractNumber: `CONTRACT-${Date.now()}`,
             contractTerms,
@@ -312,7 +312,7 @@ export const finalizeContract = async (req, res) => {
         });
 
         // Setup client account
-        await setupClientAccount(quotation.clientId._id, b2bPartnerId);
+        await setupClientAccount(quotation.corporateOwnerId._id, b2bPartnerId);
 
         // Send contract confirmation
         await sendContractConfirmation(contract, quotation);
@@ -323,7 +323,7 @@ export const finalizeContract = async (req, res) => {
             data: {
                 contractId: contract._id,
                 contractNumber: contract.contractNumber,
-                clientId: quotation.clientId._id
+                clientId: quotation.corporateOwnerId._id
             }
         });
 
@@ -350,18 +350,18 @@ export const getContracts = async (req, res) => {
             endDate 
         } = req.query;
 
-        const query = { b2bPartnerId };
+        const query = { fleetOwnerId: b2bPartnerId };
         
         if (status) query.status = status.toUpperCase();
-        if (clientId) query.clientId = clientId;
+        if (clientId) query.corporateOwnerId = clientId;
         if (startDate && endDate) {
             query.startDate = { $gte: new Date(startDate) };
             query.endDate = { $lte: new Date(endDate) };
         }
 
         const contracts = await Contract.find(query)
-            .populate('clientId', 'companyName email contactPerson')
-            .populate('b2bPartnerId', 'fullName businessName')
+            .populate('corporateOwnerId', 'companyName email fullName')
+            .populate('fleetOwnerId', 'fullName businessName')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
@@ -469,12 +469,12 @@ const sendProposalToClient = async (quotation, requirement) => {
 const sendContractConfirmation = async (contract, quotation) => {
     try {
         await sendEmail({
-            to: quotation.clientId.email,
+            to: quotation.corporateOwnerId.email,
             subject: "Contract Confirmation - Transport Services",
             template: "contractConfirmation",
             data: {
-                clientName: quotation.clientId.contactPerson,
-                companyName: quotation.clientId.companyName,
+                clientName: quotation.corporateOwnerId.fullName,
+                companyName: quotation.corporateOwnerId.companyName,
                 contractNumber: contract.contractNumber,
                 startDate: contract.startDate,
                 endDate: contract.endDate,
@@ -541,27 +541,27 @@ const getClientDashboardData = async (b2bPartnerId, period) => {
 
         // Get statistics
         const totalRequirements = await Requirement.countDocuments({
-            b2bPartnerId,
+            corporateId: b2bPartnerId,
             createdAt: dateFilter
         });
 
         const totalProposals = await Quotation.countDocuments({
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             createdAt: dateFilter
         });
 
         const totalContracts = await Contract.countDocuments({
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             createdAt: dateFilter
         });
 
         const activeContracts = await Contract.countDocuments({
-            b2bPartnerId,
+            fleetOwnerId: b2bPartnerId,
             status: "ACTIVE"
         });
 
         const totalValue = await Contract.aggregate([
-            { $match: { b2bPartnerId, status: "ACTIVE" } },
+            { $match: { fleetOwnerId: b2bPartnerId, status: "ACTIVE" } },
             { $group: { _id: null, totalValue: { $sum: "$totalValue" } } }
         ]);
 
