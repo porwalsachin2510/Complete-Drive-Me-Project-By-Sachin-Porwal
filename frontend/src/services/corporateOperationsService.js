@@ -3,7 +3,7 @@ import api from "../utils/api";
 // Daily trips for corporate
 export const getDailyTrips = async (date) => {
   try {
-    const response = await api.get("/corporate/daily-trips", {
+    const response = await api.get("/corporate-operations/daily-trips", {
       params: { date }
     });
     return response.data;
@@ -16,7 +16,7 @@ export const getDailyTrips = async (date) => {
 // Get trip details with passengers
 export const getTripDetails = async (tripId) => {
   try {
-    const response = await api.get(`/corporate/trips/${tripId}`);
+    const response = await api.get(`/corporate-operations/trips/${tripId}/details`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching trip details:", error);
@@ -27,7 +27,7 @@ export const getTripDetails = async (tripId) => {
 // Get assigned vehicles
 export const getAssignedVehicles = async () => {
   try {
-    const response = await api.get("/corporate/assigned-vehicles");
+    const response = await api.get("/corporate-operations/assigned-routes-status");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching assigned vehicles:", error);
@@ -38,7 +38,7 @@ export const getAssignedVehicles = async () => {
 // Get vehicle details
 export const getVehicleDetails = async (vehicleId) => {
   try {
-    const response = await api.get(`/corporate/vehicles/${vehicleId}`);
+    const response = await api.get(`/vehicles/${vehicleId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching vehicle details:", error);
@@ -49,7 +49,7 @@ export const getVehicleDetails = async (vehicleId) => {
 // Get employee routes
 export const getEmployeeRoutes = async () => {
   try {
-    const response = await api.get("/corporate/employee-routes");
+    const response = await api.get("/corporate-operations/assigned-routes-status");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching employee routes:", error);
@@ -153,7 +153,7 @@ export const deleteEmployee = async (employeeId) => {
 // Assign employees to trip
 export const assignEmployeesToTrip = async (tripId, employeeIds) => {
   try {
-    const response = await api.post(`/corporate/trips/${tripId}/assign-employees`, {
+    const response = await api.post(`/corporate-operations/trips/${tripId}/assign-employees`, {
       employeeIds
     });
     return response.data;

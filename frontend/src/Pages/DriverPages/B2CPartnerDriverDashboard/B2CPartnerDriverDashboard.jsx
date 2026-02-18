@@ -8,8 +8,12 @@ import { useSelector } from "react-redux";
 import { useSocket } from "../../../hooks/useSocket";
 import {
   getPartnerDriverBookings,
+  getPartnerBookings,
   startB2CTrip,
-  completeB2CTrip
+  completeB2CTrip,
+  acceptBooking,
+  rejectBooking,
+  completeBooking
 } from "../../../Redux/slices/bookingSlice";
 import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import api from "../../../utils/api";
@@ -82,8 +86,7 @@ function B2CPartnerDriverDashboard() {
   // Fetch B2C Partner Driver Bookings
   useEffect(() => {
     if (user?.role === "B2C_PARTNER_DRIVER") {
-      console.log("[B2CPartnerDriverDashboard] Fetching driver bookings...");
-      dispatch(getPartnerDriverBookings({ status: "ALL" })); // Fetch all bookings first
+      dispatch(getPartnerDriverBookings({ status: "ALL" }));
     } else {
       navigate("/");
     }
@@ -110,25 +113,7 @@ function B2CPartnerDriverDashboard() {
     }
   }, [driverBookings]);
 
-  // Debug: Log driverBookings state
-  useEffect(() => {
-    console.log("[B2CPartnerDriverDashboard] driverBookings state:", driverBookings);
-    console.log("[B2CPartnerDriverDashboard] Current user:", user);
-    if (driverBookings && driverBookings.length > 0) {
-      driverBookings.forEach(booking => {
-        console.log("[B2CPartnerDriverDashboard] Booking check:", {
-          bookingId: booking._id,
-          assignedDriverId: booking.assignedDriverId,
-          currentUserId: user?._id,
-          currentDriverId: user?.driverId,
-          isMatch: booking.assignedDriverId === user?._id,
-          isDriverIdMatch: booking.assignedDriverId === user?.driverId,
-          bookingStatus: booking.bookingStatus,
-          userRole: user?.role
-        });
-      });
-    }
-  }, [driverBookings, user]);
+
 
   const handleAccept = (bookingId) => {
     dispatch(acceptBooking(bookingId)).then(() => {
@@ -164,6 +149,20 @@ function B2CPartnerDriverDashboard() {
     } catch (error) {
       console.error("Error completing booking:", error);
     }
+  };
+
+  const getCurrentPosition = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      });
+    });
   };
 
   const shareLocation = async () => {

@@ -3,7 +3,7 @@ import api from "../utils/api";
 // Get daily trips for B2C partner
 export const getDailyTrips = async (date) => {
   try {
-    const response = await api.get("/b2c-operations/daily-trips", {
+    const response = await api.get("/b2c-partner/daily-trips", {
       params: { date }
     });
     return response.data;
@@ -16,7 +16,7 @@ export const getDailyTrips = async (date) => {
 // Get trip details
 export const getTripDetails = async (tripId) => {
   try {
-    const response = await api.get(`/b2c-operations/trips/${tripId}`);
+    const response = await api.get(`/b2c-partner/trips/${tripId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching trip details:", error);
@@ -27,7 +27,7 @@ export const getTripDetails = async (tripId) => {
 // Start trip
 export const startTrip = async (tripId) => {
   try {
-    const response = await api.post(`/b2c-operations/trips/${tripId}/start`);
+    const response = await api.post(`/b2c-partner/trips/${tripId}/start`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error starting trip:", error);
@@ -39,7 +39,7 @@ export const startTrip = async (tripId) => {
 export const completeTrip = async (tripId, completionData) => {
   try {
     const response = await api.post(
-      `/b2c-operations/trips/${tripId}/complete`,
+      `/b2c-partner/trips/${tripId}/complete`,
       completionData
     );
     return response.data;
@@ -52,7 +52,7 @@ export const completeTrip = async (tripId, completionData) => {
 // Get drivers
 export const getDrivers = async () => {
   try {
-    const response = await api.get("/b2c-operations/drivers");
+    const response = await api.get("/b2c-partner/drivers");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching drivers:", error);
@@ -63,7 +63,7 @@ export const getDrivers = async () => {
 // Get driver details
 export const getDriverDetails = async (driverId) => {
   try {
-    const response = await api.get(`/b2c-operations/drivers/${driverId}`);
+    const response = await api.get(`/b2c-partner/drivers/${driverId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching driver details:", error);
@@ -74,7 +74,7 @@ export const getDriverDetails = async (driverId) => {
 // Get vehicles
 export const getVehicles = async () => {
   try {
-    const response = await api.get("/b2c-operations/vehicles");
+    const response = await api.get("/b2c-partner/vehicles");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching vehicles:", error);
@@ -85,7 +85,7 @@ export const getVehicles = async () => {
 // Get vehicle details
 export const getVehicleDetails = async (vehicleId) => {
   try {
-    const response = await api.get(`/b2c-operations/vehicles/${vehicleId}`);
+    const response = await api.get(`/b2c-partner/vehicles/${vehicleId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching vehicle details:", error);
@@ -96,7 +96,7 @@ export const getVehicleDetails = async (vehicleId) => {
 // Get routes
 export const getRoutes = async (filters = {}) => {
   try {
-    const response = await api.get("/b2c-operations/routes", {
+    const response = await api.get("/b2c-partner/routes", {
       params: filters
     });
     return response.data;
@@ -109,7 +109,7 @@ export const getRoutes = async (filters = {}) => {
 // Create route
 export const createRoute = async (routeData) => {
   try {
-    const response = await api.post("/b2c-operations/routes", routeData);
+    const response = await api.post("/b2c-partner/routes", routeData);
     return response.data;
   } catch (error) {
     console.error("[v0] Error creating route:", error);
@@ -121,7 +121,7 @@ export const createRoute = async (routeData) => {
 export const updateRoute = async (routeId, routeData) => {
   try {
     const response = await api.put(
-      `/b2c-operations/routes/${routeId}`,
+      `/b2c-partner/routes/${routeId}`,
       routeData
     );
     return response.data;
@@ -134,7 +134,7 @@ export const updateRoute = async (routeId, routeData) => {
 // Delete route
 export const deleteRoute = async (routeId) => {
   try {
-    const response = await api.delete(`/b2c-operations/routes/${routeId}`);
+    const response = await api.delete(`/b2c-partner/routes/${routeId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error deleting route:", error);
@@ -145,7 +145,7 @@ export const deleteRoute = async (routeId) => {
 // Get monthly pass subscriptions
 export const getMonthlyPassSubscriptions = async () => {
   try {
-    const response = await api.get("/b2c-operations/monthly-passes");
+    const response = await api.get("/b2c-partner/monthly-passes");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching monthly passes:", error);
@@ -156,7 +156,7 @@ export const getMonthlyPassSubscriptions = async () => {
 // Get route bookings
 export const getRouteBookings = async (routeId, dateRange = {}) => {
   try {
-    const response = await api.get(`/b2c-operations/routes/${routeId}/bookings`, {
+    const response = await api.get(`/b2c-partner/routes/${routeId}/bookings`, {
       params: dateRange
     });
     return response.data;
@@ -169,7 +169,7 @@ export const getRouteBookings = async (routeId, dateRange = {}) => {
 // Get earnings
 export const getEarnings = async (period = "monthly") => {
   try {
-    const response = await api.get("/b2c-operations/earnings", {
+    const response = await api.get("/b2c-partner/earnings", {
       params: { period }
     });
     return response.data;
@@ -182,7 +182,7 @@ export const getEarnings = async (period = "monthly") => {
 // Get earnings breakdown
 export const getEarningsBreakdown = async (dateRange = {}) => {
   try {
-    const response = await api.get("/b2c-operations/earnings-breakdown", {
+    const response = await api.get("/b2c-partner/earnings-breakdown", {
       params: dateRange
     });
     return response.data;
@@ -195,7 +195,7 @@ export const getEarningsBreakdown = async (dateRange = {}) => {
 // Get analytics
 export const getAnalytics = async (period = "monthly") => {
   try {
-    const response = await api.get("/b2c-operations/analytics", {
+    const response = await api.get("/b2c-partner/analytics", {
       params: { period }
     });
     return response.data;
@@ -208,7 +208,7 @@ export const getAnalytics = async (period = "monthly") => {
 // Get B2C partner profile
 export const getProfile = async () => {
   try {
-    const response = await api.get("/b2c-operations/profile");
+    const response = await api.get("/b2c-partner/profile");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching profile:", error);
@@ -219,7 +219,7 @@ export const getProfile = async () => {
 // Update B2C partner profile
 export const updateProfile = async (profileData) => {
   try {
-    const response = await api.put("/b2c-operations/profile", profileData);
+    const response = await api.put("/b2c-partner/profile", profileData);
     return response.data;
   } catch (error) {
     console.error("[v0] Error updating profile:", error);
@@ -230,7 +230,7 @@ export const updateProfile = async (profileData) => {
 // Get account details
 export const getAccountDetails = async () => {
   try {
-    const response = await api.get("/b2c-operations/account");
+    const response = await api.get("/b2c-partner/account");
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching account details:", error);
@@ -241,7 +241,7 @@ export const getAccountDetails = async () => {
 // Get settlement details
 export const getSettlement = async (period = "monthly") => {
   try {
-    const response = await api.get("/b2c-operations/settlement", {
+    const response = await api.get("/b2c-partner/settlement", {
       params: { period }
     });
     return response.data;
@@ -254,7 +254,7 @@ export const getSettlement = async (period = "monthly") => {
 // Get transaction history
 export const getTransactionHistory = async (filters = {}) => {
   try {
-    const response = await api.get("/b2c-operations/transactions", {
+    const response = await api.get("/b2c-partner/transactions", {
       params: filters
     });
     return response.data;
