@@ -6,6 +6,9 @@ import Route from "../models/Route.js"
 import B2CPartnerRoute from "../models/B2CPartnerRoute.js"
 import B2CPartnerSchedule from "../models/B2CPartnerSchedule.js"
 import B2CPartnerTrip from "../models/B2CPartnerTrip.js"
+import B2CPassengerBooking from "../models/B2CPassengerBooking.js"
+import B2CMonthlyPass from "../models/B2CMonthlyPass.js"
+import RouteRequest from "../models/RouteRequest.js"
 /* ======================================================
    UTILITY FUNCTIONS
 ====================================================== */
@@ -410,12 +413,14 @@ export const searchCommuteRoutes = async (req, res) => {
                 status: "Active"
             }).populate('routeId')
 
-            if (!schedule) {
-                console.log("No active schedule found for route:", route._id)
-                continue
-            }
+            // Allow routes without schedule - use route-level data as fallback
+            const routeAvailableDays = schedule?.availableDays || route.availableDays || ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
-            console.log("Found schedule:", schedule._id, "with trip times:", schedule.tripTimes?.length || 0)
+            if (schedule) {
+                console.log("Found schedule:", schedule._id, "with trip times:", schedule.tripTimes?.length || 0)
+            } else {
+                console.log("No schedule found for route:", route._id, "- using route-level data")
+            }
 
             // Get upcoming trips for this route
             const today = new Date()
@@ -458,16 +463,16 @@ export const searchCommuteRoutes = async (req, res) => {
 
             if (!shouldInclude) continue
 
-            // Create travel path with schedule data
+            // Create travel path with schedule data (fallback to route-level data)
             const travelData = getTravelPath({
                 from: route.fromLocation,
                 to: route.toLocation,
                 stops: route.stopPoints || [],
-                inboundStart: route.startTime,
+                inboundStart: route.startTime || "",
                 pickupLocation,
                 dropoffLocation,
                 selectedDays: parsedSelectedDays,
-                availableDays: schedule.availableDays || [],
+                availableDays: routeAvailableDays,
             })
 
             if (!travelData) continue
@@ -482,21 +487,23 @@ export const searchCommuteRoutes = async (req, res) => {
                 toLocation: travelData.toLocation,
                 travelPath: travelData.travelPath,
 
-                // Schedule-based data
-                scheduleId: schedule._id,
-                scheduleName: schedule.scheduleName,
-                availableDays: schedule.availableDays || [],
-                tripTimes: schedule.tripTimes || [],
+                // Schedule-based data (with fallback)
+                scheduleId: schedule?._id || null,
+                scheduleName: schedule?.scheduleName || "Default Schedule",
+                availableDays: routeAvailableDays,
+                tripTimes: schedule?.tripTimes || [],
                 upcomingTrips: formattedTrips,
 
-                // Legacy compatibility
+                // Route data
                 pickupArrivalTime: travelData.pickupArrivalTime,
                 dropoffArrivalTime: travelData.dropoffArrivalTime,
-                departureTime: route.startTime,
+                departureTime: route.startTime || "",
                 startDate: route.routeStartDate,
+                tripType: route.tripType || "One Way",
                 roundTripPrice: route.pricing?.roundTripPrice,
                 oneWayPrice: route.pricing?.oneWayPrice,
                 monthlyPrice: route.pricing?.monthlyOneWayPrice,
+                monthlyRoundTripPrice: route.pricing?.monthlyRoundTripPrice,
                 availableSeats: route.availableSeats,
                 totalSeats: route.totalSeats,
                 dayMatching: travelData.dayMatching,
@@ -520,6 +527,358 @@ export const searchCommuteRoutes = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Server error while searching routes",
+        })
+    }
+}
+
+/* ======================================================
+   PUBLIC SEARCH (No Authentication Required)
+   - For landing page / unauthenticated users
+   - Returns only B2C Partner routes (no corporate)
+====================================================== */
+export const publicSearchRoutes = async (req, res) => {
+    try {
+        const {
+            pickupLocation,
+            dropoffLocation,
+            filterType,
+            selectedDays,
+        } = req.query
+
+        let parsedSelectedDays = []
+        if (selectedDays) {
+            try {
+                parsedSelectedDays = typeof selectedDays === "string" ? JSON.parse(selectedDays) : selectedDays
+            } catch (e) {
+                console.log("Error parsing selectedDays:", e)
+            }
+        }
+
+        const routes = []
+
+        // Get all active B2C Partner Routes
+        const b2cRoutes = await B2CPartnerRoute.find({
+            status: "Active",
+            isActive: true,
+        }).populate('b2cPartnerId', 'fullName companyLogo profileImage')
+
+        for (const route of b2cRoutes) {
+            if (!route.availableSeats || route.availableSeats <= 0) continue
+
+            // Get schedule for this route (optional - route might not have a schedule yet)
+            const schedule = await B2CPartnerSchedule.findOne({
+                routeId: route._id,
+                isActive: true,
+                status: "Active"
+            })
+
+            // Even without schedule, show the route based on its own data
+            const routeAvailableDays = schedule?.availableDays || route.availableDays || ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+            // Location filtering
+            let shouldInclude = true
+            if (filterType === "matched" && (pickupLocation || dropoffLocation)) {
+                const pickupMatch = isLocationMatch(pickupLocation, route.fromLocation, route.toLocation, route.stopPoints)
+                const dropMatch = isLocationMatch(dropoffLocation, route.fromLocation, route.toLocation, route.stopPoints)
+                shouldInclude = pickupMatch && dropMatch
+            }
+            if (!shouldInclude) continue
+
+            // Build travel path using route data (with or without schedule)
+            const travelData = getTravelPath({
+                from: route.fromLocation,
+                to: route.toLocation,
+                stops: route.stopPoints || [],
+                inboundStart: route.startTime || "",
+                pickupLocation,
+                dropoffLocation,
+                selectedDays: parsedSelectedDays,
+                availableDays: routeAvailableDays,
+            })
+
+            if (!travelData) continue
+
+            // Get upcoming trips
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const upcomingTrips = await B2CPartnerTrip.find({
+                routeId: route._id,
+                tripDate: { $gte: today },
+                status: "Scheduled"
+            }).sort({ tripDate: 1, startTime: 1 }).limit(10)
+
+            const formattedTrips = upcomingTrips.map(trip => ({
+                tripId: trip._id,
+                tripDate: trip.tripDate,
+                startTime: trip.startTime,
+                endTime: trip.endTime,
+                tripType: trip.tripType,
+                fromLocation: trip.fromLocation,
+                toLocation: trip.toLocation,
+                stopPoints: trip.stopPoints || [],
+                totalSeats: trip.totalSeats,
+                availableSeats: trip.availableSeats,
+                pricing: trip.pricing,
+            }))
+
+            routes.push({
+                routeId: route._id,
+                operator: route.b2cPartnerId?.fullName || "Unknown Operator",
+                operatorId: route.b2cPartnerId?._id,
+                companyLogo: route.b2cPartnerId?.companyLogo || route.b2cPartnerId?.profileImage || null,
+
+                fromLocation: travelData.fromLocation,
+                toLocation: travelData.toLocation,
+                travelPath: travelData.travelPath,
+
+                scheduleId: schedule?._id || null,
+                scheduleName: schedule?.scheduleName || "Default Schedule",
+                availableDays: routeAvailableDays,
+                tripTimes: schedule?.tripTimes || [],
+                upcomingTrips: formattedTrips,
+
+                pickupArrivalTime: travelData.pickupArrivalTime,
+                dropoffArrivalTime: travelData.dropoffArrivalTime,
+                departureTime: route.startTime || "",
+                startDate: route.routeStartDate,
+                tripType: route.tripType || "One Way",
+                roundTripPrice: route.pricing?.roundTripPrice,
+                oneWayPrice: route.pricing?.oneWayPrice,
+                monthlyPrice: route.pricing?.monthlyOneWayPrice,
+                monthlyRoundTripPrice: route.pricing?.monthlyRoundTripPrice,
+                availableSeats: route.availableSeats,
+                totalSeats: route.totalSeats,
+                dayMatching: travelData.dayMatching,
+                stopPoints: route.stopPoints || [],
+
+                images: route.images || [],
+                type: "b2c",
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            userType: "guest",
+            totalRoutes: routes.length,
+            routes,
+        })
+    } catch (error) {
+        console.error("publicSearchRoutes error:", error)
+        return res.status(500).json({
+            success: false,
+            message: "Server error while searching routes",
+        })
+    }
+}
+
+/* ======================================================
+   B2C PARTNER DASHBOARD STATS
+   - Real data from database
+====================================================== */
+export const getB2CPartnerDashboardStats = async (req, res) => {
+    try {
+        const partnerId = req.userId
+
+        // Get partner's active routes
+        const activeRoutes = await B2CPartnerRoute.find({
+            b2cPartnerId: partnerId,
+            status: "Active",
+        })
+        const routeIds = activeRoutes.map(r => r._id)
+
+        // Get active monthly passes (subscribers)
+        const activeSubscribers = await B2CMonthlyPass.countDocuments({
+            routeId: { $in: routeIds },
+            status: "ACTIVE",
+        })
+
+        // Get total subscribers (all time)
+        const totalSubscribers = await B2CMonthlyPass.countDocuments({
+            routeId: { $in: routeIds },
+        })
+
+        // Get monthly revenue (current month)
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+
+        const monthlyBookings = await B2CPassengerBooking.find({
+            routeId: { $in: routeIds },
+            status: { $in: ["CONFIRMED", "COMPLETED"] },
+            createdAt: { $gte: startOfMonth },
+        })
+        const monthlyRevenue = monthlyBookings.reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0)
+
+        // Get total revenue (all time)
+        const allBookings = await B2CPassengerBooking.find({
+            routeId: { $in: routeIds },
+            status: { $in: ["CONFIRMED", "COMPLETED"] },
+        })
+        const totalRevenue = allBookings.reduce((sum, b) => sum + (b.totalAmount || b.amount || 0), 0)
+
+        // Get pending route requests (either assigned to this partner or unassigned)
+        const pendingRouteRequests = await RouteRequest.countDocuments({
+            $or: [
+                { assignedProviderId: partnerId },
+                { assignedProviderId: null, status: "PENDING" },
+            ],
+            status: "PENDING",
+        })
+
+        // Get total route requests assigned to this partner
+        const totalRouteRequests = await RouteRequest.countDocuments({
+            $or: [
+                { assignedProviderId: partnerId },
+                { assignedProviderId: null },
+            ],
+        })
+
+        // Get upcoming trips count
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const upcomingTrips = await B2CPartnerTrip.countDocuments({
+            b2cPartnerId: partnerId,
+            tripDate: { $gte: today },
+            status: "Scheduled",
+        })
+
+        // Get renewal stats
+        const renewalsPending = await B2CMonthlyPass.countDocuments({
+            routeId: { $in: routeIds },
+            status: "ACTIVE",
+            autoRenew: true,
+            endDate: {
+                $gte: new Date(),
+                $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Next 7 days
+            }
+        })
+
+        // Get subscribers per route
+        const subscribersPerRoute = await Promise.all(
+            activeRoutes.map(async (route) => {
+                const count = await B2CMonthlyPass.countDocuments({
+                    routeId: route._id,
+                    status: "ACTIVE",
+                })
+                return {
+                    routeId: route._id,
+                    routeName: `${route.fromLocation} - ${route.toLocation}`,
+                    activeSubscribers: count,
+                    totalSeats: route.totalSeats,
+                    availableSeats: route.availableSeats,
+                }
+            })
+        )
+
+        return res.status(200).json({
+            success: true,
+            stats: {
+                activeRoutes: activeRoutes.length,
+                activeSubscribers,
+                totalSubscribers,
+                monthlyRevenue,
+                totalRevenue,
+                pendingRouteRequests,
+                totalRouteRequests,
+                upcomingTrips,
+                renewalsPending,
+                subscribersPerRoute,
+            },
+        })
+    } catch (error) {
+        console.error("getB2CPartnerDashboardStats error:", error)
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching dashboard stats",
+        })
+    }
+}
+
+/* ======================================================
+   B2C PARTNER ROUTE REQUESTS VIEW
+   - Show passenger route requests for this partner
+====================================================== */
+export const getB2CPartnerRouteRequests = async (req, res) => {
+    try {
+        const partnerId = req.userId
+        const { status, page = 1, limit = 20 } = req.query
+
+        const query = {
+            $or: [
+                { assignedProviderId: partnerId },
+                { assignedProviderId: null },
+            ],
+        }
+        if (status) query.status = status.toUpperCase()
+
+        const routeRequests = await RouteRequest.find(query)
+            .populate('passengerId', 'fullName email phone profileImage')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+
+        const total = await RouteRequest.countDocuments(query)
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                routeRequests,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(total / limit),
+                    total,
+                    hasNext: page * limit < total,
+                }
+            },
+        })
+    } catch (error) {
+        console.error("getB2CPartnerRouteRequests error:", error)
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching route requests",
+        })
+    }
+}
+
+/* ======================================================
+   RESPOND TO ROUTE REQUEST
+====================================================== */
+export const respondToRouteRequest = async (req, res) => {
+    try {
+        const { requestId } = req.params
+        const { status, response } = req.body
+        const partnerId = req.userId
+
+        const routeRequest = await RouteRequest.findOne({
+            _id: requestId,
+            $or: [
+                { assignedProviderId: partnerId },
+                { assignedProviderId: null },
+            ],
+        })
+
+        if (!routeRequest) {
+            return res.status(404).json({
+                success: false,
+                message: "Route request not found",
+            })
+        }
+
+        routeRequest.status = status.toUpperCase()
+        routeRequest.providerResponse = response || ""
+        routeRequest.assignedProviderId = partnerId
+        await routeRequest.save()
+
+        return res.status(200).json({
+            success: true,
+            message: `Route request ${status.toLowerCase()} successfully`,
+            routeRequest,
+        })
+    } catch (error) {
+        console.error("respondToRouteRequest error:", error)
+        return res.status(500).json({
+            success: false,
+            message: "Server error while responding to route request",
         })
     }
 }

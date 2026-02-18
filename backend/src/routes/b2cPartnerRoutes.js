@@ -23,6 +23,11 @@ import {
     getRouteTripSeatAvailability,
     getPublicRouteTripSeatAvailability
 } from "../controllers/b2cTripController.js"
+import {
+    getB2CPartnerDashboardStats,
+    getB2CPartnerRouteRequests,
+    respondToRouteRequest
+} from "../controllers/commuteSearchController.js"
 import { verifyToken, checkB2CPartnerRole } from "../middleware/auth.js"
 import { upload } from "../Config/multerConfig.js"
 
@@ -78,6 +83,13 @@ router.get("/public/routes/:routeId/trips/seat-availability", getPublicRouteTrip
 
 // B2C Partner Trips
 router.post("/trips", verifyToken, checkB2CPartnerRole, createB2CPartnerTrip)
+
+// B2C Partner Dashboard Stats
+router.get("/dashboard-stats", verifyToken, checkB2CPartnerRole, getB2CPartnerDashboardStats)
+
+// B2C Partner Route Requests (from passengers)
+router.get("/route-requests", verifyToken, checkB2CPartnerRole, getB2CPartnerRouteRequests)
+router.put("/route-requests/:requestId/respond", verifyToken, checkB2CPartnerRole, respondToRouteRequest)
 
 // B2C Partner Profile
 router.get("/profile", verifyToken, checkB2CPartnerRole, getB2CPartnerProfile)

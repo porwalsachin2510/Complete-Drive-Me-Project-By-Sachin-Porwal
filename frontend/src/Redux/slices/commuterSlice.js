@@ -2,12 +2,24 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import commuterAPI from "../../services/commuterAPI";
 
 // Async thunks
+export const publicSearchRoutes = createAsyncThunk(
+  "commuter/publicSearchRoutes",
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await commuterAPI.publicSearchRoutes(params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Public search failed");
+    }
+  }
+);
+
 export const searchRoutes = createAsyncThunk(
   "commuter/searchRoutes",
   async (params, { rejectWithValue }) => {
     try {
       const response = await commuterAPI.searchRoutes(params);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Search failed");
     }
@@ -122,7 +134,22 @@ const commuterSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Search Routes
+    // Public Search Routes (no auth)
+    builder
+      .addCase(publicSearchRoutes.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(publicSearchRoutes.fulfilled, (state, action) => {
+        state.loading = false;
+        state.searchResults = action.payload?.routes || action.payload || [];
+      })
+      .addCase(publicSearchRoutes.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Search Routes (authenticated)
     builder
       .addCase(searchRoutes.pending, (state) => {
         state.loading = true;
@@ -130,7 +157,7 @@ const commuterSlice = createSlice({
       })
       .addCase(searchRoutes.fulfilled, (state, action) => {
         state.loading = false;
-        state.searchResults = action.payload;
+        state.searchResults = action.payload?.routes || action.payload || [];
       })
       .addCase(searchRoutes.rejected, (state, action) => {
         state.loading = false;

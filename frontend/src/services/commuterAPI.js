@@ -1,12 +1,24 @@
 import api from "../utils/api";
 
-// Commuter search for available trips/routes
+// Public search for routes (no auth required) - used on landing page for guests
+// Backend: GET /api/commute/public-search
+export const publicSearchRoutes = async (params = {}) => {
+  try {
+    const response = await api.get("/commute/public-search", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error searching public routes:", error);
+    throw error;
+  }
+};
+
+// Commuter search for available trips/routes (authenticated)
 // Backend: GET /api/commute/search (commuteRoutes.js)
 export const searchRoutes = async (params) => {
-  const { source, destination, date, passengers } = params;
+  const { pickupLocation, dropoffLocation, filterType, selectedDays, nationality } = params;
   try {
     const response = await api.get("/commute/search", {
-      params: { source, destination, date, passengers }
+      params: { pickupLocation, dropoffLocation, filterType, selectedDays, nationality }
     });
     return response.data;
   } catch (error) {
@@ -193,6 +205,7 @@ export const saveRoute = async (routeId) => {
 };
 
 export default {
+  publicSearchRoutes,
   searchRoutes,
   getMyBookings,
   bookTrip,

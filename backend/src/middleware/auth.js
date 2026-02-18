@@ -23,6 +23,25 @@ export const verifyToken = (req, res, next) => {
     }
 }
 
+// Optional authentication - sets userId if token exists, continues if not
+export const optionalAuth = (req, res, next) => {
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1]
+    if (!token) {
+        req.userId = null
+        req.userRole = null
+        return next()
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        req.userId = decoded.userId
+        req.userRole = decoded.role
+    } catch (error) {
+        req.userId = null
+        req.userRole = null
+    }
+    next()
+}
+
 // START: NEW MIDDLEWARE TO CHECK COMMUTER ROLE
 export const checkCommuterRole = (req, res, next) => {
     // USER ROLE IS ALREADY SET BY verifyToken MIDDLEWARE IN req.userRole

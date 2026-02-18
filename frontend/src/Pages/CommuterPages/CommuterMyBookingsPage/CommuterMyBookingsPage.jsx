@@ -7,6 +7,7 @@ import { useSocket } from "../../../hooks/useSocket";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
 import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
+import commuterBookingAPI from "../../../services/commuterBookingAPI";
 import "./commutermybookingspage.css";
 
 const CommuterMyBookingsPage = () => {
@@ -23,6 +24,11 @@ const CommuterMyBookingsPage = () => {
   const [mapCenter, setMapCenter] = useState(null);
   const [mapBounds, setMapBounds] = useState(null);
   const [isTrackingActive, setIsTrackingActive] = useState(false);
+  const [showNoShowModal, setShowNoShowModal] = useState(false);
+  const [noShowBooking, setNoShowBooking] = useState(null);
+  const [noShowReason, setNoShowReason] = useState("");
+  const [noShowCustomReason, setNoShowCustomReason] = useState("");
+  const [noShowLoading, setNoShowLoading] = useState(false);
 
   // Utility functions - declared first
   const getDriverLocation = useCallback(
@@ -307,6 +313,42 @@ const CommuterMyBookingsPage = () => {
 
   const handleTrackingClick = (booking) => {
     startRealTimeTracking(booking);
+  };
+
+  const handleNoShowClick = (booking) => {
+    setNoShowBooking(booking);
+    setNoShowReason("");
+    setNoShowCustomReason("");
+    setShowNoShowModal(true);
+  };
+
+  const handleSubmitNoShow = async () => {
+    if (!noShowReason) {
+      alert("Please select a reason for no-show");
+      return;
+    }
+    if (noShowReason === "OTHER" && !noShowCustomReason.trim()) {
+      alert("Please provide a custom reason");
+      return;
+    }
+    try {
+      setNoShowLoading(true);
+      await commuterBookingAPI.markNoShow({
+        tripId: noShowBooking.tripId || noShowBooking._id,
+        monthlyPassId: noShowBooking.monthlyPassId || noShowBooking.monthlyPass?._id,
+        reason: noShowReason,
+        customReason: noShowReason === "OTHER" ? noShowCustomReason : null,
+        date: new Date().toISOString(),
+      });
+      alert("No-show marked successfully. Your seat has been released.");
+      setShowNoShowModal(false);
+      setNoShowBooking(null);
+      dispatch(getPassengerBookings());
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to mark no-show");
+    } finally {
+      setNoShowLoading(false);
+    }
   };
 
   const formatDate = (date) => {
@@ -867,6 +909,25 @@ const CommuterMyBookingsPage = () => {
                     {booking.bookingStatus === "PENDING" &&
                       booking.type === "B2C" && (
                         <button className="btn-cancel">Cancel Booking</button>
+                      )}
+                    {(booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "ACTIVE") &&
+                      booking.type === "B2C" && (
+                        <button
+                          className="btn-noshow"
+                          onClick={() => handleNoShowClick(booking)}
+                          style={{
+                            padding: "8px 16px",
+                            backgroundColor: "#ff6b35",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          Mark No-Show
+                        </button>
                       )}
                   </div>
 
@@ -1461,8 +1522,124 @@ const CommuterMyBookingsPage = () => {
           </div>
         </div>
       )}
+
+      {/* No-Show Modal */}
+      {showNoShowModal && noShowBooking && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "28px",
+              maxWidth: "480px",
+              width: "90%",
+            }}
+          >
+            <h3 style={{ marginBottom: "8px", fontSize: "18px" }}>Mark No-Show</h3>
+            <p style={{ color: "#6c757d", fontSize: "14px", marginBottom: "20px" }}>
+              {"Can't make it today? Mark no-show to release your seat for other passengers."}
+            </p>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontWeight: "600", marginBottom: "8px", fontSize: "14px" }}>
+                Reason
+              </label>
+              <select
+                value={noShowReason}
+                onChange={(e) => setNoShowReason(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #dee2e6",
+                  fontSize: "14px",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <option value="">Select a reason</option>
+                <option value="SICK_LEAVE">Sick Leave</option>
+                <option value="PERSONAL_WORK">Personal Work</option>
+                <option value="EMERGENCY">Emergency</option>
+                <option value="VACATION">Vacation</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+            {noShowReason === "OTHER" && (
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontWeight: "600", marginBottom: "8px", fontSize: "14px" }}>
+                  Please specify
+                </label>
+                <textarea
+                  value={noShowCustomReason}
+                  onChange={(e) => setNoShowCustomReason(e.target.value)}
+                  placeholder="Describe your reason..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #dee2e6",
+                    fontSize: "14px",
+                    minHeight: "80px",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => {
+                  setShowNoShowModal(false);
+                  setNoShowBooking(null);
+                }}
+                style={{
+                  padding: "10px 20px",
+                  border: "1px solid #dee2e6",
+                  borderRadius: "8px",
+                  backgroundColor: "white",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitNoShow}
+                disabled={noShowLoading}
+                style={{
+                  padding: "10px 20px",
+                  border: "none",
+                  borderRadius: "8px",
+                  backgroundColor: "#ff6b35",
+                  color: "white",
+                  cursor: noShowLoading ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  opacity: noShowLoading ? 0.7 : 1,
+                }}
+              >
+                {noShowLoading ? "Submitting..." : "Confirm No-Show"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};;
+};
 
 export default CommuterMyBookingsPage;

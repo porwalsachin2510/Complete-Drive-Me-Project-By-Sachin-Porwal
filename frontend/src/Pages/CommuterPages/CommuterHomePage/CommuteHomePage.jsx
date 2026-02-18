@@ -133,24 +133,19 @@ export default function CommuterHomePage() {
     async (params = {}) => {
       try {
         if (!userNationality) {
-          console.log("Nationality missing → routes API blocked");
+          console.log("Nationality missing -> routes API blocked");
           return;
         }
 
         setLoading(true);
 
+        // Check if user has a valid auth token
         const token =
           localStorage.getItem("token") ||
           document.cookie
             .split("; ")
             .find((row) => row.startsWith("token="))
             ?.split("=")[1];
-
-        if (!token) {
-          console.error("No authentication token found");
-          setLoading(false);
-          return;
-        }
 
         const queryParams = new URLSearchParams();
         if (params.pickupLocation)
@@ -170,21 +165,19 @@ export default function CommuterHomePage() {
           );
         if (userNationality) {
           queryParams.append("nationality", userNationality);
-          console.log("Fetching routes for nationality:", userNationality);
         }
 
-        const response = await api.get(
-          `/commute/search?${queryParams.toString()}`,
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+        // Use public search if not authenticated, otherwise use authenticated search
+        const endpoint = token
+          ? `/commute/search?${queryParams.toString()}`
+          : `/commute/public-search?${queryParams.toString()}`;
 
-        console.log("myresponse.data", response.data.routes);
+        const response = await api.get(endpoint, {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        });
 
         if (response.data.success) {
-          console.log("Commuter Search Vehicle", response.data.routes);
           if (params.filterType === "matched") {
             setRoutes(response.data.routes);
           } else {
@@ -195,18 +188,52 @@ export default function CommuterHomePage() {
         console.error("Error fetching routes:", error);
 
         if (error.response?.status === 401) {
-          alert("Session expired. Please login again.");
-          navigate("/login");
+          // Token expired or invalid - try public search as fallback
+          try {
+            const queryParams = new URLSearchParams();
+            if (params.pickupLocation) queryParams.append("pickupLocation", params.pickupLocation);
+            if (params.dropoffLocation) queryParams.append("dropoffLocation", params.dropoffLocation);
+            if (params.filterType) queryParams.append("filterType", params.filterType);
+            if (params.selectedDays) queryParams.append("selectedDays", JSON.stringify(params.selectedDays));
+            if (userNationality) queryParams.append("nationality", userNationality);
+
+            const fallbackResponse = await api.get(`/commute/public-search?${queryParams.toString()}`);
+            if (fallbackResponse.data.success) {
+              if (params.filterType === "matched") {
+                setRoutes(fallbackResponse.data.routes);
+              } else {
+                setFirstLoadRoutes(fallbackResponse.data.routes);
+              }
+            }
+          } catch (fallbackError) {
+            console.error("Public search fallback also failed:", fallbackError);
+          }
         } else if (error.response?.status === 403) {
-          alert("Access denied. Only commuters can access this page.");
-        } else {
-          alert("Failed to fetch routes. Please try again.");
+          // Try public search for non-commuter users
+          try {
+            const queryParams = new URLSearchParams();
+            if (params.pickupLocation) queryParams.append("pickupLocation", params.pickupLocation);
+            if (params.dropoffLocation) queryParams.append("dropoffLocation", params.dropoffLocation);
+            if (params.filterType) queryParams.append("filterType", params.filterType);
+            if (userNationality) queryParams.append("nationality", userNationality);
+
+            const fallbackResponse = await api.get(`/commute/public-search?${queryParams.toString()}`);
+            if (fallbackResponse.data.success) {
+              if (params.filterType === "matched") {
+                setRoutes(fallbackResponse.data.routes);
+              } else {
+                setFirstLoadRoutes(fallbackResponse.data.routes);
+              }
+            }
+          } catch (fallbackError) {
+            console.error("Public search fallback also failed:", fallbackError);
+          }
         }
       } finally {
         setLoading(false);
       }
     },
-    [navigate, userNationality]
+    [userNationality]
   );
 
   useEffect(() => {

@@ -27,8 +27,8 @@ export default function HomePage() {
       {/* CORPORATE USER */}
       {userRole === "CORPORATE" && <ServiceSelection />}
 
-      {/* COMMUTER / GUEST */}
-      {userRole === "COMMUTER" && <CommuterHomePage />}
+      {/* COMMUTER / GUEST (unauthenticated users see the search page too) */}
+      {(userRole === "COMMUTER" || !userRole) && <CommuterHomePage />}
 
       {/* B2B_PARTNER */}
       {userRole === "B2B_PARTNER" && <B2B_PartnerProfilePage />}

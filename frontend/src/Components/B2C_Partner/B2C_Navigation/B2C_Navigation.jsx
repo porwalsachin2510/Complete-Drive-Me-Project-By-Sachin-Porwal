@@ -3,10 +3,12 @@ import "./b2c_navigation.css";
 
 function B2C_Navigation({ b2cactiveTab, setB2CActiveTab }) {
   const tabs = [
+    { id: "overview", label: "Overview", icon: "overview" },
     { id: "trips", label: "My Trips", icon: "trips" },
     { id: "earnings", label: "Earnings", icon: "earnings" },
     { id: "vehicles", label: "Fleet", icon: "vehicles" },
     { id: "routes", label: "Routes", icon: "routes" },
+    { id: "route-requests", label: "Requests", icon: "requests" },
     { id: "account", label: "Account", icon: "account" },
   ];
 
@@ -75,6 +77,23 @@ function B2C_Navigation({ b2cactiveTab, setB2CActiveTab }) {
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M3 7L9 3L15 7V14C15 14.5523 14.5523 15 14 15H4C3.44772 15 3 14.5523 3 14V7Z" stroke="currentColor" strokeWidth="1.5" />
             <path d="M7 15V9H11V15" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        );
+      case "overview":
+        return (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="10" y="2" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="2" y="10" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="10" y="10" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        );
+      case "requests":
+        return (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M3 3H15V13H7L3 16V3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M7 7H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M7 10H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         );
       case "account":

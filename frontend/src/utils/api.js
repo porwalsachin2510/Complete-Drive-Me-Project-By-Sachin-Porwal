@@ -28,8 +28,14 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            localStorage.removeItem("token")
-            window.location.href = "/login"
+            // Only redirect to login if there was actually a token (expired session)
+            // Don't redirect for unauthenticated public requests
+            const hadToken = localStorage.getItem("token")
+            const isPublicEndpoint = error.config?.url?.includes("public")
+            if (hadToken && !isPublicEndpoint) {
+                localStorage.removeItem("token")
+                window.location.href = "/login"
+            }
         }
         return Promise.reject(error)
     },

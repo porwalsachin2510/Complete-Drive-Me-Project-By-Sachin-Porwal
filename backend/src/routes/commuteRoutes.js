@@ -1,20 +1,19 @@
-// START: NEW ROUTE FILE FOR COMMUTE SEARCH
 import express from "express"
-import { verifyToken } from "../middleware/auth.js"
+import { verifyToken, optionalAuth } from "../middleware/auth.js"
 import { checkCommuterRole } from "../middleware/auth.js"
-import { searchCommuteRoutes } from "../controllers/commuteSearchController.js"
+import { searchCommuteRoutes, publicSearchRoutes } from "../controllers/commuteSearchController.js"
 
 const router = express.Router()
 
-// ROUTE: GET /api/commute/search
-// DESCRIPTION: SEARCH COMMUTE ROUTES FOR COMMUTERS
-// ACCESS: PROTECTED - COMMUTER ROLE ONLY
+// PUBLIC: Search B2C routes without login (for landing page)
+router.get("/public-search", publicSearchRoutes)
+
+// PROTECTED: Search commute routes for authenticated commuters (includes corporate routes)
 router.get(
     "/search",
-    verifyToken, // FIRST: AUTHENTICATE USER
-    checkCommuterRole, // SECOND: CHECK IF USER IS COMMUTER
-    searchCommuteRoutes, // THIRD: EXECUTE CONTROLLER
+    verifyToken,
+    checkCommuterRole,
+    searchCommuteRoutes,
 )
 
 export default router
-// END: NEW ROUTE FILE FOR COMMUTE SEARCH

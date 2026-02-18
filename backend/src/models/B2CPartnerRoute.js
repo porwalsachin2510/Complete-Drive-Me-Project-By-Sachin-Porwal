@@ -66,6 +66,19 @@ const b2cPartnerRouteSchema = new mongoose.Schema(
             },
         },
         stopPoints: [stopPointSchema],
+        tripType: {
+            type: String,
+            enum: ["One Way", "Round Trip"],
+            default: "One Way",
+        },
+        availableDays: [{
+            type: String,
+            enum: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+        }],
+        startTime: {
+            type: String,
+            default: "",
+        },
         description: {
             type: String,
         },

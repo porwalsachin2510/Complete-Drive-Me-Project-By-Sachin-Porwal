@@ -199,6 +199,35 @@ export const commuterBookingAPI = {
       console.error("Error adding funds:", error.message);
       throw error;
     }
+  },
+
+  /**
+   * Mark No-Show for a trip
+   * Backend: POST /api/no-show/mark (noShowRoutes.js)
+   */
+  markNoShow: async (noShowData) => {
+    try {
+      const response = await api.post(`/no-show/mark`, noShowData);
+      return response.data;
+    } catch (error) {
+      console.error("Error marking no-show:", error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get passenger no-show history
+   * Backend: GET /api/no-show/passenger (noShowRoutes.js)
+   */
+  getNoShowHistory: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const response = await api.get(`/no-show/my-no-shows?${queryParams}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching no-show history:", error.message);
+      throw error;
+    }
   }
 };
 
