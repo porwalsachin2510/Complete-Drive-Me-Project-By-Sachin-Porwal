@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
+import api from "../../../utils/api";
 import "./corporateemployeedashboard.css";
 import io from "socket.io-client";
 import {
@@ -57,7 +58,7 @@ export default function CorporateEmployeeDashboard() {
         dispatch(fetchEmployeeTrips({ employeeId: userId, date: dateStr })),
         dispatch(fetchAssignedRoute(userId)),
         dispatch(fetchNoShowHistory()),
-        dispatch(fetchNotifications())
+        dispatch(fetchNotifications(userId))
       ]);
 
       setLoading(false);

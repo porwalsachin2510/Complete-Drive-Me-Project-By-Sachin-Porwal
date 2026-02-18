@@ -133,9 +133,9 @@ export const rateTrip = async (tripId, rating, review) => {
 };
 
 // Get notifications
-export const getNotifications = async () => {
+export const getNotifications = async (userId) => {
   try {
-    const response = await api.get("/notifications");
+    const response = await api.get(`/notifications/user/${userId}`);
     return response.data;
   } catch (error) {
     console.error("[v0] Error fetching notifications:", error);
@@ -146,7 +146,7 @@ export const getNotifications = async () => {
 // Mark notification as read
 export const markNotificationRead = async (notificationId) => {
   try {
-    const response = await api.put(
+    const response = await api.patch(
       `/notifications/${notificationId}/read`
     );
     return response.data;

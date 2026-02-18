@@ -51,9 +51,9 @@ export const fetchNoShowHistory = createAsyncThunk(
 
 export const fetchNotifications = createAsyncThunk(
   "corporateEmployee/fetchNotifications",
-  async (_, { rejectWithValue }) => {
+  async (userId, { rejectWithValue }) => {
     try {
-      const response = await corporateEmployeeAPI.getNotifications();
+      const response = await corporateEmployeeAPI.getNotifications(userId);
       return response.data;
     } catch (error) {
       return rejectWithValue(

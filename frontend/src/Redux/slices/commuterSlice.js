@@ -76,9 +76,9 @@ export const fetchTravelHistory = createAsyncThunk(
 
 export const fetchNotifications = createAsyncThunk(
   "commuter/fetchNotifications",
-  async (_, { rejectWithValue }) => {
+  async (userId, { rejectWithValue }) => {
     try {
-      const response = await commuterAPI.getNotifications();
+      const response = await commuterAPI.getNotifications(userId);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Failed to fetch notifications");

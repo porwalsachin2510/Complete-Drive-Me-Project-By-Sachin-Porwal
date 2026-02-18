@@ -89,7 +89,7 @@ export const corporateEmployeeAPI = {
    */
   getNoShowHistory: async () => {
     try {
-      const response = await api.get(`/no-show/my-history`);
+      const response = await api.get(`/no-show/my-no-shows`);
       return response.data;
     } catch (error) {
       console.error("[v0] Error fetching no-show history:", error.message);
@@ -99,11 +99,12 @@ export const corporateEmployeeAPI = {
 
   /**
    * Get all notifications for employee
+   * @param {string} userId - User ID
    * @returns {Promise} - List of notifications
    */
-  getNotifications: async () => {
+  getNotifications: async (userId) => {
     try {
-      const response = await api.get(`/notifications`);
+      const response = await api.get(`/notifications/user/${userId}`);
       return response.data;
     } catch (error) {
       console.error("[v0] Error fetching notifications:", error.message);
