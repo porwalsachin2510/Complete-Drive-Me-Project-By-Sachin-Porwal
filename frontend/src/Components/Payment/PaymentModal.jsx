@@ -93,14 +93,13 @@ function PaymentModal({ isOpen, onClose, amount, currency, onPaymentSuccess }) {
     try {
       // Create payment session with backend
       const response = await api.post('/wallet/create-payment-session', {
-          amount: parseFloat(amount),
-          paymentMethod: selectedMethod,
-          currency: currency,
-          paymentDetails: formData
-        })
+        amount: parseFloat(amount),
+        paymentMethod: selectedMethod,
+        currency: currency,
+        paymentDetails: formData
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         // Redirect to payment gateway

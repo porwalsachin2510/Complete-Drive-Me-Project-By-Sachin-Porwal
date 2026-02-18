@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useSelector } from "react-redux";
 import api from "../../../utils/api";
+import { SocketContext } from "../../../context/SocketContext";
 import "./driverlocationtracking.css";
 
 function DriverLocationTracking() {
   const { user } = useSelector((state) => state.auth);
+  const { socket } = useContext(SocketContext);
   const [currentTrip, setCurrentTrip] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [location, setLocation] = useState({
@@ -21,10 +23,16 @@ function DriverLocationTracking() {
 
   useEffect(() => {
     fetchActiveTrip();
+
+    // Join driver room for socket events
+    if (socket && user?._id) {
+      socket.emit('join-driver-room', user._id);
+    }
+
     return () => {
       stopLocationTracking();
     };
-  }, []);
+  }, [socket, user]);
 
   const fetchActiveTrip = async () => {
     try {
@@ -72,8 +80,6 @@ function DriverLocationTracking() {
       locationIntervalRef.current = setInterval(() => {
         sendLocationToServer();
       }, 10000); // Send location every 10 seconds
-
-      console.log("Location tracking started");
     } catch (error) {
       console.error("Error starting location tracking:", error);
       alert("Failed to start location tracking.");
@@ -92,7 +98,6 @@ function DriverLocationTracking() {
     }
 
     setIsTracking(false);
-    console.log("Location tracking stopped");
   };
 
   const getCurrentPosition = () => {
@@ -149,6 +154,7 @@ function DriverLocationTracking() {
     }
 
     try {
+      // Send via REST API for persistence
       await api.post('/driver/update-location', {
         tripId: currentTrip._id,
         latitude: location.latitude,
@@ -157,6 +163,19 @@ function DriverLocationTracking() {
         speed: location.speed,
         timestamp: new Date().toISOString(),
       });
+
+      // Also emit via socket for real-time tracking by passengers
+      if (socket) {
+        socket.emit('driver-location-update', {
+          driverId: user?._id,
+          location: {
+            lat: location.latitude,
+            lng: location.longitude,
+          },
+          timestamp: new Date().toISOString(),
+          bookingId: currentTrip.bookingId || currentTrip._id,
+        });
+      }
     } catch (error) {
       console.error("Error sending location to server:", error);
     }
@@ -169,10 +188,18 @@ function DriverLocationTracking() {
     }
 
     try {
-      const response = await api.post(`/trips/${currentTrip._id}/start`);
+      const response = await api.post(`/driver/trips/${currentTrip._id}/start`);
       if (response.data.success) {
         setTripStatus("started");
         await startLocationTracking();
+
+        // Emit socket event for real-time notification to passengers
+        if (socket) {
+          socket.emit('start-trip', {
+            bookingId: currentTrip.bookingId || currentTrip._id,
+            driverId: user?._id,
+          });
+        }
       }
     } catch (error) {
       console.error("Error starting trip:", error);
@@ -187,10 +214,18 @@ function DriverLocationTracking() {
     }
 
     try {
-      const response = await api.post(`/trips/${currentTrip._id}/complete`);
+      const response = await api.post(`/driver/trips/${currentTrip._id}/complete`);
       if (response.data.success) {
         setTripStatus("completed");
         stopLocationTracking();
+
+        // Emit socket event for real-time notification to passengers
+        if (socket) {
+          socket.emit('complete-trip', {
+            bookingId: currentTrip.bookingId || currentTrip._id,
+            driverId: user?._id,
+          });
+        }
       }
     } catch (error) {
       console.error("Error completing trip:", error);
@@ -212,7 +247,7 @@ function DriverLocationTracking() {
     }
 
     try {
-      const response = await api.post(`/trips/${currentTrip._id}/emergency`, {
+      const response = await api.post(`/driver/trips/${currentTrip._id}/emergency`, {
         emergencyType,
         message,
         location: {

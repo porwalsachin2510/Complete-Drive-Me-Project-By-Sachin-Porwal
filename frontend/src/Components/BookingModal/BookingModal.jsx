@@ -25,15 +25,6 @@ import {
 import "./bookingmodal.css";
 
 const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
-  console.log("[Frontend] BookingModal component mounted with props:", {
-    route: route,
-    isOpen: isOpen,
-    isCorporate: isCorporate,
-    routeId: route?._id,
-    routeFromLocation: route?.fromLocation,
-    routeToLocation: route?.toLocation
-  });
-
   const dispatch = useDispatch();
   const { loading, error, currentBooking, bookingCreated, paymentData } =
     useSelector((state) => state.booking);
@@ -103,29 +94,12 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
 
   // Fetch real-time seat availability for trips
   const fetchTripSeatAvailability = async () => {
-    console.log("[Frontend] fetchTripSeatAvailability called, route._id:", route?._id);
-    console.log("[Frontend] fetchTripSeatAvailability called, route.routeId:", route?.routeId);
-    
-    // Use routeId instead of _id
     const routeIdentifier = route?._id || route?.routeId;
-    
-    if (!routeIdentifier) {
-      console.log("[Frontend] No route ID, skipping seat availability fetch");
-      return;
-    }
-    
-    console.log("[Frontend] Fetching seat availability for route:", routeIdentifier);
-    
+    if (!routeIdentifier) return;
+
     try {
-      // Use PUBLIC endpoint for commuters
       const response = await api.get(`/b2c-partner/public/routes/${routeIdentifier}/trips/seat-availability`);
-      
-      console.log("[Frontend] Seat availability API response status:", response.status);
-      
       const data = response.data;
-      console.log("Trip seat availability API Response:", data);
-      console.log("Seat availability object:", data.seatAvailability);
-      console.log("Available trip keys:", Object.keys(data.seatAvailability || {}));
       setTripSeatAvailability(data.seatAvailability || {});
     } catch (error) {
       console.error("Error fetching seat availability:", error);
@@ -134,43 +108,25 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
 
   // Fetch seat availability when schedule data loads
   useEffect(() => {
-    console.log("[Frontend] useEffect for seat availability triggered");
-    console.log("[Frontend] scheduleData:", scheduleData);
-    console.log("[Frontend] route._id:", route?._id);
-    console.log("[Frontend] route.routeId:", route?.routeId);
-    console.log("[Frontend] user?.token:", user?.token ? "exists" : "missing");
-    
     if (scheduleData) {
-      console.log("[Frontend] Schedule data exists, fetching seat availability");
       fetchTripSeatAvailability();
-    } else {
-      console.log("[Frontend] No schedule data, skipping seat availability fetch");
     }
   }, [scheduleData, route?._id, route?.routeId, user?.token]);
 
   // Also fetch seat availability when route changes (immediate trigger)
   useEffect(() => {
-    console.log("[Frontend] Route change useEffect triggered");
-    console.log("[Frontend] route:", route);
     const routeIdentifier = route?._id || route?.routeId;
     if (routeIdentifier) {
-      console.log("[Frontend] Route exists, fetching seat availability immediately");
       fetchTripSeatAvailability();
     }
   }, [route]);
 
-  // Manual debug trigger - check every 5 seconds
+  // Retry fetch if seat data not available on initial load
   useEffect(() => {
-    const interval = setInterval(() => {
-      const routeIdentifier = route?._id || route?.routeId;
-      console.log("[Frontend] Manual debug check - route:", routeIdentifier);
-      if (routeIdentifier && !Object.keys(tripSeatAvailability).length) {
-        console.log("[Frontend] No seat data available, forcing fetch");
-        fetchTripSeatAvailability();
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
+    const routeIdentifier = route?._id || route?.routeId;
+    if (routeIdentifier && !Object.keys(tripSeatAvailability).length) {
+      fetchTripSeatAvailability();
+    }
   }, [route, tripSeatAvailability]);
 
   const paymentMethodRef = useRef(paymentMethod);
@@ -474,7 +430,7 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       console.error("Corporate booking error:", err);
       setIsProcessing(false);
     }
-  };;
+  };
 
   const handleClose = () => {
     dispatch(clearBookingData());
@@ -603,9 +559,7 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
                                 const availableSeats = seatInfo?.availableSeats || route.availableSeats || route.totalSeats || 35;
                                 const totalSeats = seatInfo?.totalSeats || route.totalSeats || 35;
                                 
-                                // Debug logging
-                                console.log(`[Frontend] Trip Key: ${tripKey}, Available: ${availableSeats}, Seat Info:`, seatInfo);
-                                
+  
                                 // Check if enough seats are available for selected number
                                 const hasEnoughSeats = availableSeats >= numberOfSeats;
                                 const seatStatus = hasEnoughSeats ? 'available' : 'limited';
@@ -694,9 +648,7 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
                                 const availableSeats = seatInfo?.availableSeats || route.availableSeats || route.totalSeats || 35;
                                 const totalSeats = seatInfo?.totalSeats || route.totalSeats || 35;
                                 
-                                // Debug logging
-                                console.log(`[Frontend] Return Trip Key: ${tripKey}, Available: ${availableSeats}, Seat Info:`, seatInfo);
-                                
+  
                                 // Check if enough seats are available for selected number
                                 const hasEnoughSeats = availableSeats >= numberOfSeats;
                                 const seatStatus = hasEnoughSeats ? 'available' : 'limited';

@@ -23,9 +23,11 @@ function WalletPage() {
     country: user?.country || "UAE"
   });
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   useEffect(() => {
     dispatch(getWalletBalance());
-    dispatch(getWalletTransactions());
+    dispatch(getWalletTransactions({ page: 1, limit: 20 }));
   }, [dispatch]);
 
   const handleAddFunds = () => {
@@ -33,14 +35,16 @@ function WalletPage() {
       alert("Please enter a valid amount");
       return;
     }
-    setShowAddFundsModal(true);
+    // Close the amount entry modal and open the payment modal
+    setShowAddFundsModal(false);
+    setShowPaymentModal(true);
   };
 
   const handlePaymentSuccess = () => {
-    setShowAddFundsModal(false);
+    setShowPaymentModal(false);
     setAddFundsAmount("");
     dispatch(getWalletBalance());
-    dispatch(getWalletTransactions());
+    dispatch(getWalletTransactions({ page: 1, limit: 20 }));
   };
 
   const handleWithdraw = async (e) => {
@@ -48,14 +52,15 @@ function WalletPage() {
     try {
       await dispatch(withdrawFromWallet(withdrawForm)).unwrap();
       setShowWithdrawModal(false);
-      setWithdrawForm({ 
-        amount: "", 
+      setWithdrawForm({
+        amount: "",
         iban: "",
         bankCode: "",
         accountHolderName: "",
         country: user?.country || "UAE"
       });
       dispatch(getWalletBalance());
+      dispatch(getWalletTransactions({ page: 1, limit: 20 }));
     } catch (error) {
       console.error("Withdraw error:", error);
     }
@@ -294,9 +299,9 @@ function WalletPage() {
 
       {/* Payment Modal */}
       <PaymentModal
-        isOpen={showAddFundsModal && addFundsAmount}
+        isOpen={showPaymentModal && addFundsAmount}
         onClose={() => {
-          setShowAddFundsModal(false);
+          setShowPaymentModal(false);
           setAddFundsAmount("");
         }}
         amount={addFundsAmount}

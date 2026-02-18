@@ -53,11 +53,15 @@ export const addFundsToWallet = createAsyncThunk(
 // Withdraw funds from wallet
 export const withdrawFromWallet = createAsyncThunk(
     "wallet/withdrawFromWallet",
-    async ({ amount, bankAccount }, { rejectWithValue }) => {
+    async ({ amount, iban, bankCode, accountHolderName, currency = "KWD", country = "KW" }, { rejectWithValue }) => {
         try {
             const response = await api.post("/wallet/withdraw", {
-                amount,
-                bankAccount
+                amount: parseFloat(amount),
+                iban,
+                bankCode,
+                accountHolderName,
+                currency,
+                country
             })
             return response.data
         } catch (error) {

@@ -18,15 +18,6 @@ const LiveTracking = ({
   const [distance, setDistance] = useState(null);
   const [eta, setEta] = useState(null);
 
-    console.log("window.google", window.google);
-    console.log(
-      driverLocation,
-      passangerLocation,
-      destination,
-      driverName,
-      vehicleModel,
-      driverPhone,
-    );
   // Initialize Google Map
   useEffect(() => {
     if (!window.google) {

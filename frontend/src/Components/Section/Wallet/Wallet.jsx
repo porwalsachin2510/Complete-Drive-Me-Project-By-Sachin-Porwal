@@ -18,10 +18,10 @@ export default function Wallet() {
     try {
       setLoading(true);
       const response = await api.get('/wallet/balance');
-      setWalletData(response.data.wallet);
+      setWalletData(response.data.data?.wallet || response.data.wallet);
       
       const transactionsResponse = await api.get('/wallet/transactions');
-      setTransactions(transactionsResponse.data.transactions || []);
+      setTransactions(transactionsResponse.data.data?.transactions || transactionsResponse.data.transactions || []);
     } catch (error) {
       console.error("Error fetching wallet data:", error);
     } finally {
@@ -36,14 +36,22 @@ export default function Wallet() {
     }
 
     try {
-      await api.post('/wallet/add-funds', { amount: parseFloat(addAmount) });
-      alert("Funds added successfully!");
-      setShowAddFunds(false);
-      setAddAmount("");
-      fetchWalletData();
+      // Create a payment session first, then redirect to payment gateway
+      const response = await api.post('/wallet/create-payment-session', {
+        amount: parseFloat(addAmount),
+        paymentMethod: 'card',
+        currency: 'KWD',
+      });
+
+      const data = response.data;
+      if (data.success && data.data?.paymentSession?.paymentUrl) {
+        window.location.href = data.data.paymentSession.paymentUrl;
+      } else {
+        alert("Failed to create payment session. Please try again.");
+      }
     } catch (error) {
       console.error("Error adding funds:", error);
-      alert("Failed to add funds");
+      alert("Failed to add funds. Please try again.");
     }
   };
 

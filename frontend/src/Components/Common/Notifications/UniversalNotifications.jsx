@@ -23,9 +23,6 @@ function UniversalNotifications({ isOpen, onClose }) {
   const { user } = useSelector(state => state.auth)
   const [page, setPage] = useState(1)
 
-  console.log("Universal Notification", notifications);
-
-
   // Fetch notifications on mount and when opened
   useEffect(() => {
     if (isOpen && user?._id) {
@@ -153,9 +150,6 @@ function UniversalNotifications({ isOpen, onClose }) {
     
     const userRole = user?.role
 
-    console.log("userRole my", userRole);
-
-    
     // Filter notifications relevant to user type
     return notifications.filter(notification => {
       // Admin sees all notifications
