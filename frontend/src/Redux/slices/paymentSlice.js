@@ -15,7 +15,6 @@ export const createPayment = createAsyncThunk(
     "payment/createPayment",
     async ({ contractId, paymentMethod, paymentType = "advance", currency }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Creating payment:", { contractId, paymentMethod, paymentType, currency })
             const response = await api.post(`/payments/contracts/${contractId}/payment`, {
                 paymentMethod,
                 paymentType,
@@ -32,7 +31,6 @@ export const verifyPayment = createAsyncThunk(
     "payment/verifyPayment",
     async ({ sessionId, provider }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Verifying payment:", { sessionId, provider })
             const response = await api.get(`/payments/payment/verify?session_id=${sessionId}&provider=${provider}`)
             return response.data
         } catch (error) {

@@ -9,7 +9,7 @@ export const b2bPartnerAPI = {
    */
   getContracts: async () => {
     try {
-      const response = await api.get("/contracts?status=ACTIVE");
+      const response = await api.get("/contracts/fleet/all");
       return response.data;
     } catch (error) {
       console.error("[v0] Error fetching contracts:", error.message);
@@ -85,7 +85,7 @@ export const b2bPartnerAPI = {
    */
   getFleet: async () => {
     try {
-      const response = await api.get("/vehicles");
+      const response = await api.get("/vehicles/my/vehicles");
       return response.data;
     } catch (error) {
       console.error("[v0] Error fetching fleet:", error.message);
@@ -114,7 +114,7 @@ export const b2bPartnerAPI = {
    */
   getRoutes: async (contractId) => {
     try {
-      const response = await api.get(`/contracts/${contractId}/routes`);
+      const response = await api.get(`/contracts/routes/${contractId}`);
       return response.data;
     } catch (error) {
       console.error("[v0] Error fetching routes:", error.message);

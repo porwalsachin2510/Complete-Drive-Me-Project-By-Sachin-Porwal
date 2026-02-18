@@ -42,16 +42,12 @@ export const uploadContractDocument = createAsyncThunk(
     "contract/uploadDocument",
     async ({ contractId, formData }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Redux: Uploading contract document for contract:", contractId)
-            console.log("[v0] Redux: FormData entries:", Array.from(formData.entries()))
-
             const response = await api.post(`/contracts/${contractId}/upload-document`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
             })
 
-            console.log("[v0] Redux: Upload successful:", response.data)
             return response.data
         } catch (error) {
             console.error("[v0] Redux: Upload error:", error)
@@ -64,7 +60,6 @@ export const createPaymentSchedules = createAsyncThunk(
     "contract/createPaymentSchedules",
     async ({ contractId, advancePaymentDueDate, securityDepositDueDate, installmentPlan }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Creating payment schedules for contract:", contractId)
             const response = await api.post(`/payment-schedules/contracts/${contractId}/schedules`, {
                 advancePaymentDueDate,
                 securityDepositDueDate,
@@ -83,8 +78,6 @@ export const signContract = createAsyncThunk(
     async ({ contractId, signature, ipAddress }, { rejectWithValue }) => {
         try {
             const response = await api.post(`/contracts/${contractId}/sign`, { signature, ipAddress })
-
-            console.log("[v0] Redux: Contract signed successfully:", response.data)
             return response.data
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to sign contract")
@@ -263,11 +256,9 @@ const contractSlice = createSlice({
             .addCase(createPaymentSchedules.fulfilled, (state, action) => {
                 state.loading = false
                 // Schedule creation successful
-                console.log("[v0] Payment schedules created successfully")
             })
             .addCase(createPaymentSchedules.rejected, (state, action) => {
                 state.loading = false
-                console.warn("[v0] Failed to create payment schedules:", action.payload)
             })
         
             .addCase(approveContract.pending, (state) => {

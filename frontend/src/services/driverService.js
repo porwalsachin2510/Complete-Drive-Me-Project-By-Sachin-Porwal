@@ -87,10 +87,10 @@ export const completeTrip = async (tripId, completionData) => {
 // Update location (real-time tracking)
 export const updateLocation = async (latitude, longitude) => {
   try {
-    const response = await api.post("/driver/location", {
+    const response = await api.post("/driver/update-location", {
       latitude,
       longitude,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     });
     return response.data;
   } catch (error) {

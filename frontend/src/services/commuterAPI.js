@@ -58,16 +58,17 @@ export const getWalletInfo = async () => {
   }
 };
 
-// Add money to wallet
+// Add money to wallet via payment session
 export const addWalletMoney = async (amount, paymentMethod) => {
   try {
-    const response = await api.post("/wallet/add-money", {
+    const response = await api.post("/wallet/create-payment-session", {
       amount,
-      paymentMethod
+      paymentMethod,
+      currency: "KWD"
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error adding money to wallet:", error);
+    console.error("Error adding money to wallet:", error);
     throw error;
   }
 };

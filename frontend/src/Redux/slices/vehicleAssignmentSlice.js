@@ -30,7 +30,7 @@ export const getContractForAssignment = createAsyncThunk(
     "vehicleAssignment/getContractForAssignment",
     async (contractId, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/vehicle-assignment/contract/${contractId}`)
+            const response = await api.get(`/vehicle-assignments/contract/${contractId}`)
             return response.data
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to fetch contract")

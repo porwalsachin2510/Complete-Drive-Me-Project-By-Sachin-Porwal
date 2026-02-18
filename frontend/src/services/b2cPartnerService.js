@@ -71,24 +71,24 @@ export const getDriverDetails = async (driverId) => {
   }
 };
 
-// Get vehicles
+// Get vehicles (fleet)
 export const getVehicles = async () => {
   try {
-    const response = await api.get("/b2c-partner/vehicles");
+    const response = await api.get("/b2c-partner/fleet");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching vehicles:", error);
+    console.error("Error fetching vehicles:", error);
     throw error;
   }
 };
 
-// Get vehicle details
+// Get vehicle details by ID
 export const getVehicleDetails = async (vehicleId) => {
   try {
-    const response = await api.get(`/b2c-partner/vehicles/${vehicleId}`);
+    const response = await api.get(`/vehicles/${vehicleId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching vehicle details:", error);
+    console.error("Error fetching vehicle details:", error);
     throw error;
   }
 };

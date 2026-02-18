@@ -57,35 +57,24 @@ export const getEmployeeRoutes = async () => {
   }
 };
 
-// Create new route
-export const createRoute = async (routeData) => {
+// Get contract routes
+export const getContractRoutes = async (contractId) => {
   try {
-    const response = await api.post("/corporate/routes", routeData);
+    const response = await api.get(`/contracts/routes/${contractId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error creating route:", error);
+    console.error("Error fetching contract routes:", error);
     throw error;
   }
 };
 
-// Update route
-export const updateRoute = async (routeId, routeData) => {
+// Assign route to vehicle for a contract
+export const assignRouteToVehicle = async (contractId, assignedVehicleId, routeData) => {
   try {
-    const response = await api.put(`/corporate/routes/${routeId}`, routeData);
+    const response = await api.post(`/contracts/assign-route/${contractId}/${assignedVehicleId}`, routeData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating route:", error);
-    throw error;
-  }
-};
-
-// Delete route
-export const deleteRoute = async (routeId) => {
-  try {
-    const response = await api.delete(`/corporate/routes/${routeId}`);
-    return response.data;
-  } catch (error) {
-    console.error("[v0] Error deleting route:", error);
+    console.error("Error assigning route to vehicle:", error);
     throw error;
   }
 };
@@ -163,42 +152,28 @@ export const assignEmployeesToTrip = async (tripId, employeeIds) => {
   }
 };
 
-// Mark attendance
-export const markAttendance = async (tripId, attendanceData) => {
-  try {
-    const response = await api.post(
-      `/corporate/trips/${tripId}/mark-attendance`,
-      attendanceData
-    );
-    return response.data;
-  } catch (error) {
-    console.error("[v0] Error marking attendance:", error);
-    throw error;
-  }
-};
-
-// Get attendance report
+// Get employee attendance report
 export const getAttendanceReport = async (filters = {}) => {
   try {
-    const response = await api.get("/corporate/attendance-report", {
+    const response = await api.get("/corporate-employees/attendance", {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching attendance report:", error);
+    console.error("Error fetching attendance report:", error);
     throw error;
   }
 };
 
-// Get contracts
+// Get contracts for corporate owner
 export const getContracts = async (status = "") => {
   try {
-    const response = await api.get("/corporate/contracts", {
+    const response = await api.get("/contracts/corporate/all", {
       params: { status }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching contracts:", error);
+    console.error("Error fetching contracts:", error);
     throw error;
   }
 };
@@ -206,45 +181,46 @@ export const getContracts = async (status = "") => {
 // Get contract details
 export const getContractDetails = async (contractId) => {
   try {
-    const response = await api.get(`/corporate/contracts/${contractId}`);
+    const response = await api.get(`/contracts/${contractId}`);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching contract details:", error);
+    console.error("Error fetching contract details:", error);
     throw error;
   }
 };
 
-// Get quotations
+// Get quotations for corporate owner
 export const getQuotations = async () => {
   try {
-    const response = await api.get("/corporate/quotations");
+    const response = await api.post("/quotations/getcorporateownerquotations");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching quotations:", error);
+    console.error("Error fetching quotations:", error);
     throw error;
   }
 };
 
-// Accept quotation
-export const acceptQuotation = async (quotationId) => {
+// Accept/reject quotation
+export const acceptQuotation = async (quotationId, decision = "ACCEPTED") => {
   try {
     const response = await api.post(
-      `/corporate/quotations/${quotationId}/accept`
+      `/quotations/corporate/${quotationId}/decision`,
+      { decision }
     );
     return response.data;
   } catch (error) {
-    console.error("[v0] Error accepting quotation:", error);
+    console.error("Error accepting quotation:", error);
     throw error;
   }
 };
 
-// Get requirements
+// Get requirements for corporate
 export const getRequirements = async () => {
   try {
-    const response = await api.get("/corporate/requirements");
+    const response = await api.get("/requirements/corporate");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching requirements:", error);
+    console.error("Error fetching requirements:", error);
     throw error;
   }
 };
@@ -252,10 +228,10 @@ export const getRequirements = async () => {
 // Create requirement
 export const createRequirement = async (requirementData) => {
   try {
-    const response = await api.post("/corporate/requirements", requirementData);
+    const response = await api.post("/requirements", requirementData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error creating requirement:", error);
+    console.error("Error creating requirement:", error);
     throw error;
   }
 };
@@ -263,10 +239,10 @@ export const createRequirement = async (requirementData) => {
 // Get corporate profile
 export const getCorporateProfile = async () => {
   try {
-    const response = await api.get("/corporate/profile");
+    const response = await api.get("/users/profile");
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching corporate profile:", error);
+    console.error("Error fetching corporate profile:", error);
     throw error;
   }
 };
@@ -274,36 +250,36 @@ export const getCorporateProfile = async () => {
 // Update corporate profile
 export const updateCorporateProfile = async (profileData) => {
   try {
-    const response = await api.put("/corporate/profile", profileData);
+    const response = await api.put("/users/profile", profileData);
     return response.data;
   } catch (error) {
-    console.error("[v0] Error updating corporate profile:", error);
+    console.error("Error updating corporate profile:", error);
     throw error;
   }
 };
 
-// Get performance analytics
+// Get route utilization analytics
 export const getPerformanceAnalytics = async (period = "monthly") => {
   try {
-    const response = await api.get("/corporate/analytics", {
+    const response = await api.get("/corporate-employees/route-utilization", {
       params: { period }
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching analytics:", error);
+    console.error("Error fetching analytics:", error);
     throw error;
   }
 };
 
-// Get cost analysis
+// Get cost analysis via finance metrics
 export const getCostAnalysis = async (dateRange = {}) => {
   try {
-    const response = await api.get("/corporate/cost-analysis", {
+    const response = await api.get("/wallet/statement", {
       params: dateRange
     });
     return response.data;
   } catch (error) {
-    console.error("[v0] Error fetching cost analysis:", error);
+    console.error("Error fetching cost analysis:", error);
     throw error;
   }
 };
@@ -314,16 +290,14 @@ export default {
   getAssignedVehicles,
   getVehicleDetails,
   getEmployeeRoutes,
-  createRoute,
-  updateRoute,
-  deleteRoute,
+  getContractRoutes,
+  assignRouteToVehicle,
   bulkUploadEmployees,
   getEmployees,
   getEmployeeDetails,
   updateEmployee,
   deleteEmployee,
   assignEmployeesToTrip,
-  markAttendance,
   getAttendanceReport,
   getContracts,
   getContractDetails,

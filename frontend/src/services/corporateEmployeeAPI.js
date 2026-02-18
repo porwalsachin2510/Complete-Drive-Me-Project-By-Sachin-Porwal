@@ -135,7 +135,7 @@ export const corporateEmployeeAPI = {
    */
   getDailyTrips: async (date, contractId = null) => {
     try {
-      let url = `/corporate/daily-trips?date=${date}`;
+      let url = `/corporate-operations/daily-trips?date=${date}`;
       if (contractId) {
         url += `&contractId=${contractId}`;
       }
@@ -155,7 +155,7 @@ export const corporateEmployeeAPI = {
   assignRouteToVehicle: async (assignmentData) => {
     try {
       const response = await api.post(
-        `/corporate/assign-route-to-vehicle`,
+        `/corporate-operations/assign-route-to-vehicle`,
         assignmentData
       );
       return response.data;
@@ -173,7 +173,7 @@ export const corporateEmployeeAPI = {
   bulkAssignEmployees: async (assignments) => {
     try {
       const response = await api.post(
-        `/corporate/trips/bulk-assign-employees`,
+        `/corporate-operations/trips/bulk-assign-employees`,
         { assignments }
       );
       return response.data;
@@ -191,7 +191,7 @@ export const corporateEmployeeAPI = {
   generateDailyTrips: async (data) => {
     try {
       const response = await api.post(
-        `/corporate/generate-daily-trips`,
+        `/corporate-operations/generate-daily-trips`,
         data
       );
       return response.data;
@@ -208,7 +208,7 @@ export const corporateEmployeeAPI = {
    */
   getRouteAssignmentStatus: async (routeId = null) => {
     try {
-      let url = `/corporate/assigned-routes-status`;
+      let url = `/corporate-operations/assigned-routes-status`;
       if (routeId) {
         url += `?routeId=${routeId}`;
       }

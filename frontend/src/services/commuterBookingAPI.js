@@ -183,25 +183,28 @@ export const commuterBookingAPI = {
    */
   getWallet: async () => {
     try {
-      const response = await api.get(`/wallet`);
+      const response = await api.get(`/wallet/balance`);
       return response.data;
     } catch (error) {
-      console.error("[v0] Error fetching wallet:", error.message);
+      console.error("Error fetching wallet:", error.message);
       throw error;
     }
   },
 
   /**
-   * Add funds to wallet
+   * Add funds to wallet via payment session
    * @param {object} data - {amount, paymentMethod}
-   * @returns {Promise} - Transaction confirmation
+   * @returns {Promise} - Payment session with redirect URL
    */
   addFundsToWallet: async (data) => {
     try {
-      const response = await api.post(`/wallet/add-funds`, data);
+      const response = await api.post(`/wallet/create-payment-session`, {
+        ...data,
+        currency: data.currency || "KWD"
+      });
       return response.data;
     } catch (error) {
-      console.error("[v0] Error adding funds:", error.message);
+      console.error("Error adding funds:", error.message);
       throw error;
     }
   }

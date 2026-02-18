@@ -17,7 +17,7 @@ export const createDriver = createAsyncThunk("driver/createDriver", async (drive
 
 export const createCorporateDriver = createAsyncThunk("driver/createDriver", async (driverData, { rejectWithValue }) => {
     try {
-        const response = await api.post("/corporate/create-corporate-driver", driverData, {
+        const response = await api.post("/b2b/drivers/create-corporate-driver", driverData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },

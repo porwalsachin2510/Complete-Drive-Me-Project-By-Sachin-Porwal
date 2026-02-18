@@ -5,7 +5,6 @@ export const createPaymentSchedules = createAsyncThunk(
     "paymentSchedule/create",
     async ({ contractId, advancePaymentDueDate, securityDepositDueDate, installmentPlan }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Creating payment schedules:", contractId)
             const response = await api.post(`/payment-schedules/contracts/${contractId}/schedules`, {
                 advancePaymentDueDate,
                 securityDepositDueDate,
@@ -22,7 +21,6 @@ export const getPaymentScheduleByContract = createAsyncThunk(
     "paymentSchedule/getByContract",
     async ({ contractId, silent = false }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Fetching payment schedules for contract:", contractId)
             const response = await api.get(`/payment-schedules/contracts/${contractId}/schedules`)
             return { schedules: response.data.schedules || [], silent }
         } catch (error) {
@@ -33,8 +31,7 @@ export const getPaymentScheduleByContract = createAsyncThunk(
 
 export const checkOverduePayments = createAsyncThunk("paymentSchedule/checkOverdue", async (_, { rejectWithValue }) => {
     try {
-        console.log("[v0] Checking overdue payments...")
-        const response = await api.post(`/payment-schedules/check-overdue`, {})
+            const response = await api.post(`/payment-schedules/check-overdue`, {})
         return response.data
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || "Failed to check overdue payments")
@@ -45,7 +42,6 @@ export const markPaymentAsPaid = createAsyncThunk(
     "paymentSchedule/markAsPaid",
     async ({ scheduleId, paymentDetails }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Marking payment as paid:", scheduleId)
             const response = await api.patch(`/payment-schedules/${scheduleId}/mark-paid`, paymentDetails)
             return response.data.schedule
         } catch (error) {
@@ -58,7 +54,6 @@ export const getAllOverduePayments = createAsyncThunk(
     "paymentSchedule/getAllOverdue",
     async (_, { rejectWithValue }) => {
         try {
-            console.log("[v0] Fetching all overdue payments...")
             const response = await api.get(`/payment-schedules/overdue`)
             return response.data.overdueSchedules || []
         } catch (error) {

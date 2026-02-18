@@ -15,7 +15,7 @@ export const requestQuotation = createAsyncThunk(
 
 export const getMyQuotations = createAsyncThunk("quotation/getMyQuotations", async (params, { rejectWithValue }) => {
     try {
-        const response = await api.get("/quotations/my-quotations", { params })
+        const response = await api.post("/quotations/getcorporateownerquotations", params)
         return response.data.data
     } catch (error) {
         return rejectWithValue(error.response?.data?.message || "Failed to fetch quotations")
@@ -136,8 +136,6 @@ export const respondToQuotation = createAsyncThunk(
     "quotation/respondToQuotation",
     async ({ quotationId, status, message, terms, quotedPrice }, { rejectWithValue }) => {
         try {
-            console.log("[v0] Sending quotation response:", { quotationId, status, message, terms, quotedPrice })
-
             const response = await api.post(`/quotations/fleet/${quotationId}/respond`, {
                 status,
                 message,
@@ -145,10 +143,8 @@ export const respondToQuotation = createAsyncThunk(
                 quotedPrice, // Send the entire quotedPrice object
             })
 
-            console.log("[v0] Response received:", response.data)
             return response.data.data
         } catch (error) {
-            console.error("[v0] Error responding to quotation:", error.response?.data)
             return rejectWithValue(error.response?.data?.message || "Failed to respond to quotation")
         }
     },
