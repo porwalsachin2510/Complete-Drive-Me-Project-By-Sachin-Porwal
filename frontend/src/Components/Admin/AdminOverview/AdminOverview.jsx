@@ -131,7 +131,7 @@ function AdminOverview() {
     }
   }
 
-  const formatCurrency = (amount) => {
+  const _formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
       currency: 'AED',

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./earnings.css"
 import api from "../../../../utils/api"
 
@@ -10,11 +10,7 @@ function Earnings() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("monthly")
 
-  useEffect(() => {
-    fetchEarningsData()
-  }, [period])
-
-  const fetchEarningsData = async () => {
+  const fetchEarningsData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/b2c-partner/earnings', {
@@ -27,7 +23,11 @@ function Earnings() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    fetchEarningsData()
+  }, [fetchEarningsData])
 
   if (loading) {
     return (

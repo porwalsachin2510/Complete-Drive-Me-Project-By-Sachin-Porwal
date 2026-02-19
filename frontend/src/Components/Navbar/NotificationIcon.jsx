@@ -24,7 +24,7 @@ function NotificationIcon() {
     if (user && user._id) {
       dispatch(fetchNotifications({ userId: user._id }));
     }
-  }, [dispatch, user && user._id]);
+  }, [dispatch, user]);
 
   useEffect(() => {
     // Setup socket connection for real-time notifications
@@ -76,7 +76,7 @@ function NotificationIcon() {
         socket.off('trip_update');
       }
     };
-  }, [dispatch, user && user._id]);
+  }, [dispatch, user]);
 
   useEffect(() => {
     // Request notification permission

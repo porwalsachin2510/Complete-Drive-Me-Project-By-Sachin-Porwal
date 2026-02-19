@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../../utils/api';
 import './B2B_ClientDashboard.css';
 
@@ -23,11 +23,7 @@ const B2B_ClientDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('30days');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [dateRange]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await api.get(`/b2b-partner/dashboard`, {
         params: { range: dateRange }
@@ -45,7 +41,11 @@ const B2B_ClientDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {

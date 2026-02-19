@@ -28,7 +28,8 @@ function AdminServiceProviders() {
   const fetchProviders = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/admin/b2c/stats')
+      // Fetch B2C stats
+      await api.get('/admin/b2c/stats')
       
       // Get real B2C providers data
       const providersResponse = await api.get('/admin/users?role=B2C_PARTNER')
@@ -134,7 +135,7 @@ function AdminServiceProviders() {
     return matchesSearch && matchesStatus
   })
 
-  const getStatusColor = (status) => {
+  const _getStatusColor = (status) => {
     switch (status) {
       case "ACTIVE": return "#28a745"
       case "SUSPENDED": return "#dc3545"

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import "./alerts.css";
 import api from "../../../utils/api";
@@ -13,13 +13,7 @@ export default function Alerts() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => {
-    if (user?._id) {
-      fetchNotifications();
-    }
-  }, [filterType, user?._id]);
-
-  const fetchNotifications = async (reset = true) => {
+  const fetchNotifications = useCallback(async (reset = true) => {
     try {
       if (reset) {
         setLoading(true);
@@ -57,7 +51,13 @@ export default function Alerts() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [filterType, user?._id, page, notifications.length]);
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, user?._id]);
 
   const markAsRead = async (notificationId) => {
     try {

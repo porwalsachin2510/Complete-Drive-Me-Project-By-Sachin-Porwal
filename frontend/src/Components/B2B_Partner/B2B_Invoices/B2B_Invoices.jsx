@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../../utils/api";
 import "./b2b_invoices.css";
 
@@ -8,11 +8,7 @@ export default function B2B_Invoices() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [filter]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -27,7 +23,11 @@ export default function B2B_Invoices() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const getStatusClass = (status) => {
     const s = (status || "").toLowerCase();

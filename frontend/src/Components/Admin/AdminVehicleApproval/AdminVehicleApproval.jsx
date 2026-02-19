@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../../utils/api";
 import "./adminvehicleapproval.css";
 
@@ -15,11 +15,7 @@ function AdminVehicleApproval() {
     total: 0,
   });
 
-  useEffect(() => {
-    fetchPendingVehicles();
-  }, [pagination.page]);
-
-  const fetchPendingVehicles = async () => {
+  const fetchPendingVehicles = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(
@@ -40,7 +36,11 @@ function AdminVehicleApproval() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    fetchPendingVehicles();
+  }, [fetchPendingVehicles]);
 
   const approveVehicle = async (vehicleId) => {
     try {

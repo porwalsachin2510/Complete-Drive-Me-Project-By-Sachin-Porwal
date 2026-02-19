@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import B2B_BarChart from "../B2B_Common/B2B_BarChart/B2B_BarChart"
 import B2B_LineChart from "../B2B_Common/B2B_LineChart/B2B_LineChart"
 import "./b2b_analytics.css"
@@ -11,11 +11,7 @@ function B2B_Analytics() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("monthly")
 
-  useEffect(() => {
-    fetchAnalyticsData()
-  }, [period])
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/b2b-partner/analytics', {
@@ -27,7 +23,11 @@ function B2B_Analytics() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [fetchAnalyticsData])
 
   if (loading) {
     return (

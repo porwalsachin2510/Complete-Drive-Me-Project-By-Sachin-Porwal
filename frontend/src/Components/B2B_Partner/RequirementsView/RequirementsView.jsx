@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../../utils/api";
 import "./RequirementsView.css";
 
@@ -53,11 +53,7 @@ function RequirementsView() {
     validUntil: ""
   });
 
-  useEffect(() => {
-    fetchRequirements();
-  }, [currentPage, searchTerm, filterVehicleType, filterLocation]);
-
-  const fetchRequirements = async () => {
+  const fetchRequirements = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/requirements/open', {
@@ -76,7 +72,11 @@ function RequirementsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, filterVehicleType, filterLocation]);
+
+  useEffect(() => {
+    fetchRequirements();
+  }, [fetchRequirements]);
 
   const handleCreateQuotation = (requirement) => {
     setSelectedRequirement(requirement);

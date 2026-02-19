@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "../../../utils/api";
 import "./adminsettlement.css";
 
@@ -19,11 +19,7 @@ function AdminSettlement() {
   // eslint-disable-next-line no-unused-vars
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    fetchSettlements();
-  }, [pagination.page, filter]);
-
-  const fetchSettlements = async () => {
+  const fetchSettlements = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(
@@ -44,7 +40,11 @@ function AdminSettlement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    fetchSettlements();
+  }, [fetchSettlements]);
 
   const processMonthlySettlement = async () => {
     try {
