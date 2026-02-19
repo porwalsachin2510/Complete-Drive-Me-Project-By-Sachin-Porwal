@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./AdminEarningsPayments.css"
 import api from "../../../../utils/api"
 
@@ -10,11 +10,7 @@ function AdminEarningsPayments() {
   const [periodFilter, setPeriodFilter] = useState("monthly")
   const [providerFilter, setProviderFilter] = useState("all")
 
-  useEffect(() => {
-    fetchEarnings()
-  }, [periodFilter, providerFilter])
-
-  const fetchEarnings = async () => {
+  const fetchEarnings = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/admin/b2c/earnings-payments', {
@@ -29,7 +25,11 @@ function AdminEarningsPayments() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [periodFilter, providerFilter])
+
+  useEffect(() => {
+    fetchEarnings()
+  }, [fetchEarnings])
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {

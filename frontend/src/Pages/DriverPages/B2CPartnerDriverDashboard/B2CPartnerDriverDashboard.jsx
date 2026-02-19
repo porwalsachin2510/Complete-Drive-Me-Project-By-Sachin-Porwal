@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../../Redux/slices/authSlice";
@@ -92,26 +92,33 @@ function B2CPartnerDriverDashboard() {
     }
   }, [dispatch, user, navigate]);
 
-  // Set filter status based on available bookings
-  useEffect(() => {
-    if (driverBookings && driverBookings.length > 0) {
-      // Find the most relevant status to show
-      const statuses = driverBookings.map(b => b.bookingStatus);
-      const hasAccepted = statuses.includes("ACCEPTED");
+  // Memoize driverBookings to prevent dependency changes
+  const memoizedDriverBookings = useMemo(() => driverBookings, [JSON.stringify(driverBookings)]);
+
+  // Compute initial filter status from bookings
+  const initialFilterStatus = useMemo(() => {
+    if (memoizedDriverBookings && memoizedDriverBookings.length > 0) {
+      const statuses = memoizedDriverBookings.map(b => b.bookingStatus);
       const hasInProgress = statuses.includes("IN_PROGRESS");
+      const hasAccepted = statuses.includes("ACCEPTED");
       const hasPending = statuses.includes("PENDING");
       
-      if (hasInProgress) {
-        setFilterStatus("IN_PROGRESS");
-      } else if (hasAccepted) {
-        setFilterStatus("ACCEPTED");
-      } else if (hasPending) {
-        setFilterStatus("PENDING");
-      } else {
-        setFilterStatus("ALL");
-      }
+      if (hasInProgress) return "IN_PROGRESS";
+      if (hasAccepted) return "ACCEPTED";
+      if (hasPending) return "PENDING";
+      return "ALL";
     }
-  }, [driverBookings]);
+    return "ACCEPTED";
+  }, [memoizedDriverBookings]);
+
+  // Set filter status based on available bookings - only on first load
+  const hasSetInitialFilter = useRef(false);
+  useEffect(() => {
+    if (!hasSetInitialFilter.current && memoizedDriverBookings.length > 0) {
+      setFilterStatus(initialFilterStatus);
+      hasSetInitialFilter.current = true;
+    }
+  }, [memoizedDriverBookings, initialFilterStatus]);
 
 
 
@@ -239,7 +246,7 @@ function B2CPartnerDriverDashboard() {
         },
       );
     }
-  }, [socket, user._id]);
+  }, [socket, user?._id, user?.driverId, user?.role, activeTrip?._id]);
 
   const startAutomaticLocationSharing = useCallback(() => {
     if (isSharingLocation) return;

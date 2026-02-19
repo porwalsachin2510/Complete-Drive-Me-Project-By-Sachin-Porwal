@@ -17,10 +17,6 @@ function AdminB2BListings() {
     activeListings: 0
   })
 
-  useEffect(() => {
-    fetchB2BStats()
-  }, [])
-
   const fetchB2BStats = async () => {
     try {
       const response = await api.get('/admin/b2b/stats')
@@ -29,6 +25,10 @@ function AdminB2BListings() {
       console.error("Error fetching B2B stats:", error)
     }
   }
+
+  useEffect(() => {
+    fetchB2BStats()
+  }, [])
 
   const renderSubContent = () => {
     switch (activeSubTab) {

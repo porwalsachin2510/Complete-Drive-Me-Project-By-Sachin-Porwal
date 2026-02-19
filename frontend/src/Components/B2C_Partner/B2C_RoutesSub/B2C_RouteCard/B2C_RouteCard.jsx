@@ -14,30 +14,30 @@ function B2C_RouteCard({ route, onRouteUpdated, onAddSchedule }) {
 
   // Check if route has schedule and upcoming trips
   useEffect(() => {
-    checkScheduleAndTrips();
-  }, [route._id]);
+    let cancelled = false;
+    const checkScheduleAndTrips = async () => {
+      try {
+        // Check if schedule exists for this route
+        const scheduleResponse = await api.get(`/b2c-schedules/schedules?routeId=${route._id}`);
+        const hasScheduleData = scheduleResponse.data.success && scheduleResponse.data.schedules.length > 0;
+        if (cancelled) return;
+        setHasSchedule(hasScheduleData);
 
-  const checkScheduleAndTrips = async () => {
-    try {
-      // Check if schedule exists for this route
-      const scheduleResponse = await api.get(`/b2c-schedules/schedules?routeId=${route._id}`);
-      const hasScheduleData = scheduleResponse.data.success && scheduleResponse.data.schedules.length > 0;
-      setHasSchedule(hasScheduleData);
-
-      if (hasScheduleData) {
-        // Get upcoming trips for this route
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const tripsResponse = await api.get(`/b2c-trips/trips/today?routeId=${route._id}`);
-        if (tripsResponse.data.success) {
-          setUpcomingTrips(tripsResponse.data.trips || []);
+        if (hasScheduleData) {
+          // Get upcoming trips for this route
+          const tripsResponse = await api.get(`/b2c-trips/trips/today?routeId=${route._id}`);
+          if (!cancelled && tripsResponse.data.success) {
+            setUpcomingTrips(tripsResponse.data.trips || []);
+          }
         }
+      } catch (error) {
+        console.error("Error checking schedule/trips:", error);
       }
-    } catch (error) {
-      console.error("Error checking schedule/trips:", error);
-    }
-  };
+    };
+
+    checkScheduleAndTrips();
+    return () => { cancelled = true; };
+  }, [route._id]);
 
   const getStatusColor = (status) => {
     switch (status) {

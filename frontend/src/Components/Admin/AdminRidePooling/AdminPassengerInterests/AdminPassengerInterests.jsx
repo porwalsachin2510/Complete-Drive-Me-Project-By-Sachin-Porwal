@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./AdminPassengerInterests.css"
 import api from "../../../../utils/api"
 
@@ -10,11 +10,7 @@ const AdminPassengerInterests = () => {
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
-  useEffect(() => {
-    fetchPassengerInterests()
-  }, [statusFilter])
-
-  const fetchPassengerInterests = async () => {
+  const fetchPassengerInterests = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/admin/ride-pooling/passenger-interests', {
@@ -26,7 +22,11 @@ const AdminPassengerInterests = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
+
+  useEffect(() => {
+    fetchPassengerInterests()
+  }, [fetchPassengerInterests])
 
   const handleStatusChange = async (interestId, newStatus) => {
     try {

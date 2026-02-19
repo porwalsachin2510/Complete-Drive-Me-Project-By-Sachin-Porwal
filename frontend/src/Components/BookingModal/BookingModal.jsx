@@ -319,8 +319,8 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       routeId: route._id || route.id || route.routeId,
       scheduleId: scheduleData?._id || route.scheduleId || route._id, // Use schedule data ID
       passType: selectedPassType,
-      outboundTripTime: selectedTrip?.departureTime || morningTrips[0]?.departureTime || roundTripOptions[0]?.departureTime || '8:00 AM',
-      returnTripTime: selectedReturnTrip?.departureTime || eveningTrips[0]?.departureTime || roundTripOptions[0]?.arrivalTime || '',
+      outboundTripTime: selectedTrip?.departureTime || morningTrips[0]?.departureTime || allTrips[0]?.departureTime || '8:00 AM',
+      returnTripTime: selectedReturnTrip?.departureTime || eveningTrips[0]?.departureTime || allTrips.find(t => t.direction === 'return')?.departureTime || '',
       pickupLocation: selectedPickupPoint || route.fromLocation,
       dropoffLocation: selectedDropoffPoint || route.toLocation,
       returnPickupLocation: selectedReturnPickupPoint || (selectedPassType === 'ROUND_TRIP' ? route.toLocation : ''),

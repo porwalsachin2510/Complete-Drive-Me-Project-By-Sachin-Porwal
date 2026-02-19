@@ -19,7 +19,34 @@ function DriverLocationTracking() {
   });
   const [tripStatus, setTripStatus] = useState("idle"); // idle, started, completed, emergency
   const [watchId, setWatchId] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const locationIntervalRef = useRef(null);
+
+  const fetchActiveTrip = async () => {
+    try {
+      const response = await api.get('/driver/active-trip');
+      if (response.data.success && response.data.trip) {
+        setCurrentTrip(response.data.trip);
+        setTripStatus(response.data.trip.status === "In Progress" ? "started" : "idle");
+      }
+    } catch (error) {
+      console.error("Error fetching active trip:", error);
+    }
+  };
+
+  const stopLocationTracking = () => {
+    if (watchId) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
+    }
+
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+
+    setIsTracking(false);
+  };
 
   useEffect(() => {
     fetchActiveTrip();
@@ -33,18 +60,6 @@ function DriverLocationTracking() {
       stopLocationTracking();
     };
   }, [socket, user]);
-
-  const fetchActiveTrip = async () => {
-    try {
-      const response = await api.get('/driver/active-trip');
-      if (response.data.success && response.data.trip) {
-        setCurrentTrip(response.data.trip);
-        setTripStatus(response.data.trip.status === "In Progress" ? "started" : "idle");
-      }
-    } catch (error) {
-      console.error("Error fetching active trip:", error);
-    }
-  };
 
   const startLocationTracking = async () => {
     if (!navigator.geolocation) {
@@ -86,20 +101,6 @@ function DriverLocationTracking() {
     }
   };
 
-  const stopLocationTracking = () => {
-    if (watchId) {
-      navigator.geolocation.clearWatch(watchId);
-      setWatchId(null);
-    }
-
-    if (locationIntervalRef.current) {
-      clearInterval(locationIntervalRef.current);
-      locationIntervalRef.current = null;
-    }
-
-    setIsTracking(false);
-  };
-
   const getCurrentPosition = () => {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -124,6 +125,8 @@ function DriverLocationTracking() {
       heading: heading || 0,
       address: "", // Will be filled by geocoding
     });
+
+    setLastUpdated(Date.now());
 
     // Get address from coordinates (geocoding)
     getAddressFromCoordinates(latitude, longitude);
@@ -370,7 +373,7 @@ function DriverLocationTracking() {
         <div className="status-item">
           <span className="status-label">Last Update:</span>
           <span className="status-value">
-            {location.latitude ? formatTime(Date.now()) : "Never"}
+            {lastUpdated ? formatTime(lastUpdated) : "Never"}
           </span>
         </div>
 

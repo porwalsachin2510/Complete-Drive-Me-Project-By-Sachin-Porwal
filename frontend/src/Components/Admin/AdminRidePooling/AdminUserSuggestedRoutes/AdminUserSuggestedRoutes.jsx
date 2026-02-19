@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./AdminUserSuggestedRoutes.css"
 import api from "../../../../utils/api"
 
@@ -13,11 +13,7 @@ const AdminUserSuggestedRoutes = () => {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [selectedRoute, setSelectedRoute] = useState(null)
 
-  useEffect(() => {
-    fetchSuggestedRoutes()
-  }, [statusFilter])
-
-  const fetchSuggestedRoutes = async () => {
+  const fetchSuggestedRoutes = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/admin/ride-pooling/suggested-routes', {
@@ -29,7 +25,11 @@ const AdminUserSuggestedRoutes = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
+
+  useEffect(() => {
+    fetchSuggestedRoutes()
+  }, [fetchSuggestedRoutes])
 
   const handleApprove = async (routeId) => {
     try {

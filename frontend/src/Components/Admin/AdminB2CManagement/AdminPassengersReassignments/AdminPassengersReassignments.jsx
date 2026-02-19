@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./AdminPassengersReassignments.css"
 import AdminReassignModal from "../AdminReassignModal/AdminReassignModal"
 import api from "../../../../utils/api"
@@ -13,11 +13,7 @@ function AdminPassengersReassignments() {
   const [showReassignModal, setShowReassignModal] = useState(false)
   const [selectedReassignment, setSelectedReassignment] = useState(null)
 
-  useEffect(() => {
-    fetchReassignments()
-  }, [statusFilter])
-
-  const fetchReassignments = async () => {
+  const fetchReassignments = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/admin/b2c/passenger-reassignments', {
@@ -29,7 +25,11 @@ function AdminPassengersReassignments() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
+
+  useEffect(() => {
+    fetchReassignments()
+  }, [fetchReassignments])
 
   const handleProcessReassignment = async (reassignmentId, action, reason = "") => {
     try {

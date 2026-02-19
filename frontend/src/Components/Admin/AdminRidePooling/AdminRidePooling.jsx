@@ -15,10 +15,6 @@ function AdminRidePooling() {
     matchedRides: 0
   })
 
-  useEffect(() => {
-    fetchRidePoolingStats()
-  }, [])
-
   const fetchRidePoolingStats = async () => {
     try {
       const response = await api.get('/admin/ride-pooling/stats')
@@ -27,6 +23,10 @@ function AdminRidePooling() {
       console.error("Error fetching ride pooling stats:", error)
     }
   }
+
+  useEffect(() => {
+    fetchRidePoolingStats()
+  }, [])
 
   const renderSubContent = () => {
     switch (activeSubTab) {

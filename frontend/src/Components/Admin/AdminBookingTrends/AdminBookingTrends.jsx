@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import api from "../../../utils/api"
 import "./AdminBookingTrends.css"
@@ -11,12 +11,7 @@ function AdminBookingTrends() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("12")
 
-  useEffect(() => {
-    setAnimationKey((prev) => prev + 1)
-    fetchBookingTrends()
-  }, [period])
-
-  const fetchBookingTrends = async () => {
+  const fetchBookingTrends = useCallback(async () => {
     try {
       setLoading(true)
       // Fetch booking data from backend
@@ -27,7 +22,7 @@ function AdminBookingTrends() {
       } else {
         // Fallback to realistic data
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const currentMonth = new Date().getMonth()
+        const _currentMonth = new Date().getMonth()
         const monthsToShow = period === "3" ? 3 : period === "6" ? 6 : 12
         
         const fallbackData = months
@@ -57,7 +52,12 @@ function AdminBookingTrends() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    setAnimationKey((prev) => prev + 1)
+    fetchBookingTrends()
+  }, [fetchBookingTrends])
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {

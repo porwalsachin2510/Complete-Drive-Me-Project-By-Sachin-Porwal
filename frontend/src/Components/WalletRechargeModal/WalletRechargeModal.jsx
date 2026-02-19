@@ -69,13 +69,13 @@ const WalletRechargeModal = ({
 
       if (response.data.success) {
         // Redirect to payment gateway or handle payment
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
-        } else if (data.paymentIntentClientSecret) {
+        if (response.data.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
+        } else if (response.data.paymentIntentClientSecret) {
           // Handle Stripe payment
-          const stripe = window.Stripe(data.publishableKey);
+          const stripe = window.Stripe(response.data.publishableKey);
           const { error } = await stripe.confirmPayment({
-            clientSecret: data.paymentIntentClientSecret,
+            clientSecret: response.data.paymentIntentClientSecret,
             confirmParams: {
               return_url: `${window.location.origin}/wallet/recharge/success`,
             },
@@ -86,7 +86,7 @@ const WalletRechargeModal = ({
           }
         }
       } else {
-        alert(data.message || 'Payment initialization failed');
+        alert(response.data.message || 'Payment initialization failed');
       }
     } catch (error) {
       console.error('Recharge error:', error);

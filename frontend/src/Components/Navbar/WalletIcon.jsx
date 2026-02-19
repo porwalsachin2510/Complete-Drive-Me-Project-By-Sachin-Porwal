@@ -16,18 +16,15 @@ function WalletIcon() {
 
   // Roles that should have wallet access
   const walletAllowedRoles = ['COMMUTER', 'B2C_PARTNER', 'B2B_PARTNER', 'CORPORATE_EMPLOYEE'];
-  
-  // Hide wallet for CORPORATE, ADMIN and other roles
-  if (!user || !walletAllowedRoles.includes(user.role)) {
-    return null;
-  }
+  const isAllowed = user && walletAllowedRoles.includes(user.role);
 
   useEffect(() => {
+    if (!isAllowed) return;
     fetchWalletBalance();
     // Set up interval for real-time updates
     const interval = setInterval(fetchWalletBalance, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [isAllowed]);
 
   const fetchWalletBalance = async () => {
     try {
@@ -40,6 +37,11 @@ function WalletIcon() {
       dispatch(updateWalletBalance(0));
     }
   };
+  
+  // Hide wallet for CORPORATE, ADMIN and other roles
+  if (!isAllowed) {
+    return null;
+  }
 
   const handleWalletClick = () => {
     navigate('/wallet');

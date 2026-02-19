@@ -3,7 +3,7 @@
 import { useState } from "react"
 import "./AdminEditRouteModal.css"
 
-function AdminEditRouteModal({ route, onClose }) {
+function AdminEditRouteModal({ route: _route, onClose }) {
   const [selectedTags, setSelectedTags] = useState(["premium"])
   const [isFeatured, setIsFeatured] = useState(true)
   const [isActive, setIsActive] = useState(true)

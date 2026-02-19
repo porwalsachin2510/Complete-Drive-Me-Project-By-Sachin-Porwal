@@ -26,9 +26,9 @@ function AdminRevenueChart() {
         setData(response.data.data)
       } else {
         // Fallback to current year data with realistic values
-        const currentYear = new Date().getFullYear()
+        const _currentYear = new Date().getFullYear()
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const fallbackData = months.map((month, index) => ({
+        const fallbackData = months.map((month) => ({
           month,
           total: Math.floor(Math.random() * 8000) + 2000,
           corporate: Math.floor(Math.random() * 5000) + 1000,

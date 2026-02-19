@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../../hooks/useSocket";
@@ -23,6 +23,18 @@ const B2C_PartnerBookingsPage = () => {
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+  const locationSharingRef = useRef(null);
+
+  const fetchWalletBalance = async () => {
+    try {
+      const response = await api.get("/wallet/balance");
+      const balance = response.data.data?.balance || 0;
+      setWalletBalance(balance);
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      setWalletBalance(0);
+    }
+  };
 
   useEffect(() => {
     if (auth.user?.role === "B2C_PARTNER") {
@@ -39,17 +51,6 @@ const B2C_PartnerBookingsPage = () => {
       fetchWalletBalance();
     }
   }, [auth.user]);
-
-  const fetchWalletBalance = async () => {
-    try {
-      const response = await api.get("/wallet/balance");
-      const balance = response.data.data?.balance || 0;
-      setWalletBalance(balance);
-    } catch (error) {
-      console.error("Error fetching wallet balance:", error);
-      setWalletBalance(0);
-    }
-  };
 
   const handleAccept = (booking) => {
     // Check wallet balance for cash bookings
@@ -160,7 +161,7 @@ const B2C_PartnerBookingsPage = () => {
       const interval = setInterval(shareLocation, 5000);
 
       // Store interval ID for cleanup
-      window.locationSharingInterval = interval;
+      locationSharingRef.current = interval;
       
       console.log("🚀 B2C_PARTNER location sharing started for booking:", booking._id);
     } catch (error) {

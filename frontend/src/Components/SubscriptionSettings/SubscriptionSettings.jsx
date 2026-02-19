@@ -67,15 +67,13 @@ const SubscriptionSettings = () => {
       const response = await api.post('/subscription-settings/cancel', { reason: cancelReason });
 
       if (response.data.success) {
-
-      if (data.success) {
         setSuccess('Subscription cancelled successfully');
         setShowCancelModal(false);
         setCancelReason('');
         // Update settings to reflect cancellation
         setSettings(prev => ({ ...prev, autoRenewal: false }));
       } else {
-        setError(data.message || 'Failed to cancel subscription');
+        setError(response.data.message || 'Failed to cancel subscription');
       }
     } catch (error) {
       console.error('Error cancelling subscription:', error);

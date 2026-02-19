@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
@@ -11,7 +11,6 @@ export default function CorporateEmployeeManagementPage() {
 
   const [activeTab, setActiveTab] = useState("corporate");
   const [employees, setEmployees] = useState([]);
-  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,7 +31,7 @@ export default function CorporateEmployeeManagementPage() {
  
 
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(
@@ -45,9 +44,9 @@ export default function CorporateEmployeeManagementPage() {
       console.error("Error fetching employees:", error);
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     try {
       const response = await axios.get(`/api/routes`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -56,16 +55,16 @@ export default function CorporateEmployeeManagementPage() {
     } catch (error) {
       console.error("Error fetching routes:", error);
     }
-    };
+  }, [token]);
     
-     useEffect(() => {
-       if (token && userId) {
-         fetchEmployees();
-         fetchRoutes();
-       }
-     }, [token, userId]);
+  useEffect(() => {
+    if (token && userId) {
+      fetchEmployees();
+      fetchRoutes();
+    }
+  }, [token, userId, fetchEmployees, fetchRoutes]);
 
-  const filterEmployees = () => {
+  const filteredEmployees = useMemo(() => {
     let filtered = employees;
 
     if (searchTerm) {
@@ -81,13 +80,8 @@ export default function CorporateEmployeeManagementPage() {
       filtered = filtered.filter((emp) => emp.department === filterDepartment);
     }
 
-    setFilteredEmployees(filtered);
-    setCurrentPage(1);
-    };
-    
-      useEffect(() => {
-        filterEmployees();
-      }, [employees, searchTerm, filterDepartment]);
+    return filtered;
+  }, [employees, searchTerm, filterDepartment]);
 
 
   const handleFileUpload = async (e) => {

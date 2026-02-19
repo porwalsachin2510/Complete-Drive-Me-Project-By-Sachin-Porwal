@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import "./AdminRouteManagement.css"
 import api from "../../../../utils/api"
 
@@ -20,9 +20,9 @@ function AdminRouteManagement() {
   useEffect(() => {
     fetchRoutes()
     fetchRouteStats()
-  }, [statusFilter])
+  }, [fetchRoutes, fetchRouteStats])
 
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/admin/b2c/routes', {
@@ -31,7 +31,6 @@ function AdminRouteManagement() {
       
       if (response.data.success) {
         setRoutes(response.data.routes || [])
-        // Update stats when routes are fetched
         await fetchRouteStats()
       }
     } catch (error) {
@@ -40,9 +39,9 @@ function AdminRouteManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
-  const fetchRouteStats = async () => {
+  const fetchRouteStats = useCallback(async () => {
     try {
       const response = await api.get('/admin/b2c/stats')
       
