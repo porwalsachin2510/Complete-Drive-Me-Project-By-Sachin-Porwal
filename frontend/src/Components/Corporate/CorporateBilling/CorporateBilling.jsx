@@ -9,12 +9,7 @@ export default function CorporateBilling() {
   const [period, setPeriod] = useState("current");
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchBillingData();
-    fetchInvoices();
-  }, [period]);
-
-  const fetchBillingData = async () => {
+  const fetchBillingData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get("/corporate/billing", {
@@ -29,9 +24,9 @@ export default function CorporateBilling() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       const response = await api.get("/corporate/invoices");
       if (response.data.success) {
@@ -40,7 +35,12 @@ export default function CorporateBilling() {
     } catch (err) {
       console.error("Error fetching invoices:", err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchBillingData();
+    fetchInvoices();
+  }, [fetchBillingData, fetchInvoices]);
 
   if (loading) {
     return (

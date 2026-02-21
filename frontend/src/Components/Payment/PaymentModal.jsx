@@ -4,7 +4,7 @@ import { useState } from "react";
 import api from "../../utils/api";
 import "./PaymentModal.css";
 
-function PaymentModal({ isOpen, onClose, amount, currency, onPaymentSuccess }) {
+function PaymentModal({ isOpen, onClose, amount, currency, onPaymentSuccess: _onPaymentSuccess }) {
   const [selectedMethod, setSelectedMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({

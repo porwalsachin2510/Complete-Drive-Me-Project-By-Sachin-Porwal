@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { startB2CTrip, completeB2CTrip } from "../../Redux/slices/bookingSlice";
 import api from "../../utils/api";
@@ -10,13 +10,7 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
   const [loading, setLoading] = useState(false);
   const [expandedTripId, setExpandedTripId] = useState(null);
 
-  useEffect(() => {
-    if (booking?.bookingId || booking?._id) {
-      fetchDailyTrips();
-    }
-  }, [booking?.bookingId, booking?._id]);
-
-  const fetchDailyTrips = async () => {
+  const fetchDailyTrips = useCallback(async () => {
     try {
       setLoading(true);
       const bookingId = booking?.bookingId || booking?._id;
@@ -33,7 +27,13 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [booking?.bookingId, booking?._id]);
+
+  useEffect(() => {
+    if (booking?.bookingId || booking?._id) {
+      fetchDailyTrips();
+    }
+  }, [fetchDailyTrips, booking?.bookingId, booking?._id]);
 
   const handleStartTrip = async (tripId) => {
     try {

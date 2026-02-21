@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import './TravelHistory.css';
 
-const TravelHistory = ({ userId }) => {
+const TravelHistory = ({ userId: _userId }) => {
   const [travelHistory, setTravelHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,11 +18,7 @@ const TravelHistory = ({ userId }) => {
     complaints: []
   });
 
-  useEffect(() => {
-    fetchTravelHistory();
-  }, [filter]);
-
-  const fetchTravelHistory = async () => {
+  const fetchTravelHistory = useCallback(async () => {
     try {
       const queryParams = new URLSearchParams({
         period: filter.period,
@@ -43,7 +39,11 @@ const TravelHistory = ({ userId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchTravelHistory();
+  }, [fetchTravelHistory]);
 
   const handleRateTrip = (trip) => {
     setSelectedTrip(trip);

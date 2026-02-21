@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import BookingModal from "../BookingModal/BookingModal";
-import { normalizeTime } from "../../utils/helperutility";
+
 import "./availablesection.css";
 
 const AvailableSection = ({

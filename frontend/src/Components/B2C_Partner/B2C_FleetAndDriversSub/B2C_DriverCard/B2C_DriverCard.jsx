@@ -4,9 +4,7 @@ import { useState } from "react";
 import "./b2c_drivercard.css";
 
 function B2C_DriverCard({ driver }) {
-  const [showActions, setShowActions] = useState(false);
-
-  const getStatusColor = (status) => {
+  const _getStatusColor = (status) => {
     switch (status) {
       case "Active":
       case "AVAILABLE":

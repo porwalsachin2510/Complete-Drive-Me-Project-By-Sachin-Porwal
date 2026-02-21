@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 import B2C_VehicleCard from "../B2C_VehicleCard/B2C_VehicleCard";
 import "./b2c_vehiclestab.css";
 
