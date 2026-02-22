@@ -511,7 +511,7 @@ export const searchCommuteRoutes = async (req, res) => {
                 driverName: route.assignedDriver?.name,
                 vehicleModel: route.assignedVehicle?.model,
                 vehiclePlate: route.assignedVehicle?.licensePlate,
-                images: route.images || [],
+                images: (route.images || []).map(img => typeof img === 'string' ? img : img?.url).filter(Boolean),
                 type: "b2c",
             })
         }
@@ -651,7 +651,7 @@ export const publicSearchRoutes = async (req, res) => {
                 dayMatching: travelData.dayMatching,
                 stopPoints: route.stopPoints || [],
 
-                images: route.images || [],
+                images: (route.images || []).map(img => typeof img === 'string' ? img : img?.url).filter(Boolean),
                 type: "b2c",
             })
         }

@@ -12,7 +12,10 @@
 .featured-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 24px;
 }
 
 .star-icon {
@@ -479,27 +482,26 @@
 
 .available-days {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .day-pill {
-  width: 25px;
-  height: 20px;
-
+  min-width: 32px;
+  height: 22px;
+  padding: 0 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  border-radius: 6px;
-  background: #f3f4f6; /* light gray */
-  border: 1.5px solid #d1d5db;
-
-  font-size: 8px;
-  font-weight: 400;
-  color: #111827;
-
+  border-radius: 4px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  font-size: 9px;
+  font-weight: 600;
+  color: #374151;
   user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .day-pill.weekend {

@@ -2081,6 +2081,7 @@ export const getDailyTripsForBooking = async (req, res) => {
     try {
         const { bookingId } = req.params
         const userId = req.userId
+        const userRole = req.userRole
 
         // Find the booking
         const booking = await B2CPassengerBooking.findById(bookingId).lean()
@@ -2095,10 +2096,22 @@ export const getDailyTripsForBooking = async (req, res) => {
 
         // Verify user has access to this booking
         const isPassenger = booking.passengerId?.toString() === userId
-        const isPartner = booking.b2cPartnerId?.toString() === userId
+        const isPartner = booking.b2cPartnerId?.toString() === userId || booking.partnerId?.toString() === userId
         const isDriver = booking.driverId?.toString() === userId || booking.assignedDriverId?.toString() === userId
 
-        if (!isPassenger && !isPartner && !isDriver) {
+        // For B2C_PARTNER_DRIVER role, check if they are a driver under the partner who owns this booking
+        let isPartnerDriver = false
+        if (!isPassenger && !isPartner && !isDriver && userRole === "B2C_PARTNER_DRIVER") {
+            const driverRecord = await B2CPartnerDriver.findOne({
+                userId: userId,
+                b2cPartnerId: booking.b2cPartnerId || booking.partnerId
+            }).lean()
+            if (driverRecord) {
+                isPartnerDriver = true
+            }
+        }
+
+        if (!isPassenger && !isPartner && !isDriver && !isPartnerDriver) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized access to this booking",
@@ -2106,23 +2119,55 @@ export const getDailyTripsForBooking = async (req, res) => {
             })
         }
 
-        // Get trips for this booking
-        const Trip = require("../models/Trip.js").default || require("../models/Trip.js")
-        
-        const dailyTrips = await Trip.find({
-            bookingId: bookingId,
-        }).lean()
+        // Get B2C partner trips for this booking using the linked trip references
+        const tripQuery = {}
+        if (booking.linkedTrip || booking.linkedReturnTrip) {
+            const tripIds = []
+            if (booking.linkedTrip) tripIds.push(booking.linkedTrip)
+            if (booking.linkedReturnTrip) tripIds.push(booking.linkedReturnTrip)
+            tripQuery._id = { $in: tripIds }
+        } else if (booking.routeId) {
+            // Fallback: find trips by route and date
+            tripQuery.routeId = booking.routeId
+            if (booking.travelDate) {
+                const travelDate = new Date(booking.travelDate)
+                const startOfDay = new Date(travelDate.getFullYear(), travelDate.getMonth(), travelDate.getDate())
+                const endOfDay = new Date(travelDate.getFullYear(), travelDate.getMonth(), travelDate.getDate() + 1)
+                tripQuery.tripDate = { $gte: startOfDay, $lt: endOfDay }
+            }
+        } else {
+            // No trip references, return empty
+            return res.status(200).json({
+                success: true,
+                data: [],
+                message: "No daily trips linked to this booking",
+                count: 0
+            })
+        }
 
-        console.log(`[v0] Retrieved ${dailyTrips.length} daily trips for booking ${bookingId}`)
+        const dailyTrips = await B2CPartnerTrip.find(tripQuery)
+            .populate('routeId', 'fromLocation toLocation')
+            .populate('driverId', 'fullName contactNumber')
+            .lean()
+
+        // Enrich trips with booking-relevant data
+        const enrichedTrips = dailyTrips.map(trip => ({
+            ...trip,
+            tripStatus: trip.status || "PENDING",
+            fromLocation: trip.routeId?.fromLocation || booking.pickupLocation,
+            toLocation: trip.routeId?.toLocation || booking.dropoffLocation,
+            pickupTime: trip.startTime,
+            driverName: trip.driverId?.fullName || booking.driverName,
+        }))
 
         res.status(200).json({
             success: true,
-            data: dailyTrips || [],
+            data: enrichedTrips || [],
             message: "Daily trips retrieved successfully",
-            count: (dailyTrips || []).length
+            count: (enrichedTrips || []).length
         })
     } catch (error) {
-        console.error("[v0] Error fetching daily trips:", error)
+        console.error("Error fetching daily trips:", error)
         res.status(500).json({
             success: false,
             message: "Failed to fetch daily trips",

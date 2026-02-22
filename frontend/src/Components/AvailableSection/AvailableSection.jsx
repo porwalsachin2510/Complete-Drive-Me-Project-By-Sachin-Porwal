@@ -285,10 +285,10 @@ const AvailableSection = ({
                 {/* Available Days */}
                 <div className="availablesection-featured-detail-group">
                   <label className="availablesection-detail-label">
-                    Available Days <span className="days-arrow">⇒</span>
+                    AVAILABLE DAYS
                   </label>
                   <div className="available-days">
-                    {route.dayMatching.matchedDays?.map((day) => (
+                    {(route.dayMatching?.matchedDays || route.availableDays || []).map((day) => (
                       <span
                         key={day}
                         className={`day-pill ${

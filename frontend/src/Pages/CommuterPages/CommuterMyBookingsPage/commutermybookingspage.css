@@ -85,7 +85,7 @@
 /* Fix: Reduced minmax from 380px to 300px to prevent overflow in sidebar layouts */
 .bookings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
 }
 
@@ -93,11 +93,13 @@
 .booking-card {
   background: white;
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   overflow: hidden;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .booking-card:hover {
@@ -109,9 +111,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   gap: 12px;
-  flex-wrap: wrap;
+}
+
+.booking-meta {
+  flex: 1;
+  min-width: 0;
 }
 
 .booking-meta h3 {
@@ -120,6 +126,7 @@
   margin: 0 0 8px 0;
   color: #333;
   word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .booking-date {
@@ -135,12 +142,13 @@
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .booking-details {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 15px;
   padding: 15px 0;
   border-top: 1px solid #eee;
@@ -149,17 +157,20 @@
 
 .detail-item {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   min-width: 0;
+  gap: 12px;
 }
 
 .detail-label {
   font-size: 12px;
   color: #999;
   font-weight: 500;
-  margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .detail-value {
@@ -168,11 +179,12 @@
   color: #333;
   word-break: break-word;
   overflow-wrap: break-word;
+  text-align: right;
 }
 
 .partner-info {
   background: #f8f9fa;
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 13px;
@@ -181,7 +193,10 @@
 }
 
 .partner-info p {
-  margin: 6px 0;
+  margin: 4px 0;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .booking-actions {
@@ -488,8 +503,9 @@
     grid-template-columns: 1fr;
   }
 
-  .booking-details {
-    grid-template-columns: 1fr;
+  .detail-item {
+    flex-direction: row;
+    justify-content: space-between;
   }
 
   .tracking-modal {

@@ -180,8 +180,18 @@ const FeaturedRoutes = ({ routes, loading }) => {
                 {/* Card Image */}
                 <div className="card-image">
                   <img
-                    src={route.images[0] || "/placeholder.svg"}
-                    alt={route.type}
+                    src={
+                      route.images?.[0]?.url || 
+                      route.images?.[0] || 
+                      route.driverImage || 
+                      route.companyLogo || 
+                      "/placeholder.svg"
+                    }
+                    alt={`${route.fromLocation} to ${route.toLocation}`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/placeholder.svg";
+                    }}
                   />
 
                   {/* Badges */}
@@ -210,18 +220,20 @@ const FeaturedRoutes = ({ routes, loading }) => {
                     <div className="company-header">
                       <img
                         src={
-                          route.companyLogo
-                            ? route.companyLogo
-                            : route.driverImage || "/placeholder.svg"
+                          route.companyLogo ||
+                          route.driverImage ||
+                          "/placeholder.svg"
                         }
-                        alt={route.company}
+                        alt={route.operator || "Provider"}
                         className="company-logo"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/placeholder.svg";
+                        }}
                       />
                       <div className="company-info">
                         <h4 className="company-name">
-                          {route.companyLogo
-                            ? route.operator
-                            : route.driverName}
+                          {route.operator || route.driverName || "Unknown Provider"}
                         </h4>
                       </div>
 

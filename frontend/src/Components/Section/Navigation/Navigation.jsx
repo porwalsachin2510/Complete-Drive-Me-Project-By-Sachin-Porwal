@@ -15,6 +15,8 @@ export default function Navigation({ profileactiveTab, setProfileActiveTab }) {
     { id: "find-routes", label: "Find Routes", icon: "📍" },
     { id: "wallet", label: "Wallet", icon: "💳" },
     { id: "alerts", label: "Alerts", icon: "🔔" },
+    { id: "travel-history", label: "Travel History", icon: "📜" },
+    { id: "subscription-settings", label: "Subscriptions", icon: "📦" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 
