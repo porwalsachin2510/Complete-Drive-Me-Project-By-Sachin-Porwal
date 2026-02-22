@@ -410,10 +410,6 @@ function B2CPartnerDriverDashboard() {
 
   return (
     <div className="b2c-partner-driver-dashboard">
-      <button className="b2c-logout-btn" onClick={handleLogout}>
-        Log Out
-      </button>
-      
       <div className="dashboard-header">
         <h1>B2C Partner Driver Dashboard</h1>
         <div className="driver-info">

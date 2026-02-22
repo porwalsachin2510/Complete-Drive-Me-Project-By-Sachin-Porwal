@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Navbar from "../../../Components/Navbar/Navbar";
 import CommuteSearchForm from "../../../Components/CommutersSearchForm/Commute-search-form";
 import FeaturedRoutes from "../../../Components/FeaturedRoutes/FeaturedRoutes";
 import AvailableSection from "../../../Components/AvailableSection/AvailableSection";
 import RouteRequest from "../../../Components/RouteRequest/RouteRequest";
 import { useNavigate } from "react-router-dom";
-import Footer from "../../../Components/Footer/Footer";
 import {
   isServiceAvailable,
   getDisplayCountry,
@@ -428,8 +426,6 @@ export default function CommuterHomePage() {
           console.log('Route request submitted');
         }}
       />
-
-      <Footer />
     </div>
   );
 }

@@ -49,6 +49,8 @@ import B2CPartnerDriverDashboard from "./Pages/DriverPages/B2CPartnerDriverDashb
 import B2BPartnerDriverDashboard from "./Pages/DriverPages/B2BPartnerDriverDashboard/B2BPartnerDriverDashboard";
 import CorporateDriverDashboard from "./Pages/DriverPages/CorporateDriverDashboard/CorporateDriverDashboard";
 import DriverLocationTracking from "./Pages/DriverPages/DriverLocationTracking/DriverLocationTracking";
+import Navbar from "./Components/Navbar/Navbar";
+import Footer from "./Components/Footer/Footer";
 
 function App() {
   return (
@@ -410,7 +412,9 @@ function App() {
             path="/driver/b2c-dashboard"
             element={
               <ProtectedRoleBasedRoute allowedRoles={["B2C_PARTNER_DRIVER"]}>
+                <Navbar />
                 <B2CPartnerDriverDashboard />
+                <Footer />
               </ProtectedRoleBasedRoute>
             }
           />

@@ -12,7 +12,7 @@ export default function CorporateBilling() {
   const fetchBillingData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get("/corporate/billing", {
+      const response = await api.get("/corporate/billing-report", {
         params: { period },
       });
       if (response.data.success) {

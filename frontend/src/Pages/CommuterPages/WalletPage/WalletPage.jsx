@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { getWalletBalance, getWalletTransactions, addFundsToWallet, withdrawFromWallet } from "../../../Redux/slices/walletSlice";
 import PaymentModal from "../../../Components/Payment/PaymentModal";
+import Navbar from "../../../Components/Navbar/Navbar";
+import Footer from "../../../Components/Footer/Footer";
 import "./walletpage.css";
 
 function WalletPage() {
@@ -100,6 +102,8 @@ function WalletPage() {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="wallet-page">
       <div className="wallet-header">
         <h1>My Wallet</h1>
@@ -395,6 +399,8 @@ function WalletPage() {
         </div>
       )}
     </div>
+    <Footer />
+    </>
   );
 }
 

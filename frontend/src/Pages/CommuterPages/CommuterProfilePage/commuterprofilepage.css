@@ -23,24 +23,29 @@ body {
   padding: 0 30px;
   min-height: 100vh;
   margin-top: 80px;
+  overflow-x: hidden;
 }
 
 .commuter-profile-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-left: 50px;
+  margin-left: 20px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .commuter-profile-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* Desktop (1200px and above) */
+/* Desktop below 1400px */
 @media (max-width: 1399px) {
   .commuter-profile-main {
-    margin-left: 280px;
+    margin-left: 16px;
   }
 
   .commuter-profile-content {

@@ -217,11 +217,11 @@ export const corporateEmployeeAPI = {
 
   /**
    * Get billing data for corporate
-   * Backend: GET /api/corporate/billing (corporateRoutes.js)
+   * Backend: GET /api/corporate/billing-report (corporateRoutes.js)
    */
   getBillingData: async (period = "current") => {
     try {
-      const response = await api.get("/corporate/billing", { params: { period } });
+      const response = await api.get("/corporate/billing-report", { params: { period } });
       return response.data;
     } catch (error) {
       console.error("Error fetching billing data:", error.message);
