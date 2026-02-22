@@ -1,101 +1,107 @@
+/* Commuter My Bookings Page - Professional Clean Layout */
 .my-bookings-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8f9fa;
+  background: #f0f2f5;
   max-width: 100%;
   overflow-x: hidden;
 }
 
 .bookings-container {
   flex: 1;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   width: 100%;
-  padding: 40px 20px;
+  padding: 32px 20px;
 }
 
 .bookings-header {
-  margin-bottom: 40px;
+  margin-bottom: 28px;
 }
 
 .bookings-header h1 {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  margin: 0 0 10px 0;
-  color: #333;
+  margin: 0 0 6px 0;
+  color: #1a202c;
 }
 
 .bookings-header p {
-  font-size: 16px;
-  color: #666;
+  font-size: 14px;
+  color: #718096;
   margin: 0;
 }
 
+/* Filter Buttons */
 .filter-section {
   display: flex;
-  gap: 12px;
-  margin-bottom: 30px;
+  gap: 8px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .filter-btn {
-  padding: 10px 20px;
-  border: 2px solid #ddd;
+  padding: 8px 18px;
+  border: 1px solid #e2e8f0;
   background: white;
   border-radius: 20px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  color: #4a5568;
+  transition: all 0.2s ease;
 }
 
 .filter-btn:hover {
-  border-color: #007bff;
-  color: #007bff;
+  border-color: #3182ce;
+  color: #3182ce;
 }
 
 .filter-btn.active {
-  background: #007bff;
+  background: #3182ce;
   color: white;
-  border-color: #007bff;
+  border-color: #3182ce;
 }
 
+/* Loading / Empty States */
 .loading-state,
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 48px 20px;
   background: white;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .loading-state p,
 .empty-state p {
-  font-size: 16px;
-  color: #666;
+  font-size: 15px;
+  color: #718096;
   margin: 0;
 }
 
 .empty-subtitle {
-  font-size: 14px;
-  color: #999;
-  margin-top: 8px;
+  font-size: 13px;
+  color: #a0aec0;
+  margin-top: 6px;
 }
 
-/* Fix: Reduced minmax from 380px to 300px to prevent overflow in sidebar layouts */
+/* Bookings Grid */
 .bookings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
 }
 
-/* Fix: Added overflow protection to booking cards */
+/* Booking Card */
 .booking-card {
   background: white;
   border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
   overflow: hidden;
   max-width: 100%;
   display: flex;
@@ -103,16 +109,17 @@
 }
 
 .booking-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e0;
 }
 
+/* Card Header */
 .booking-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
-  gap: 12px;
+  margin-bottom: 14px;
+  gap: 10px;
 }
 
 .booking-meta {
@@ -120,39 +127,41 @@
   min-width: 0;
 }
 
-.booking-meta h3 {
-  font-size: 16px;
+.booking-meta h3, .booking-title {
+  font-size: 15px;
   font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #333;
+  margin: 0 0 6px 0;
+  color: #1a202c;
   word-break: break-word;
   overflow-wrap: break-word;
+  line-height: 1.3;
 }
 
 .booking-date {
-  font-size: 14px;
-  color: #666;
+  font-size: 13px;
+  color: #718096;
   margin: 0;
 }
 
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 4px 12px;
+  border-radius: 16px;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+/* Booking Details */
 .booking-details {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 15px;
-  padding: 15px 0;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px 0;
+  border-top: 1px solid #edf2f7;
+  border-bottom: 1px solid #edf2f7;
 }
 
 .detail-item {
@@ -164,9 +173,9 @@
 }
 
 .detail-label {
-  font-size: 12px;
-  color: #999;
-  font-weight: 500;
+  font-size: 11px;
+  color: #a0aec0;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   white-space: nowrap;
@@ -174,103 +183,128 @@
 }
 
 .detail-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: #2d3748;
   word-break: break-word;
   overflow-wrap: break-word;
   text-align: right;
 }
 
+/* Partner / Company Info */
 .partner-info {
-  background: #f8f9fa;
+  background: #f7fafc;
   padding: 10px 12px;
   border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 13px;
+  margin-bottom: 12px;
+  font-size: 12px;
   overflow: hidden;
   word-break: break-word;
+  border: 1px solid #edf2f7;
 }
 
 .partner-info p {
-  margin: 4px 0;
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  margin: 3px 0;
+  color: #4a5568;
 }
 
+.partner-info strong {
+  color: #2d3748;
+}
+
+/* Driver Info */
+.driver-info {
+  background: #f7fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  border: 1px solid #edf2f7;
+}
+
+.driver-info p {
+  margin: 3px 0;
+  color: #4a5568;
+}
+
+.driver-info strong {
+  color: #2d3748;
+}
+
+/* Action Buttons */
 .booking-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .btn-cancel {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #dc3545;
+  padding: 8px 12px;
+  border: 1px solid #fc8181;
   background: white;
-  color: #dc3545;
+  color: #e53e3e;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
-  min-width: 100px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
 }
 
 .btn-cancel:hover {
-  background: #dc3545;
-  color: white;
+  background: #fff5f5;
 }
 
-/* Track button styling */
 .btn-track {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #007bff;
-  background: #007bff;
+  padding: 8px 12px;
+  border: none;
+  background: #3182ce;
   color: white;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
-  min-width: 100px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
 }
 
 .btn-track:hover {
-  background: #0056b3;
-  border-color: #0056b3;
+  background: #2c5282;
 }
 
-/* No-show button styling */
 .btn-noshow {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ffc107;
+  padding: 8px 12px;
+  border: 1px solid #ed8936;
   background: white;
-  color: #856404;
+  color: #c05621;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.3s ease;
-  min-width: 100px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
 }
 
 .btn-noshow:hover {
-  background: #ffc107;
-  color: #333;
+  background: #fffaf0;
 }
 
-/* ============ TRACKING MODAL STYLES (Global - moved out of media query) ============ */
-
+/* ============ TRACKING MODAL ============ */
 .tracking-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,27 +313,27 @@
 
 .tracking-modal {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   max-width: 600px;
-  width: 90vw;
+  width: 92vw;
   max-height: 90vh;
   overflow: auto;
 }
 
 .tracking-header {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: #2b6cb0;
   color: white;
   padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: 16px 16px 0 0;
+  border-radius: 14px 14px 0 0;
 }
 
 .tracking-header h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -307,15 +341,14 @@
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
 }
 
 .tracking-header button:hover {
@@ -323,20 +356,19 @@
 }
 
 .tracking-info {
-  padding: 20px 25px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  padding: 16px 20px;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .tracking-info p {
-  margin: 8px 0;
-  font-size: 15px;
-  color: #495057;
+  margin: 6px 0;
+  font-size: 14px;
+  color: #4a5568;
 }
 
 .tracking-info strong {
-  color: #212529;
-  font-weight: 600;
+  color: #1a202c;
 }
 
 .map-container {
@@ -350,43 +382,44 @@
 }
 
 .tracking-actions {
-  padding: 20px 25px;
-  background: #f8f9fa;
-  border-radius: 0 0 16px 16px;
+  padding: 16px 20px;
+  background: #f7fafc;
+  border-radius: 0 0 14px 14px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: flex-end;
 }
 
 .tracking-actions button {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: #2b6cb0;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 8px 18px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  font-size: 13px;
+  transition: all 0.2s;
 }
 
 .tracking-actions button:hover {
-  opacity: 0.9;
+  background: #2c5282;
 }
 
-/* Driver status badge on map */
+/* Driver Status Badge */
 .driver-status-badge {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: #48bb78;
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
 }
 
@@ -396,14 +429,8 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #007bff 0%, #28a745 50%, #ffc107 100%);
+  background: linear-gradient(90deg, #3182ce 0%, #48bb78 50%, #ed8936 100%);
   z-index: 999;
-  animation: routeFlow 3s linear infinite;
-}
-
-@keyframes routeFlow {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
 }
 
 .location-marker {
@@ -417,86 +444,58 @@
   font-size: 12px;
   color: white;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   z-index: 998;
 }
 
 .pickup-marker {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: #48bb78;
   border: 2px solid white;
 }
 
 .dropoff-marker {
-  background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+  background: #e53e3e;
   border: 2px solid white;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0.3; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes driverPulse {
-  0% { transform: scale(1); box-shadow: 0 2px 10px rgba(0, 123, 255, 0.5); }
-  50% { transform: scale(1.1); box-shadow: 0 4px 20px rgba(0, 123, 255, 0.8); }
-  100% { transform: scale(1); box-shadow: 0 2px 10px rgba(0, 123, 255, 0.5); }
-}
-
-/* Driver Status Indicators */
+/* Status indicators */
 .driver-online {
-  color: #28a745 !important;
-  background: rgba(40, 167, 69, 0.1);
+  color: #38a169;
+  background: rgba(72, 187, 120, 0.1);
   padding: 2px 8px;
   border-radius: 12px;
-  border: 1px solid rgba(40, 167, 69, 0.2);
 }
 
 .driver-offline {
-  color: #ffc107 !important;
-  background: rgba(255, 193, 7, 0.1);
+  color: #d69e2e;
+  background: rgba(237, 137, 54, 0.1);
   padding: 2px 8px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 193, 7, 0.2);
 }
 
-/* Distance Status Colors */
 .status-very-close {
-  background: #d4edda !important;
-  color: #155724 !important;
-  border-color: #c3e6cb !important;
+  background: #c6f6d5;
+  color: #276749;
 }
 
 .status-on-way {
-  background: #fff3cd !important;
-  color: #856404 !important;
-  border-color: #ffeaa7 !important;
+  background: #fefcbf;
+  color: #975a16;
 }
 
 .status-far {
-  background: #f8d7da !important;
-  color: #721c24 !important;
-  border-color: #f5c6cb !important;
+  background: #fed7d7;
+  color: #9b2c2c;
 }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
   .bookings-container {
-    padding: 20px 15px;
+    padding: 16px 12px;
   }
 
   .bookings-header h1 {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .bookings-grid {
@@ -509,7 +508,16 @@
   }
 
   .tracking-modal {
-    max-width: 95vw;
-    width: 95vw;
+    max-width: 96vw;
+    width: 96vw;
+  }
+  
+  .filter-section {
+    gap: 6px;
+  }
+  
+  .filter-btn {
+    padding: 6px 14px;
+    font-size: 12px;
   }
 }

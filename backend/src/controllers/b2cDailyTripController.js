@@ -136,25 +136,58 @@ export const updateTripStatus = async (req, res) => {
     try {
         const { tripId } = req.params;
         const { status, reason, actualStartTime, actualEndTime } = req.body;
-        const providerId = req.userId;
+        const userId = req.userId;
+        const userRole = req.userRole;
 
-        const trip = await B2CPartnerTrip.findOne({
-            _id: tripId,
-            b2cPartnerId: providerId
-        });
+        // Find trip - allow both B2C_PARTNER and B2C_PARTNER_DRIVER
+        let trip = null;
+        
+        if (userRole === "B2C_PARTNER") {
+            trip = await B2CPartnerTrip.findOne({
+                _id: tripId,
+                b2cPartnerId: userId
+            });
+        } else if (userRole === "B2C_PARTNER_DRIVER") {
+            // Driver needs to find trip via their driverId
+            const driverUser = await User.findById(userId).lean();
+            if (driverUser?.driverId) {
+                trip = await B2CPartnerTrip.findOne({
+                    _id: tripId,
+                    driverId: driverUser.driverId
+                });
+            }
+        }
 
         if (!trip) {
             return res.status(404).json({
                 success: false,
-                message: "Trip not found"
+                message: "Trip not found or access denied"
             });
         }
 
         // Update trip status
-        trip.status = status.toUpperCase();
-        if (reason) trip.cancellationReason = reason;
+        const statusMap = {
+            "started": "In Progress",
+            "in_progress": "In Progress",
+            "in progress": "In Progress",
+            "completed": "Completed",
+            "cancelled": "Cancelled",
+            "delayed": "Delayed",
+            "scheduled": "Scheduled"
+        };
+        
+        trip.status = statusMap[status.toLowerCase()] || status;
+        if (reason) trip.delayReason = reason;
         if (actualStartTime) trip.actualStartTime = new Date(actualStartTime);
         if (actualEndTime) trip.actualEndTime = new Date(actualEndTime);
+        
+        // Auto-set times based on status
+        if (status.toLowerCase() === "started" || status.toLowerCase() === "in_progress" || status.toLowerCase() === "in progress") {
+            if (!trip.actualStartTime) trip.actualStartTime = new Date();
+        }
+        if (status.toLowerCase() === "completed") {
+            if (!trip.actualEndTime) trip.actualEndTime = new Date();
+        }
 
         await trip.save();
 

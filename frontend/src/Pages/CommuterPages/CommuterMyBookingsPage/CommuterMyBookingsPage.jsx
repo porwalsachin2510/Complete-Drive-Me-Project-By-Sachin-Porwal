@@ -302,13 +302,16 @@ const CommuterMyBookingsPage = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      PENDING: { color: "#ffc107", label: "Pending" },
-      CONFIRMED: { color: "#28a745", label: "Confirmed" },
-      COMPLETED: { color: "#17a2b8", label: "Completed" },
-      REJECTED: { color: "#dc3545", label: "Rejected" },
-      CANCELLED: { color: "#6c757d", label: "Cancelled" },
+      PENDING: { color: "#d69e2e", label: "Pending" },
+      CONFIRMED: { color: "#38a169", label: "Confirmed" },
+      ACCEPTED: { color: "#38a169", label: "Accepted" },
+      COMPLETED: { color: "#3182ce", label: "Completed" },
+      REJECTED: { color: "#e53e3e", label: "Rejected" },
+      CANCELLED: { color: "#718096", label: "Cancelled" },
+      IN_PROGRESS: { color: "#d69e2e", label: "In Progress" },
+      ACTIVE: { color: "#38a169", label: "Active" },
     };
-    return statusConfig[status] || { color: "#6c757d", label: status };
+    return statusConfig[status] || { color: "#718096", label: status };
   };
 
   const handleTrackingClick = (booking) => {
@@ -893,21 +896,11 @@ const CommuterMyBookingsPage = () => {
                       booking.type === "B2C" && (
                         <button className="btn-cancel">Cancel Booking</button>
                       )}
-                    {(booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "ACTIVE") &&
+                    {(booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "ACTIVE" || booking.bookingStatus === "ACCEPTED") &&
                       booking.type === "B2C" && (
                         <button
                           className="btn-noshow"
                           onClick={() => handleNoShowClick(booking)}
-                          style={{
-                            padding: "8px 16px",
-                            backgroundColor: "#ff6b35",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                          }}
                         >
                           Mark No-Show
                         </button>
@@ -917,12 +910,12 @@ const CommuterMyBookingsPage = () => {
                   {/* Daily Trips for this Booking */}
                   {(booking.bookingStatus === "CONFIRMED" || 
                     booking.bookingStatus === "IN_PROGRESS" ||
-                    booking.bookingStatus === "ACTIVE") && (
+                    booking.bookingStatus === "ACTIVE" ||
+                    booking.bookingStatus === "ACCEPTED") && (
                     <DailyTripsInBooking 
                       booking={booking}
                       userRole={userType}
                       onTripStatusChange={(status, tripId) => {
-                        console.log(`Trip ${tripId} status changed to: ${status}`);
                         // Refresh bookings after trip status change
                         dispatch(getPassengerBookings());
                       }}

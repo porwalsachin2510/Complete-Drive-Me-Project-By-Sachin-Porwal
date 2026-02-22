@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyToken, checkB2CPartnerRole } from "../middleware/auth.js";
+import { verifyToken, checkB2CPartnerRole, checkDriverRole } from "../middleware/auth.js";
 import {
     getTodayTrips,
     getUpcomingTrips,
@@ -15,7 +15,8 @@ const router = express.Router();
 // Daily trip management
 router.get("/today", verifyToken, checkB2CPartnerRole, getTodayTrips);
 router.get("/upcoming", verifyToken, checkB2CPartnerRole, getUpcomingTrips);
-router.put("/status/:tripId", verifyToken, checkB2CPartnerRole, updateTripStatus);
+// Allow both B2C_PARTNER and B2C_PARTNER_DRIVER to update trip status
+router.put("/status/:tripId", verifyToken, updateTripStatus);
 router.put("/seats/:tripId", verifyToken, checkB2CPartnerRole, updateTripSeats);
 
 // Statistics and dashboard

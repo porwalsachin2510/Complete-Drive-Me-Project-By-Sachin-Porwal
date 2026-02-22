@@ -510,30 +510,51 @@ function B2CPartnerDriverDashboard() {
                     <div className="booking-details">
                       <div className="route-info">
                         <div className="route-point">
-                          <strong>From:</strong> {booking.pickupLocation}
+                          <span className="route-label">From:</span> {booking.pickupLocation}
                         </div>
-                        <div className="route-arrow">→</div>
+                        <div className="route-arrow">&rarr;</div>
                         <div className="route-point">
-                          <strong>To:</strong> {booking.dropoffLocation}
+                          <span className="route-label">To:</span> {booking.dropoffLocation}
                         </div>
                       </div>
 
-                      <div className="passenger-info">
-                        <p><strong>Passenger:</strong> {booking.passengerId?.name || 'N/A'}</p>
-                        <p><strong>Phone:</strong> {booking.passengerId?.phone || 'N/A'}</p>
-                        <p><strong>Seats:</strong> {booking.numberOfSeats}</p>
-                      </div>
-
-                      <div className="driver-info">
-                        <p><strong>Driver:</strong> {booking.driverName || 'N/A'}</p>
-                        <p><strong>Phone:</strong> {booking.driverPhoneNumber || 'N/A'}</p>
-                        <p><strong>Type:</strong> {booking.isSelfDriver ? 'Self-Driving' : 'Assigned Driver'}</p>
-                      </div>
-
-                      <div className="price-info">
-                        <p><strong>Price:</strong> ₹{booking.paymentAmount}</p>
-                        <p><strong>Payment:</strong> {booking.paymentStatus}</p>
-                        <p><strong>Method:</strong> {booking.paymentMethod}</p>
+                      <div className="booking-info-grid">
+                        <div className="info-item">
+                          <span className="info-label">Passenger</span>
+                          <span className="info-value">{booking.passengerId?.name || booking.passengerName || 'N/A'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Phone</span>
+                          <span className="info-value">{booking.passengerId?.phone || 'N/A'}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Seats</span>
+                          <span className="info-value">{booking.numberOfSeats}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Type</span>
+                          <span className="info-value">{booking.bookingType === "ROUND_TRIP" ? "Round Trip" : "One Way"}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Price</span>
+                          <span className="info-value price-highlight">{booking.paymentAmount?.toLocaleString()} KWD</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-label">Payment</span>
+                          <span className="info-value">{booking.paymentStatus} / {booking.paymentMethod}</span>
+                        </div>
+                        {booking.isMonthlyPass && (
+                          <>
+                            <div className="info-item">
+                              <span className="info-label">Pass Type</span>
+                              <span className="info-value">Monthly Pass</span>
+                            </div>
+                            <div className="info-item">
+                              <span className="info-label">Driver Earnings</span>
+                              <span className="info-value price-highlight">{booking.driverEarnings?.toLocaleString()} KWD</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -554,42 +575,13 @@ function B2CPartnerDriverDashboard() {
                       </div>
                     )}
 
-                    {booking.bookingStatus === "ACCEPTED" && (booking.assignedDriverId === user?._id || booking.assignedDriverId === user?.driverId) && (
-                      <div className="booking-actions">
-                        <button
-                          className="start-trip-btn"
-                          onClick={() => startTrip(booking._id)}
-                        >
-                          Start Trip
-                        </button>
-                        <button
-                          className="complete-btn"
-                          onClick={() => completeTrip(booking._id)}
-                        >
-                          Complete Trip
-                        </button>
-                      </div>
-                    )}
-
-                    {booking.bookingStatus === "IN_PROGRESS" && (booking.assignedDriverId === user?._id || booking.assignedDriverId === user?.driverId) && (
-                      <div className="booking-actions">
-                        <button
-                          className="complete-btn"
-                          onClick={() => completeTrip(booking._id)}
-                        >
-                          Complete Trip
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Daily Trips for this Booking */}
+                    {/* Daily Trips for this Booking - trips are managed at daily level, not booking level */}
                     {(booking.bookingStatus === "ACCEPTED" || 
                       booking.bookingStatus === "IN_PROGRESS") && (
                       <DailyTripsInBooking 
                         booking={booking}
                         userRole={user?.role}
                         onTripStatusChange={(status, tripId) => {
-                          console.log(`Trip ${tripId} status changed to: ${status}`);
                           // Refresh bookings after trip status change
                           dispatch(getPartnerDriverBookings({ status: "ALL" }));
                         }}

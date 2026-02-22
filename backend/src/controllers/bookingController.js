@@ -2099,15 +2099,27 @@ export const getDailyTripsForBooking = async (req, res) => {
         const isPartner = booking.b2cPartnerId?.toString() === userId || booking.partnerId?.toString() === userId
         const isDriver = booking.driverId?.toString() === userId || booking.assignedDriverId?.toString() === userId
 
-        // For B2C_PARTNER_DRIVER role, check if they are a driver under the partner who owns this booking
+        // For B2C_PARTNER_DRIVER role, check via user.driverId matching booking.assignedDriverId
         let isPartnerDriver = false
         if (!isPassenger && !isPartner && !isDriver && userRole === "B2C_PARTNER_DRIVER") {
-            const driverRecord = await B2CPartnerDriver.findOne({
-                userId: userId,
-                b2cPartnerId: booking.b2cPartnerId || booking.partnerId
-            }).lean()
-            if (driverRecord) {
-                isPartnerDriver = true
+            // The User model has driverId that maps to B2CPartnerDriver._id
+            // The booking has assignedDriverId that also maps to B2CPartnerDriver._id
+            const driverUser = await User.findById(userId).lean()
+            if (driverUser?.driverId) {
+                const driverIdStr = driverUser.driverId.toString()
+                if (driverIdStr === booking.assignedDriverId?.toString()) {
+                    isPartnerDriver = true
+                }
+            }
+            // Also check by B2CPartnerDriver record under the partner
+            if (!isPartnerDriver) {
+                const driverRecord = await B2CPartnerDriver.findOne({
+                    _id: driverUser?.driverId,
+                    b2cPartnerId: booking.b2cPartnerId || booking.partnerId
+                }).lean()
+                if (driverRecord) {
+                    isPartnerDriver = true
+                }
             }
         }
 
@@ -2119,45 +2131,62 @@ export const getDailyTripsForBooking = async (req, res) => {
             })
         }
 
-        // Get B2C partner trips for this booking using the linked trip references
-        const tripQuery = {}
-        if (booking.linkedTrip || booking.linkedReturnTrip) {
+        // Get trips using the booking's monthlyTrips array (primary source)
+        let dailyTrips = []
+        
+        if (booking.monthlyTrips && booking.monthlyTrips.length > 0) {
+            // Use monthlyTrips array - these are B2CPartnerTrip IDs
+            dailyTrips = await B2CPartnerTrip.find({
+                _id: { $in: booking.monthlyTrips }
+            })
+            .populate('routeId', 'fromLocation toLocation')
+            .populate('driverId', 'name phoneNumber')
+            .sort({ tripDate: 1, startTime: 1 })
+            .lean()
+        } else if (booking.linkedTrip || booking.linkedReturnTrip) {
+            // Fallback to linkedTrip references
             const tripIds = []
             if (booking.linkedTrip) tripIds.push(booking.linkedTrip)
             if (booking.linkedReturnTrip) tripIds.push(booking.linkedReturnTrip)
-            tripQuery._id = { $in: tripIds }
+            dailyTrips = await B2CPartnerTrip.find({
+                _id: { $in: tripIds }
+            })
+            .populate('routeId', 'fromLocation toLocation')
+            .populate('driverId', 'name phoneNumber')
+            .sort({ tripDate: 1, startTime: 1 })
+            .lean()
         } else if (booking.routeId) {
-            // Fallback: find trips by route and date
-            tripQuery.routeId = booking.routeId
-            if (booking.travelDate) {
+            // Last fallback: find trips by route within booking date range
+            const tripQuery = { routeId: booking.routeId }
+            if (booking.passStartDate && booking.passEndDate) {
+                tripQuery.tripDate = { $gte: new Date(booking.passStartDate), $lte: new Date(booking.passEndDate) }
+            } else if (booking.travelDate) {
                 const travelDate = new Date(booking.travelDate)
                 const startOfDay = new Date(travelDate.getFullYear(), travelDate.getMonth(), travelDate.getDate())
                 const endOfDay = new Date(travelDate.getFullYear(), travelDate.getMonth(), travelDate.getDate() + 1)
                 tripQuery.tripDate = { $gte: startOfDay, $lt: endOfDay }
             }
-        } else {
-            // No trip references, return empty
-            return res.status(200).json({
-                success: true,
-                data: [],
-                message: "No daily trips linked to this booking",
-                count: 0
-            })
+            dailyTrips = await B2CPartnerTrip.find(tripQuery)
+                .populate('routeId', 'fromLocation toLocation')
+                .populate('driverId', 'name phoneNumber')
+                .sort({ tripDate: 1, startTime: 1 })
+                .lean()
         }
 
-        const dailyTrips = await B2CPartnerTrip.find(tripQuery)
-            .populate('routeId', 'fromLocation toLocation')
-            .populate('driverId', 'fullName contactNumber')
-            .lean()
+        // Filter to show only today's and future trips (not all 58 trips at once)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
         // Enrich trips with booking-relevant data
         const enrichedTrips = dailyTrips.map(trip => ({
             ...trip,
-            tripStatus: trip.status || "PENDING",
-            fromLocation: trip.routeId?.fromLocation || booking.pickupLocation,
-            toLocation: trip.routeId?.toLocation || booking.dropoffLocation,
+            tripStatus: trip.status || "Scheduled",
+            fromLocation: trip.fromLocation || trip.routeId?.fromLocation || booking.pickupLocation,
+            toLocation: trip.toLocation || trip.routeId?.toLocation || booking.dropoffLocation,
             pickupTime: trip.startTime,
-            driverName: trip.driverId?.fullName || booking.driverName,
+            driverName: trip.driverId?.name || booking.driverName,
+            driverPhone: trip.driverId?.phoneNumber || booking.driverPhoneNumber,
+            tripType: trip.tripType || booking.bookingType,
         }))
 
         res.status(200).json({

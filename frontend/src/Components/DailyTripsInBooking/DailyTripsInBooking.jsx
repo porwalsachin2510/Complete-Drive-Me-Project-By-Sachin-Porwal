@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useDispatch } from "react-redux";
-import { startB2CTrip, completeB2CTrip } from "../../Redux/slices/bookingSlice";
 import api from "../../utils/api";
 import "./DailyTripsInBooking.css";
 
 const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
-  const dispatch = useDispatch();
   const [dailyTrips, setDailyTrips] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [expandedTripId, setExpandedTripId] = useState(null);
+  const [filter, setFilter] = useState("upcoming"); // "upcoming", "all", "today"
+  const [actionLoading, setActionLoading] = useState(null);
 
   const fetchDailyTrips = useCallback(async () => {
     try {
@@ -19,10 +17,9 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
       if (response.data.success) {
         const trips = Array.isArray(response.data.data) ? response.data.data : [];
         setDailyTrips(trips);
-        console.log("[DailyTrips] Fetched trips:", trips);
       }
     } catch (error) {
-      console.error("[DailyTrips] Error fetching trips:", error);
+      console.error("[DailyTrips] Error fetching trips:", error?.response?.data || error.message);
       setDailyTrips([]);
     } finally {
       setLoading(false);
@@ -33,63 +30,88 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
     if (booking?.bookingId || booking?._id) {
       fetchDailyTrips();
     }
-  }, [fetchDailyTrips, booking?.bookingId, booking?._id]);
+  }, [fetchDailyTrips]);
 
+  // Start a specific trip (changes status from Scheduled -> In Progress)
   const handleStartTrip = async (tripId) => {
     try {
-      const bookingId = booking?.bookingId || booking?._id;
-      await dispatch(startB2CTrip(bookingId)).unwrap();
-      
-      // Send notification to passenger
-      console.log("[DailyTrips] Trip started - notifying passenger");
-      if (onTripStatusChange) {
-        onTripStatusChange("STARTED", tripId);
-      }
-      
-      // Refresh trips list
+      setActionLoading(tripId);
+      await api.put(`/b2c-trips/status/${tripId}`, { status: "Started" });
+      if (onTripStatusChange) onTripStatusChange("STARTED", tripId);
       await fetchDailyTrips();
     } catch (error) {
-      console.error("[DailyTrips] Error starting trip:", error);
+      console.error("[DailyTrips] Error starting trip:", error?.response?.data || error.message);
+      alert(error?.response?.data?.message || "Failed to start trip");
+    } finally {
+      setActionLoading(null);
     }
   };
 
+  // Complete a specific trip (changes status from In Progress -> Completed)
   const handleCompleteTrip = async (tripId) => {
     try {
-      const bookingId = booking?.bookingId || booking?._id;
-      await dispatch(completeB2CTrip(bookingId)).unwrap();
-      
-      // Send notification to passenger
-      console.log("[DailyTrips] Trip completed - notifying passenger");
-      if (onTripStatusChange) {
-        onTripStatusChange("COMPLETED", tripId);
-      }
-      
-      // Refresh trips list
+      setActionLoading(tripId);
+      await api.put(`/b2c-trips/status/${tripId}`, { status: "Completed" });
+      if (onTripStatusChange) onTripStatusChange("COMPLETED", tripId);
       await fetchDailyTrips();
     } catch (error) {
-      console.error("[DailyTrips] Error completing trip:", error);
+      console.error("[DailyTrips] Error completing trip:", error?.response?.data || error.message);
+      alert(error?.response?.data?.message || "Failed to complete trip");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const getTripStatus = (trip) => {
-    if (trip.tripStatus === "COMPLETED") return "Completed";
-    if (trip.tripStatus === "STARTED") return "In Progress";
-    if (trip.tripStatus === "CANCELLED") return "Cancelled";
-    return "Pending";
+  const getStatusLabel = (status) => {
+    const map = {
+      "Scheduled": "Scheduled",
+      "In Progress": "In Progress",
+      "Completed": "Completed",
+      "Cancelled": "Cancelled",
+      "Delayed": "Delayed",
+    };
+    return map[status] || status || "Scheduled";
   };
 
-  const getTripStatusColor = (trip) => {
-    if (trip.tripStatus === "COMPLETED") return "#28a745";
-    if (trip.tripStatus === "STARTED") return "#ffc107";
-    if (trip.tripStatus === "CANCELLED") return "#dc3545";
-    return "#6c757d";
+  const getStatusClass = (status) => {
+    const map = {
+      "Scheduled": "status-scheduled",
+      "In Progress": "status-inprogress",
+      "Completed": "status-completed",
+      "Cancelled": "status-cancelled",
+      "Delayed": "status-delayed",
+    };
+    return map[status] || "status-scheduled";
   };
 
   const isDriverRole = userRole === "B2C_PARTNER" || userRole === "B2C_PARTNER_DRIVER";
-  const isPassengerRole = userRole === "NORMAL_PASSENGER" || userRole === "CORPORATE_EMPLOYEE";
+
+  // Filter trips
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const filteredTrips = dailyTrips.filter((trip) => {
+    const tripDate = new Date(trip.tripDate);
+    if (filter === "today") {
+      return tripDate >= todayStart && tripDate < todayEnd;
+    }
+    if (filter === "upcoming") {
+      return tripDate >= todayStart;
+    }
+    return true; // "all"
+  });
+
+  // Count stats
+  const todayTrips = dailyTrips.filter(t => {
+    const d = new Date(t.tripDate);
+    return d >= todayStart && d < todayEnd;
+  });
+  const upcomingTrips = dailyTrips.filter(t => new Date(t.tripDate) >= todayStart);
+  const completedTrips = dailyTrips.filter(t => t.status === "Completed" || t.tripStatus === "Completed");
 
   if (loading) {
-    return <div className="daily-trips-loading">Loading daily trips...</div>;
+    return <div className="daily-trips-loading">Loading trips...</div>;
   }
 
   if (!dailyTrips || dailyTrips.length === 0) {
@@ -99,154 +121,104 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
   return (
     <div className="daily-trips-container">
       <div className="daily-trips-header">
-        <h4>Daily Trips ({dailyTrips.length})</h4>
-        <button 
-          className="refresh-btn"
-          onClick={fetchDailyTrips}
-          title="Refresh trips"
+        <h4>Daily Trips</h4>
+        <div className="trip-stats-mini">
+          <span className="stat-mini">{todayTrips.length} today</span>
+          <span className="stat-mini">{upcomingTrips.length} upcoming</span>
+          <span className="stat-mini">{completedTrips.length} done</span>
+        </div>
+      </div>
+
+      <div className="trip-filter-tabs">
+        <button
+          className={`trip-filter-btn ${filter === "today" ? "active" : ""}`}
+          onClick={() => setFilter("today")}
         >
-          ↻
+          Today ({todayTrips.length})
+        </button>
+        <button
+          className={`trip-filter-btn ${filter === "upcoming" ? "active" : ""}`}
+          onClick={() => setFilter("upcoming")}
+        >
+          Upcoming ({upcomingTrips.length})
+        </button>
+        <button
+          className={`trip-filter-btn ${filter === "all" ? "active" : ""}`}
+          onClick={() => setFilter("all")}
+        >
+          All ({dailyTrips.length})
+        </button>
+        <button className="trip-refresh-btn" onClick={fetchDailyTrips} title="Refresh">
+          Refresh
         </button>
       </div>
 
-      <div className="daily-trips-list">
-        {dailyTrips.map((trip, index) => {
-          const isExpanded = expandedTripId === trip._id;
-          const tripTime = new Date(trip.tripDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
+      {filteredTrips.length === 0 ? (
+        <div className="daily-trips-empty">
+          No {filter === "today" ? "trips for today" : filter === "upcoming" ? "upcoming trips" : "trips"} found
+        </div>
+      ) : (
+        <div className="daily-trips-list">
+          {filteredTrips.map((trip) => {
+            const tripDate = new Date(trip.tripDate);
+            const isToday = tripDate >= todayStart && tripDate < todayEnd;
+            const tripStatus = trip.status || trip.tripStatus || "Scheduled";
+            const statusClass = getStatusClass(tripStatus);
 
-          return (
-            <div key={trip._id} className="daily-trip-card">
-              <div 
-                className="trip-header"
-                onClick={() => setExpandedTripId(isExpanded ? null : trip._id)}
-              >
-                <div className="trip-info">
-                  <div className="trip-number">Trip #{index + 1}</div>
-                  <div className="trip-date">{tripTime}</div>
-                  <div 
-                    className="trip-status-badge"
-                    style={{ backgroundColor: getTripStatusColor(trip) }}
-                  >
-                    {getTripStatus(trip)}
+            return (
+              <div key={trip._id} className={`daily-trip-item ${isToday ? "today-highlight" : ""}`}>
+                <div className="trip-item-left">
+                  <div className="trip-date-block">
+                    <span className="trip-day">{tripDate.toLocaleDateString("en-US", { weekday: "short" })}</span>
+                    <span className="trip-date-num">{tripDate.getDate()}</span>
+                    <span className="trip-month">{tripDate.toLocaleDateString("en-US", { month: "short" })}</span>
                   </div>
                 </div>
-                <div className="trip-chevron">
-                  {isExpanded ? "▼" : "▶"}
+                <div className="trip-item-center">
+                  <div className="trip-route-line">
+                    <span className="trip-from">{trip.fromLocation || booking.pickupLocation}</span>
+                    <span className="trip-arrow">--&gt;</span>
+                    <span className="trip-to">{trip.toLocation || booking.dropoffLocation}</span>
+                  </div>
+                  <div className="trip-meta-row">
+                    <span className="trip-time">{trip.startTime || trip.pickupTime || "--"}</span>
+                    <span className="trip-type-badge">{trip.tripType || "One Way"}</span>
+                    {trip.driverName && <span className="trip-driver-name">{trip.driverName}</span>}
+                  </div>
+                </div>
+                <div className="trip-item-right">
+                  <span className={`trip-status-pill ${statusClass}`}>
+                    {getStatusLabel(tripStatus)}
+                  </span>
+                  
+                  {isDriverRole && isToday && (
+                    <div className="trip-action-btns">
+                      {(tripStatus === "Scheduled") && (
+                        <button
+                          className="btn-trip-start"
+                          onClick={() => handleStartTrip(trip._id)}
+                          disabled={actionLoading === trip._id}
+                        >
+                          {actionLoading === trip._id ? "..." : "Start"}
+                        </button>
+                      )}
+                      {(tripStatus === "In Progress") && (
+                        <button
+                          className="btn-trip-complete"
+                          onClick={() => handleCompleteTrip(trip._id)}
+                          disabled={actionLoading === trip._id}
+                        >
+                          {actionLoading === trip._id ? "..." : "Complete"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {isExpanded && (
-                <div className="trip-details">
-                  <div className="detail-row">
-                    <span className="label">Date:</span>
-                    <span className="value">{tripTime}</span>
-                  </div>
-
-                  {trip.fromLocation && (
-                    <div className="detail-row">
-                      <span className="label">From:</span>
-                      <span className="value">{trip.fromLocation}</span>
-                    </div>
-                  )}
-
-                  {trip.toLocation && (
-                    <div className="detail-row">
-                      <span className="label">To:</span>
-                      <span className="value">{trip.toLocation}</span>
-                    </div>
-                  )}
-
-                  {trip.pickupTime && (
-                    <div className="detail-row">
-                      <span className="label">Pickup Time:</span>
-                      <span className="value">
-                        {new Date(trip.pickupTime).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                    </div>
-                  )}
-
-                  {trip.estimatedArrival && (
-                    <div className="detail-row">
-                      <span className="label">Estimated Arrival:</span>
-                      <span className="value">
-                        {new Date(trip.estimatedArrival).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                    </div>
-                  )}
-
-                  {trip.driverId && (
-                    <div className="detail-row">
-                      <span className="label">Driver:</span>
-                      <span className="value">{trip.driverName || trip.driverId}</span>
-                    </div>
-                  )}
-
-                  {trip.vehicleNumber && (
-                    <div className="detail-row">
-                      <span className="label">Vehicle:</span>
-                      <span className="value">{trip.vehicleNumber}</span>
-                    </div>
-                  )}
-
-                  {/* Driver Actions */}
-                  {isDriverRole && (
-                    <div className="trip-actions">
-                      {trip.tripStatus !== "COMPLETED" && trip.tripStatus !== "CANCELLED" && (
-                        <>
-                          {trip.tripStatus === "PENDING" && (
-                            <button 
-                              className="btn btn-start"
-                              onClick={() => handleStartTrip(trip._id)}
-                            >
-                              ▶ Start Trip
-                            </button>
-                          )}
-
-                          {trip.tripStatus === "STARTED" && (
-                            <button 
-                              className="btn btn-complete"
-                              onClick={() => handleCompleteTrip(trip._id)}
-                            >
-                              ✓ Complete Trip
-                            </button>
-                          )}
-                        </>
-                      )}
-
-                      {(trip.tripStatus === "COMPLETED" || trip.tripStatus === "CANCELLED") && (
-                        <div className="trip-status-final">
-                          {trip.tripStatus === "COMPLETED" ? "✓ Trip Completed" : "✗ Trip Cancelled"}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Passenger View */}
-                  {isPassengerRole && trip.tripStatus === "STARTED" && (
-                    <div className="passenger-actions">
-                      <button className="btn btn-track">
-                        📍 Track Driver
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
