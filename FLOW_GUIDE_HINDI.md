@@ -8,6 +8,10 @@
 3. **B2B_PARTNER** - परिवहन कंपनी (Transportation Company)
 4. **CORPORATE** - कॉर्पोरेट क्लाइंट (Company)
 5. **CORPORATE_EMPLOYEE** - कर्मचारी (Employee)
+6. **B2C_PARTNER_DRIVER** - व्यक्तिगत ड्राइवर (Individual Driver)
+7. **B2B_PARTNER_DRIVER** - परिवहन कंपनी का ड्राइवर (Transportation Company Driver)
+8. **CORPORATE_DRIVER** - कंपनी का ड्राइवर (Company Driver)
+9. **ADMIN** - प्रशासक (Administrator)
 
 ---
 
@@ -135,7 +139,7 @@
 
 ## **चरण 6: महीने के अंत में नवीकरण (Renewal)**
 
-### क्या होता है:
+### क्या ��ोता है:
 1. महीने के अंत में आपको notification मिलता है
 2. 3 विकल्प दिखते हैं:
    - **Auto-Renew** - अगले महीने के लिए automatically charge हो जाएगा
@@ -548,7 +552,7 @@
 
 ### बैकएंड में:
 - API: `POST /contracts/:contractId/accept`
-- Database: **Contract** में status update होती है
+- Database: **Contract** में status update होत�� है
 - Start date से service शुरु हो जाती है
 
 ---
@@ -767,6 +771,385 @@
 
 ---
 
+# 🚗 B2C_PARTNER_DRIVER (व्यक्तिगत ड्राइवर)
+
+## **चरण 1: B2C Partner के लिए Register करें**
+
+### क्या होता है:
+1. B2C Partner आपको add करता है अपने Fleet में
+2. आपको invitation email मिलता है
+3. आप उस link से sign up करते हो
+
+### Sign Up में:
+- नाम, फोन, address
+- License number और validity
+- Experience
+- Documents (DL, Police Clearance)
+
+### बैकएंड में:
+- API: `POST /b2c-partner/drivers`
+- Database: **B2CPartnerDriver** में record
+- Role: "B2C_PARTNER_DRIVER" assign होता है
+
+---
+
+## **चरण 2: Daily Trip Accept करना**
+
+### हर सुबह:
+1. **"Today's Trips"** section खोलो
+2. B2C Partner ने आपको जो routes assign किए उन सभी trips दिखते हैं:
+   - Route name
+   - Pickup points
+   - Passenger names (जो confirmed हो गए)
+   - Pickup time
+   - Drop-off locations
+
+### क्या करते हो:
+1. **"Accept Trip"** दबाओ
+2. Vehicle condition check करो (pre-trip checklist):
+   - Fuel level
+   - Tire condition
+   - AC/Heater working
+   - Safety equipment
+3. सभी कुछ ठीक हो तो **"Trip Ready"** mark करो
+
+### बैकएंड में:
+- API: `GET /b2c-trips/driver/daily-assignments` - आपके trips
+- API: `POST /b2c-trips/trips/:tripId/accept` - Trip accept करना
+- Database: **B2CPartnerTrip** status update होती है
+
+---
+
+## **चरण 3: Trip शुरु करना और Location Sharing**
+
+### Trip के दिन:
+1. सभी passengers को pickup point पर pick करो
+2. सभी आ जाने के बाद **"Start Trip"** दबाओ
+3. तुरंत **Location Sharing** activate हो जाती है:
+   - GPS location हर 10 सेकंड update होता है
+   - सभी passengers को real-time location दिखता है
+   - B2C Partner को भी दिखता है
+
+### Travel के दौरान:
+- रूट follow करो जो दिया गया है
+- Intermediate stops पर सही समय पर रुको
+- Final destination पर सभी को drop करो
+
+### बैकएंड में:
+- API: `POST /b2c-trips/trips/:tripId/start` - Trip शुरु करना
+- API: `POST /driver/location` - Location updates (Real-time, every 10 seconds)
+- Socket.io: Location broadcast होता है
+- Database: **DriverLocation** में सभी coordinates save होते हैं
+
+---
+
+## **चरण 4: Trip Complete करना**
+
+### Trip खत्म होने पर:
+1. Final destination पर सभी passengers को drop करो
+2. **"Trip Completed"** दबाओ
+3. Passengers count confirm करो (जो चढ़े थे)
+4. Trip का feedback/notes add कर सकते हो (optional)
+
+### क्या update होता है:
+- Location sharing automatically बंद हो जाती है
+- Attendance सभी passengers के लिए automatically mark हो जाती है
+- Trip duration और distance automatically calculate होते हैं
+
+### बैकएंड में:
+- API: `POST /b2c-trips/trips/:tripId/complete`
+- Database: **B2CPartnerTrip** status: "COMPLETED"
+- **Attendance** table में सभी passengers की entries
+- Payment processing तुरंत होती है
+
+---
+
+## **चरण 5: Ratings और Reviews मिलना**
+
+### Trip के बाद:
+1. Passengers आपको rate कर सकते हैं:
+   - Driving quality
+   - Vehicle condition
+   - Behavior
+   - Punctuality
+2. आपकी overall rating update होती है
+3. अगर कोई complaint आए तो notification मिलता है
+
+### बैकएंड में:
+- API: `GET /driver/ratings` - आपकी सभी ratings
+- Database: **DriverRating** से average calculate होता है
+- Low rating पर alert B2C Partner को
+
+---
+
+## **चरण 6: Earnings और Payment**
+
+### महीने के अंत में:
+1. **"Earnings"** section में:
+   - Total trips completed
+   - Total passengers served
+   - Total earnings
+   - Commission breakdown
+2. Payment directly आपके bank account में जाती है
+
+### बैकएंड में:
+- API: `GET /driver/earnings`
+- Database: सभी **B2CPartnerTrip** records calculate होती हैं
+- Formula: Per trip rate × Number of trips × Commission percentage
+
+---
+
+# 👨‍💼 B2B_PARTNER_DRIVER (परिवहन कंपनी का ड्राइवर)
+
+## **चरण 1: B2B Partner के लिए Join करना**
+
+### Registration:
+1. B2B Partner (transportation company) आपको add करता है
+2. आपको email invitation मिलता है
+3. Sign up करते हो अपनी details के साथ:
+   - Full name
+   - Phone number
+   - License number (Driving License)
+   - License expiry date
+   - Years of experience
+   - Documents (DL, Police Clearance, Medical Certificate)
+
+### बैकएंड में:
+- API: `POST /b2b-partner/drivers`
+- Database: **B2BPartnerDriver** में record
+- Role: "B2B_PARTNER_DRIVER"
+
+---
+
+## **चरण 2: Assigned Contracts और Routes देखना**
+
+### Dashboard खोलते ही:
+1. **"My Contracts"** section
+2. यह दिखता है कि आप किस corporate client के लिए काम करते हो:
+   - Corporate name
+   - Assigned route
+   - Working days
+   - Shift timing
+   - Vehicle assigned
+
+### क्या information मिलता है:
+- Route details (from-to location)
+- Pickup and drop points
+- Schedule (कौन से दिन, कौन सा समय)
+- Employee list (कितने employees pick करने हैं)
+
+### बैकएंड में:
+- API: `GET /b2b-driver/assignments` - आपकी contracts
+- Database: **Contract** से linked routes fetch होते हैं
+
+---
+
+## **चरण 3: Daily Trip Management**
+
+### हर सुबह:
+1. **"Today's Trips"** खोलो
+2. आपको अपनी assigned routes की सभी trips दिखती हैं:
+   - Employee count जिन्हें pick करना है
+   - Pickup locations
+   - Pickup time
+   - Drop location
+
+### Pre-Trip Checks:
+1. Vehicle का condition check करो
+2. Fuel, tires, AC सब check करो
+3. **"Ready for Trip"** mark करो
+
+### Trip शुरु करना:
+1. सभी employees को right locations पर pick करो
+2. सभी के बाद **"Start Trip"** दबाओ
+3. GPS location sharing activate हो जाता है
+4. Corporate को भी location दिखता है
+
+### बैकएंड में:
+- API: `GET /b2b-driver/daily-trips` - आपके trips
+- API: `POST /b2b-driver/trips/:tripId/start`
+- API: `POST /driver/location` - Real-time location updates
+- Socket.io: Live tracking for corporate employee
+
+---
+
+## **चरण 4: During Trip - Attendance Marking**
+
+### Hर pickup point पर:
+1. Employee चढ़ते ही उन्हें app में mark करो
+2. अगर कोई नहीं आया तो **"Mark as No-Show"** करो
+3. यह information corporate को जाती है
+
+### Route के दौरान:
+- सभी intermediate stops को accurately follow करो
+- Location continuously update होती है
+- Corporate employees को push notification मिलते हैं
+
+### बैकएंड में:
+- API: `POST /attendance/mark`
+- Database: **Attendance** में सभी entries
+- Email: Corporate को daily attendance report
+
+---
+
+## **चरण 5: Trip Complete और Handoff**
+
+### Office/Drop location पर:
+1. सभी employees को safely drop करो
+2. **"Complete Trip"** दबाओ
+3. Final passenger count confirm करो
+4. Any issues note करो (vehicle issue, delay, etc.)
+
+### क्या automatically होता है:
+- Location sharing बंद हो जाती है
+- Attendance सभी के लिए finalized हो जाती है
+- Trip duration और distance calculate होता है
+- Payment के लिए ready हो जाता है
+
+### बैकएंड में:
+- API: `POST /b2b-driver/trips/:tripId/complete`
+- Database: **Trip** status: "COMPLETED", **Attendance** finalized
+- Notifications: Corporate को completion confirmation
+
+---
+
+## **चरण 6: Ratings और Performance**
+
+### End of trip:
+1. Corporate employees आपको rate कर सकते हैं:
+   - Driving quality
+   - Punctuality
+   - Vehicle condition
+   - Behavior/Professionalism
+2. Average rating calculate होती है
+
+### Performance Tracking:
+1. B2B Partner को आपका performance दिखता है:
+   - On-time arrival percentage
+   - No-show complaints
+   - Safety record
+   - Customer ratings
+
+### बैकएंड में:
+- API: `GET /b2b-driver/performance`
+- Database: सभी trips के metrics aggregate होते हैं
+
+---
+
+## **चरण 7: Monthly Payments और Reports**
+
+### Month के अंत में:
+1. **"Payment & Reports"** section
+2. दिखता है:
+   - Total days worked
+   - Total trips completed
+   - Total passengers transported
+   - Per day rate
+   - Gross earning
+   - Any deductions (fuel, maintenance, etc.)
+   - Net payment
+
+### Payment Method:
+- Direct bank transfer
+- या company के माध्यम से check
+
+### बैकएंड में:
+- API: `GET /b2b-driver/monthly-statement`
+- Database: सभी **Trip** records aggregate होती हैं
+- Calculation: Days worked × Daily rate - Deductions
+
+---
+
+# 🚗 CORPORATE_DRIVER (कंपनी का ड्राइवर)
+
+## **चरण 1: Company द्वारा Hire करना**
+
+### Registration:
+1. Corporate company आपको hire करता है
+2. आपको invitation मिलता है
+3. Sign up करते हो:
+   - Personal details
+   - License information
+   - Experience
+   - Documents
+
+### बैकएंड में:
+- API: `POST /corporate/drivers`
+- Database: **CorporateDriver** record
+- Role: "CORPORATE_DRIVER"
+
+---
+
+## **चरण 2: Assigned Routes और Employees**
+
+### Dashboard:
+1. अपना **"Assigned Route"** देख सकते हो:
+   - Which location to which location
+   - Pickup and drop points
+   - Schedule (कौन से दिन, कौन सा समय)
+   - Total employees to transport
+
+### Employee List:
+1. **"My Passengers"** section
+2. सभी employees की list जिन्हें हर दिन pick करना है
+
+### बैकएंड में:
+- API: `GET /corporate-driver/assignment` - आपकी route info
+- Database: Route details corporate contract से fetch होती हैं
+
+---
+
+## **चरण 3: Daily Operations - Exactly B2B के जैसे**
+
+### हर दिन:
+1. Morning में **"Today's Trip"** खोलो
+2. Vehicle check करो
+3. Pickup points पर जाओ और employees को pick करो
+4. **"Start Trip"** करो - GPS activate हो जाती है
+5. Route follow करो
+6. Employees को final destination पर drop करो
+7. **"Complete Trip"** करो
+
+### Attendance:
+- हर employee को mark करते हो जब वह चढ़ता है
+- Corporate को real-time attendance दिखती है
+
+### बैकएंड में:
+- API: `GET /corporate-driver/daily-trip`
+- API: `POST /corporate-driver/trip/start`
+- API: `POST /corporate-driver/trip/complete`
+- Socket.io: Real-time location updates
+
+---
+
+## **चरण 4: Ratings और Feedback**
+
+### Employees rate कर सकते हैं आपको
+- Punctuality
+- Behavior
+- Vehicle cleanliness
+- Safe driving
+
+### Performance visible है:
+- अपना average rating देख सकते हो
+- Company को भी आपका performance दिखता है
+
+---
+
+## **चरण 5: Monthly Salary और Benefits**
+
+### Month के अंत:
+1. **"Payroll"** section में:
+   - Days worked
+   - Salary amount
+   - Allowances
+   - Deductions
+   - Net salary
+
+### Direct bank transfer होती है
+
+---
+
 # 🔐 ADMIN PANEL - Complete Overview
 
 ## Admin के पास ये सभी powers हैं:
@@ -856,11 +1239,15 @@
 
 ## 🎯 Summary: हर User की सफलता की रणनीति
 
-### **COMMUTER**: अपनी subscription सही समय पर renew करो
-### **B2C_PARTNER**: Daily trips सही से manage करो, quality maintain करो
-### **CORPORATE**: Employees को proper support दो, payment on time करो
-### **B2B_PARTNER**: Contracts properly execute करो, reports on time submit करो
-### **CORPORATE_EMPLOYEE**: Regularly travel करो, feedback दो, issues report करो
+### **COMMUTER**: अपनी subscription सही समय पर renew करो, कोई issue हो तो report करो
+### **B2C_PARTNER**: Daily trips सही से manage करो, quality maintain करो, drivers को properly guide करो
+### **B2C_PARTNER_DRIVER**: Safely और on-time सभी passengers को pick-drop करो, location sharing सही से करो
+### **B2B_PARTNER**: Contracts properly execute करो, employees के लिए best service दो, reports on time submit करो
+### **B2B_PARTNER_DRIVER**: Punctuality maintain करो, attendance properly mark करो, corporate को good experience दो
+### **CORPORATE**: Employees को proper support दो, payment on time करो, performance track करो
+### **CORPORATE_DRIVER**: Schedule का पालन करो, employees का care लो, safe driving maintain करो
+### **CORPORATE_EMPLOYEE**: Regularly travel करो, feedback दो, issues report करो, rating दो
+### **ADMIN**: सभी users को support दो, disputes resolve करो, quality maintain करो, system को smooth रखो
 
 ---
 
