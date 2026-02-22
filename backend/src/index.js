@@ -47,6 +47,7 @@ import corporateOperationsRoutes from "./routes/corporateOperationsRoutes.js"
 import driverLocationRoutes from "./routes/driverLocationRoutes.js"
 import corporateRoutes from "./routes/corporateRoutes.js"
 import { dailyTripGeneration, frequentTripGeneration, hourlyTripGeneration, runImmediateGeneration, corporateTripGeneration } from "./cron/tripGenerationCron.js"
+import { processDailyRenewals, sendDailyRenewalReminders } from "./cron/subscriptionCron.js"
 
 dotenv.config()
 
@@ -432,6 +433,9 @@ server.listen(PORT, async () => {
     console.log(`- Daily Corporate: 00:30`)
     console.log(`- Frequent: every 6 hours`)
     console.log(`- Hourly: every hour`)
+    console.log(`Subscription cron jobs ENABLED`)
+    console.log(`- Daily Renewals: 00:15`)
+    console.log(`- Renewal Reminders: 09:00`)
     
     // Run immediate trip generation on server start
     console.log(`[v0] Initializing trip generation on server startup...`)

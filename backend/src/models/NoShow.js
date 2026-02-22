@@ -10,7 +10,7 @@ const noShowSchema = new mongoose.Schema({
     monthlyPassId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "B2CMonthlyPass",
-        required: true
+        default: null
     },
     
     // Passenger Information

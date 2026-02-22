@@ -7,7 +7,7 @@ const NoShow = ({ tripId, onNoShowMarked }) => {
   const [formData, setFormData] = useState({
     reason: '',
     date: new Date().toISOString().split('T')[0],
-    notes: ''
+    customReason: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,11 +15,9 @@ const NoShow = ({ tripId, onNoShowMarked }) => {
 
   const reasons = [
     'SICK_LEAVE',
-    'PERSONAL_EMERGENCY',
+    'PERSONAL_WORK',
+    'EMERGENCY',
     'VACATION',
-    'WORK_FROM_HOME',
-    'MEETING_CONFLICT',
-    'TRANSPORTATION_ISSUE',
     'OTHER'
   ];
 
@@ -113,13 +111,14 @@ const NoShow = ({ tripId, onNoShowMarked }) => {
               </div>
 
               <div className="form-group">
-                <label>Additional Notes</label>
+                <label>Additional Notes {formData.reason === 'OTHER' && <span style={{color:'#dc2626'}}>*</span>}</label>
                 <textarea
-                  name="notes"
-                  value={formData.notes}
+                  name="customReason"
+                  value={formData.customReason}
                   onChange={handleInputChange}
                   rows="3"
                   placeholder="Provide any additional details..."
+                  required={formData.reason === 'OTHER'}
                 />
               </div>
 

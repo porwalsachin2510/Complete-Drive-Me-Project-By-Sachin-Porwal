@@ -402,7 +402,7 @@ export default function CommuterHomePage() {
           )}
         </div>
 
-        <CommuteSearchForm onSearch={handleSearch} />
+        <CommuteSearchForm onSearch={handleSearch} onRequestRoute={() => setShowRouteRequest(true)} />
 
         <FeaturedRoutes routes={featuredRoutes} loading={loading} />
 

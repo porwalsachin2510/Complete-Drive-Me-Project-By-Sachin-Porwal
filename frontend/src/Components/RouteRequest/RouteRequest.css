@@ -93,6 +93,48 @@
   min-height: 80px;
 }
 
+.required {
+  color: #dc2626;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.days-toggle-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.day-toggle-btn {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.day-toggle-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.day-toggle-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
 .error-message {
   background-color: #fef2f2;
   border: 1px solid #fecaca;
@@ -163,6 +205,11 @@
 
   .form-actions {
     flex-direction: column;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
   }
 
   .cancel-btn,
