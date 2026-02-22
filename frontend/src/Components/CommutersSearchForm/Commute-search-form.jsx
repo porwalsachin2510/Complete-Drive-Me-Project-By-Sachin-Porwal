@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./commute-search-form.css";
 
-export default function CommuteSearchForm({ onSearch }) {
+export default function CommuteSearchForm({ onSearch, onRequestRoute }) {
   const [formData, setFormData] = useState({
     pickupLocation: "",
     dropoffLocation: "",
@@ -428,8 +428,8 @@ export default function CommuteSearchForm({ onSearch }) {
             <span className="search-icon">🔍</span>
             Search Commutes
           </button>
-          <button type="button" className="request-button">
-            Can't find a route? Request one
+          <button type="button" className="request-button" onClick={onRequestRoute}>
+            {"Can't find a route? Request one"}
           </button>
         </div>
       </form>
