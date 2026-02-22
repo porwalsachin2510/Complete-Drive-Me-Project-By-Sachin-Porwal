@@ -70,7 +70,7 @@ function AdminRouteManagement() {
         setStats(calculatedStats)
       }
     }
-  }
+  }, [statusFilter])
 
   const handleEditClick = (route) => {
     // Admin can only view route details, not edit

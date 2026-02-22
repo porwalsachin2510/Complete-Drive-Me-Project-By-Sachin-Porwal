@@ -2083,7 +2083,7 @@ export const getDailyTripsForBooking = async (req, res) => {
         const userId = req.userId
 
         // Find the booking
-        const booking = await B2CBooking.findById(bookingId).lean()
+        const booking = await B2CPassengerBooking.findById(bookingId).lean()
         
         if (!booking) {
             return res.status(404).json({
