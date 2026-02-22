@@ -1,4 +1,5 @@
 import axios from "axios"
+import crypto from "crypto"
 
 class TapPayments {
     constructor() {
@@ -94,7 +95,6 @@ class TapPayments {
     verifyWebhook(payload, signature) {
         // Tap Payments webhook verification logic
         // They use HMAC SHA256
-        const crypto = require("crypto")
         const hash = crypto.createHmac("sha256", this.apiKey).update(JSON.stringify(payload)).digest("hex")
         return hash === signature
     }
