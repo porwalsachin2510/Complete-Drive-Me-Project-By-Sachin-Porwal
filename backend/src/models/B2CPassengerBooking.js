@@ -33,6 +33,11 @@ const b2cPassengerBookingSchema = new mongoose.Schema(
             required: true,
             default: "ONE_WAY"
         },
+        scheduleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "B2CPartnerSchedule",
+            required: false
+        },
         linkedSchedule: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "B2CPartnerSchedule",

@@ -81,13 +81,20 @@ export const createPassengerBooking = async (req, res) => {
 
         // Calculate pricing - ONLY MONTHLY PASSES
         let totalAmount = 0;
-        const isMonthly = req.body.isMonthly || true; // Default to monthly
+        const isMonthly = req.body.isMonthly !== false; // Default to monthly
         
         if (isMonthly) {
             if (bookingType === "ONE_WAY") {
-                totalAmount = route.pricing.monthlyPrice * numberOfSeats;
+                totalAmount = (route.pricing.monthlyOneWayPrice || route.pricing.oneWayPrice || 0) * numberOfSeats;
             } else if (bookingType === "ROUND_TRIP") {
-                totalAmount = (route.pricing.monthlyRoundTripPrice || route.pricing.monthlyPrice * 1.5) * numberOfSeats;
+                totalAmount = (route.pricing.monthlyRoundTripPrice || route.pricing.roundTripPrice || (route.pricing.monthlyOneWayPrice || route.pricing.oneWayPrice || 0) * 1.5) * numberOfSeats;
+            }
+        } else {
+            // Single trip pricing
+            if (bookingType === "ONE_WAY") {
+                totalAmount = (route.pricing.oneWayPrice || 0) * numberOfSeats;
+            } else if (bookingType === "ROUND_TRIP") {
+                totalAmount = (route.pricing.roundTripPrice || (route.pricing.oneWayPrice || 0) * 1.5) * numberOfSeats;
             }
         }
 

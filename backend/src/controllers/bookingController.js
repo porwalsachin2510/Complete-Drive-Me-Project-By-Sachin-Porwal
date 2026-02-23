@@ -986,7 +986,7 @@ export const rejectB2CBooking = async (req, res) => {
             type: "BOOKING_REJECTED",
             title: "Booking Rejected",
             message: `Your booking has been rejected. Reason: ${booking.rejectionReason}`,
-            relatedUserId: driverId,
+            relatedUserId: partnerId,
             bookingId: booking._id,
         })
 
@@ -997,7 +997,7 @@ export const rejectB2CBooking = async (req, res) => {
             message: rejectNotification.message,
             data: {
                 bookingId: booking._id,
-                driverId,
+                partnerId,
                 passengerId: booking.passengerId,
                 rejectionReason: booking.rejectionReason,
                 notification: rejectNotification

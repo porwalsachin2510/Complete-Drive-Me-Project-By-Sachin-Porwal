@@ -7,6 +7,11 @@ const b2cPartnerTripSchema = new mongoose.Schema(
             ref: "B2CPartnerRoute",
             required: true,
         },
+        scheduleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "B2CPartnerSchedule",
+            required: false,
+        },
         b2cPartnerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -29,6 +34,9 @@ const b2cPartnerTripSchema = new mongoose.Schema(
         startTime: {
             type: String,
             required: true,
+        },
+        endTime: {
+            type: String,
         },
         actualStartTime: {
             type: Date,
@@ -119,6 +127,13 @@ const b2cPartnerTripSchema = new mongoose.Schema(
                 default: false,
             },
         },
+        // Pricing snapshot from route
+        pricing: {
+            oneWayPrice: { type: Number, default: 0 },
+            roundTripPrice: { type: Number, default: 0 },
+            monthlyOneWayPrice: { type: Number, default: 0 },
+            monthlyRoundTripPrice: { type: Number, default: 0 },
+        },
         // Financial tracking
         revenue: {
             type: Number,
@@ -165,6 +180,7 @@ b2cPartnerTripSchema.index({ b2cPartnerId: 1, status: 1 });
 b2cPartnerTripSchema.index({ vehicleId: 1, tripDate: 1 });
 b2cPartnerTripSchema.index({ driverId: 1, tripDate: 1 });
 b2cPartnerTripSchema.index({ tripDate: 1, status: 1 });
+b2cPartnerTripSchema.index({ scheduleId: 1, tripDate: 1, startTime: 1 });
 
 // Virtual for trip completion percentage
 b2cPartnerTripSchema.virtual('completionPercentage').get(function() {
