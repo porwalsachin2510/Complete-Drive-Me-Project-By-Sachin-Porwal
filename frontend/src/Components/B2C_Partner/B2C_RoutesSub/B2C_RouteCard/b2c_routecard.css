@@ -1,36 +1,36 @@
+/* B2C Route Card - Professional Clean Layout */
 .b2c-route-card {
   background: white;
   border-radius: 12px;
   overflow: visible;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
   position: relative;
-  z-index: 1;
 }
 
 .b2c-route-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
+/* Header */
 .b2c-route-header {
-  padding: 16px;
-  border-bottom: 1px solid #f3f4f6;
-  position: relative;
-}
-
-.b2c-route-info {
+  padding: 16px 20px;
+  border-bottom: 1px solid #edf2f7;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
-.b2c-route-locations {
+.b2c-route-info {
   flex: 1;
+}
+
+.b2c-route-locations {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -41,96 +41,107 @@
 }
 
 .b2c-location-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .b2c-location-dot.b2c-from {
-  background: #10b981;
+  background: #48bb78;
+  box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
 }
 
 .b2c-location-dot.b2c-to {
-  background: #ef4444;
+  background: #f56565;
+  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.2);
 }
 
 .b2c-location-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a202c;
 }
 
 .b2c-route-arrow {
-  font-size: 16px;
-  color: #6b7280;
-  font-weight: bold;
+  font-size: 1.1rem;
+  color: #a0aec0;
+  font-weight: 700;
 }
 
-.b2c-route-meta {
+/* Badges */
+.b2c-badges-wrapper {
   display: flex;
-  justify-content: flex-end;
+  gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 
-.b2c-badges-container {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
+.b2c-status-badge {
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.b2c-status-badge,
 .b2c-trip-type-badge {
   color: white;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   white-space: nowrap;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
 }
 
+/* Details Section */
 .b2c-route-details {
-  padding: 16px;
+  padding: 16px 20px;
 }
 
 .b2c-detail-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   margin-bottom: 12px;
-  gap: 16px;
 }
 
 .b2c-detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1px solid #edf2f7;
 }
 
 .b2c-detail-label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
+  display: block;
+  font-size: 0.7rem;
+  color: #a0aec0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
 }
 
 .b2c-detail-value {
-  font-size: 14px;
-  color: #1f2937;
+  font-size: 0.9rem;
+  color: #2d3748;
   font-weight: 600;
 }
 
+/* Pricing */
 .b2c-pricing-row {
   display: flex;
   justify-content: space-between;
-  margin: 16px 0;
-  padding: 12px;
-  background: #f8f9fa;
+  margin: 14px 0;
+  padding: 14px;
+  background: #f0fff4;
   border-radius: 8px;
-  gap: 16px;
+  border: 1px solid #c6f6d5;
+  gap: 12px;
 }
 
 .b2c-price-item {
@@ -141,39 +152,51 @@
 }
 
 .b2c-price-label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 0.7rem;
+  color: #718096;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   margin-bottom: 4px;
 }
 
 .b2c-price-value {
-  font-size: 16px;
-  color: #059669;
+  font-size: 1rem;
+  color: #276749;
   font-weight: 700;
 }
 
+/* Stop Points */
 .b2c-stop-points {
   margin-top: 12px;
 }
 
+.b2c-stop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .b2c-toggle-details {
-  background: #f3f4f6;
+  background: #edf2f7;
   border: none;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
-  font-size: 12px;
-  color: #374151;
+  font-size: 0.8rem;
+  color: #4a5568;
   cursor: pointer;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .b2c-toggle-details:hover {
-  background: #e5e7eb;
+  background: #e2e8f0;
+  color: #2d3748;
 }
 
 .b2c-stop-points-list {
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -182,123 +205,161 @@
 .b2c-stop-point {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  background: #f8f9fa;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f7fafc;
   border-radius: 6px;
-  font-size: 13px;
+  border: 1px solid #edf2f7;
 }
 
 .b2c-stop-number {
-  width: 20px;
-  height: 20px;
-  background: #3b82f6;
+  width: 22px;
+  height: 22px;
+  background: #3182ce;
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .b2c-stop-location {
   flex: 1;
-  color: #374151;
+  color: #2d3748;
   font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .b2c-stop-time {
-  color: #6b7280;
-  font-size: 12px;
+  color: #718096;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
+/* Assignments */
 .b2c-route-assignments {
-  margin-top: 16px;
+  margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #f3f4f6;
-  display: flex;
-  gap: 16px;
+  border-top: 1px solid #edf2f7;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .b2c-assignment-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
 }
 
 .b2c-assignment-label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 0.7rem;
+  color: #a0aec0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .b2c-assignment-value {
-  font-size: 13px;
-  color: #1f2937;
+  font-size: 0.85rem;
+  color: #2d3748;
   font-weight: 600;
 }
 
+/* Actions */
 .b2c-route-actions {
-  padding: 16px;
-  border-top: 1px solid #f3f4f6;
+  padding: 14px 20px;
+  border-top: 1px solid #edf2f7;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .b2c-action-btn {
   flex: 1;
-  padding: 8px 12px;
+  min-width: 80px;
+  padding: 8px 14px;
   border: none;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  text-align: center;
 }
 
 .b2c-edit-btn {
-  background: #3b82f6;
+  background: #4299e1;
   color: white;
 }
 
 .b2c-edit-btn:hover {
-  background: #2563eb;
+  background: #3182ce;
 }
 
 .b2c-schedule-btn {
-  background: #8b5cf6;
+  background: #805ad5;
   color: white;
 }
 
 .b2c-schedule-btn:hover {
-  background: #7c3aed;
+  background: #6b46c1;
 }
 
-.b2c-trip-btn {
-  background: #10b981;
-  color: white;
-}
-
-.b2c-trip-btn:hover {
-  background: #059669;
-}
-
+.b2c-trip-btn,
 .b2c-view-trips-btn {
-  background: #3b82f6;
+  background: #48bb78;
   color: white;
 }
 
+.b2c-trip-btn:hover,
 .b2c-view-trips-btn:hover {
-  background: #2563eb;
+  background: #38a169;
 }
 
 .b2c-delete-btn {
-  background: #ef4444;
+  background: #fc8181;
   color: white;
 }
 
 .b2c-delete-btn:hover {
-  background: #dc2626;
+  background: #f56565;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .b2c-route-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .b2c-detail-row {
+    grid-template-columns: 1fr;
+  }
+
+  .b2c-pricing-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .b2c-price-item {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .b2c-route-actions {
+    flex-wrap: wrap;
+  }
+
+  .b2c-action-btn {
+    min-width: calc(50% - 4px);
+  }
+
+  .b2c-route-assignments {
+    grid-template-columns: 1fr;
+  }
 }

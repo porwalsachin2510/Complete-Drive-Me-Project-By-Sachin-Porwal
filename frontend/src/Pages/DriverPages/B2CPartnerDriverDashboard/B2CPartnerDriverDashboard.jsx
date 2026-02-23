@@ -581,9 +581,18 @@ function B2CPartnerDriverDashboard() {
                       <DailyTripsInBooking 
                         booking={booking}
                         userRole={user?.role}
+                        currentUserId={user?._id}
                         onTripStatusChange={(status, tripId) => {
-                          // Refresh bookings after trip status change
                           dispatch(getPartnerDriverBookings({ status: "ALL" }));
+                        }}
+                        onTripStart={(tripId) => {
+                          setActiveTrip(booking);
+                          if (!isSharingLocation) {
+                            startAutomaticLocationSharing();
+                          }
+                        }}
+                        onTripComplete={(tripId) => {
+                          stopAutomaticLocationSharing();
                         }}
                       />
                     )}

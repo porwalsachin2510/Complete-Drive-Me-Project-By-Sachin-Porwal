@@ -300,30 +300,30 @@ const B2C_PartnerBookingsPage = () => {
               <div className="booking-details">
                 <div className="route-info">
                   <div className="route-point">
-                    <strong>From:</strong> {booking.pickupLocation}
+                    <strong>From</strong> {booking.pickupLocation || 'N/A'}
                   </div>
-                  <div className="route-arrow">→</div>
+                  <div className="route-arrow">&rarr;</div>
                   <div className="route-point">
-                    <strong>To:</strong> {booking.dropoffLocation}
+                    <strong>To</strong> {booking.dropoffLocation || 'N/A'}
                   </div>
                 </div>
 
                 <div className="driver-info">
-                  <p><strong>Driver:</strong> {booking.driverName || "Not Assigned"}</p>
-                  <p><strong>Phone:</strong> {booking.driverPhoneNumber || "Not Available"}</p>
-                  <p><strong>Passenger:</strong> {booking.passengerId?.name || "Passenger"}</p>
+                  <p><strong>Driver</strong> {booking.driverName || "Not Assigned"}</p>
+                  <p><strong>Phone</strong> {booking.driverPhoneNumber || "N/A"}</p>
+                  <p><strong>Passenger</strong> {booking.passengerId?.name || "Passenger"}</p>
                 </div>
 
                 <div className="booking-info-details">
-                  <p><strong>Seats:</strong> {booking.numberOfSeats}</p>
-                  <p><strong>Price:</strong> ₹{booking.paymentAmount}</p>
-                  <p><strong>Payment:</strong> {booking.paymentStatus}</p>
-                  <p><strong>Type:</strong> {booking.isMonthlyPass ? "Monthly Pass" : "Single Trip"}</p>
+                  <p><strong>Seats</strong> {booking.numberOfSeats || 1}</p>
+                  <p><strong>Amount</strong> {(booking.paymentAmount || 0).toLocaleString()} KWD</p>
+                  <p><strong>Payment</strong> {booking.paymentStatus || 'N/A'} / {booking.paymentMethod || 'N/A'}</p>
+                  <p><strong>Type</strong> {booking.isMonthlyPass ? "Monthly Pass" : "Single Trip"}</p>
                 </div>
 
                 <div className="commission-info">
-                  <p><strong>Admin Commission:</strong> ₹{booking.adminCommissionAmount}</p>
-                  <p><strong>Driver Earnings:</strong> ₹{booking.driverEarnings}</p>
+                  <p><strong>Admin Commission</strong> {(booking.adminCommissionAmount || 0).toLocaleString()} KWD</p>
+                  <p><strong>Driver Earnings</strong> {(booking.driverEarnings || 0).toLocaleString()} KWD</p>
                 </div>
               </div>
 
@@ -393,10 +393,24 @@ const B2C_PartnerBookingsPage = () => {
                 <DailyTripsInBooking 
                   booking={booking}
                   userRole={auth.user?.role}
+                  currentUserId={auth.user?._id}
                   onTripStatusChange={(status, tripId) => {
-                    console.log(`Trip ${tripId} status changed to: ${status}`);
                     // Refresh bookings after trip status change
                     dispatch(getPartnerBookings({ status: filterStatus }));
+                  }}
+                  onTripStart={(tripId) => {
+                    // Start location sharing when driver starts trip
+                    if (auth.user?.role === "B2C_PARTNER" && booking.isSelfDriver) {
+                      startLocationSharing(booking);
+                    }
+                  }}
+                  onTripComplete={(tripId) => {
+                    // Stop location sharing when trip completes
+                    if (locationSharingRef.current) {
+                      clearInterval(locationSharingRef.current);
+                      locationSharingRef.current = null;
+                    }
+                    fetchWalletBalance();
                   }}
                 />
               )}

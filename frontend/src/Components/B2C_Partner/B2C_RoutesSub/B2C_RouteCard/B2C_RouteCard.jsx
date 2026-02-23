@@ -91,31 +91,10 @@ function B2C_RouteCard({ route, onRouteUpdated, onAddSchedule }) {
           </div>
         </div>
         
-        {/* Separate badges container with absolute positioning - Only Active Badge */}
-        <div className="b2c-badges-wrapper" style={{
-          position: 'absolute',
-          top: '2px',
-          right: '12px',
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '6px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          zIndex: 10
-        }}>
+        <div className="b2c-badges-wrapper">
           <span 
             className="b2c-status-badge"
-            style={{ 
-              backgroundColor: getStatusColor(route.status),
-              display: 'inline-block',
-              padding: '3px 8px',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: '600',
-              color: 'white',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-            }}
+            style={{ backgroundColor: getStatusColor(route.status) }}
           >
             {route.status}
           </span>
@@ -166,12 +145,7 @@ function B2C_RouteCard({ route, onRouteUpdated, onAddSchedule }) {
 
         {route.stopPoints && route.stopPoints.length > 0 && (
           <div className="b2c-stop-points">
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              width: '100%'
-            }}>
+            <div className="b2c-stop-header">
               <button 
                 className="b2c-toggle-details"
                 onClick={() => setShowDetails(!showDetails)}
@@ -181,16 +155,7 @@ function B2C_RouteCard({ route, onRouteUpdated, onAddSchedule }) {
               
               <span 
                 className="b2c-trip-type-badge"
-                style={{ 
-                  backgroundColor: getTripTypeColor(route.tripType),
-                  display: 'inline-block',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '500',
-                  color: 'white',
-                  whiteSpace: 'nowrap'
-                }}
+                style={{ backgroundColor: getTripTypeColor(route.tripType) }}
               >
                 {route.tripType}
               </span>
