@@ -171,18 +171,43 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
 
   if (!isOpen || !route) return null;
 
-  // MONTHLY PASS PRICING LOGIC
-  const getMonthlyPrice = () => {
+  // MONTHLY PASS PRICING LOGIC - Per-day pricing
+  // oneWayPrice and roundTripPrice are PER DAY rates from route document
+  const getPerDayPrice = () => {
     if (selectedPassType === "ONE_WAY") {
-      return route.pricing?.monthlyOneWayPrice || route.monthlyPrice || 3000;
+      return route.pricing?.oneWayPrice || route.oneWayPrice || 100;
     } else {
-      return route.pricing?.monthlyRoundTripPrice || 6000;
+      return route.pricing?.roundTripPrice || route.roundTripPrice || 200;
     }
   };
 
+  // Calculate travel days per month based on route's available days
+  const getTravelDaysPerMonth = () => {
+    const availableDays = route.availableDays || route.schedule?.availableDays || [];
+    
+    // If availableDays is a string like "Daily", "Weekdays", etc.
+    if (typeof availableDays === 'string') {
+      if (availableDays.toLowerCase() === 'daily' || availableDays.toLowerCase() === 'all') return 30;
+      if (availableDays.toLowerCase() === 'weekdays') return 22;
+      if (availableDays.toLowerCase() === 'weekends') return 8;
+    }
+    
+    // If availableDays is an array of day names
+    if (Array.isArray(availableDays) && availableDays.length > 0) {
+      const dayCount = availableDays.length;
+      // Approximate days per month = (dayCount / 7) * 30
+      return Math.round((dayCount / 7) * 30);
+    }
+    
+    // Default: whole week = ~30 days/month
+    return 30;
+  };
+
   const availableSeats = route.availableSeats ?? route.totalSeats ?? 10;
-  const pricePerSeat = getMonthlyPrice();
-  const totalAmount = (pricePerSeat * numberOfSeats * passDuration).toFixed(2);
+  const perDayPrice = getPerDayPrice();
+  const travelDaysPerMonth = getTravelDaysPerMonth();
+  const pricePerMonth = perDayPrice * travelDaysPerMonth;
+  const totalAmount = (pricePerMonth * numberOfSeats * passDuration).toFixed(2);
   const adminCommission = (totalAmount * 0.2).toFixed(2);
   const driverEarnings = (totalAmount * 0.8).toFixed(2);
 
@@ -846,8 +871,16 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
                   <span>{selectedPassType === "ONE_WAY" ? "One Way Monthly" : "Round Trip Monthly"}</span>
                 </div>
                 <div className="price-row">
-                  <span>Price per seat (per month)</span>
-                  <span>AED {pricePerSeat.toFixed(2)}</span>
+                  <span>Per Day Rate</span>
+                  <span>AED {perDayPrice.toFixed(2)}/day</span>
+                </div>
+                <div className="price-row">
+                  <span>Travel Days/Month</span>
+                  <span>~{travelDaysPerMonth} days ({route.availableDays || 'Daily'})</span>
+                </div>
+                <div className="price-row">
+                  <span>Monthly Price (per seat)</span>
+                  <span>AED {pricePerMonth.toFixed(2)}</span>
                 </div>
                 <div className="price-row">
                   <span>Number of seats</span>

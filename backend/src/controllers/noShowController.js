@@ -1,29 +1,64 @@
 import NoShow from "../models/NoShow.js";
 import B2CPartnerTrip from "../models/B2CPartnerTrip.js";
 import B2CMonthlyPass from "../models/B2CMonthlyPass.js";
+import B2CPassengerBooking from "../models/B2CPassengerBooking.js";
 import User from "../models/User.js";
 import { sendEmail } from "../Services/emailService.js";
 
 // Mark no-show for a trip
 export const markNoShow = async (req, res) => {
     try {
-        const { tripId, monthlyPassId, reason, customReason, date } = req.body;
+        const { tripId, bookingId, monthlyPassId, reason, customReason, date } = req.body;
         const passengerId = req.userId;
 
-        // Validate required fields (monthlyPassId is optional for single bookings)
-        if (!tripId || !reason || !date) {
+        // Validate required fields
+        if (!reason || !date) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields for no-show marking (tripId, reason, date)"
+                message: "Missing required fields for no-show marking (reason, date)"
             });
         }
 
-        // Verify trip exists and belongs to passenger
-        const trip = await B2CPartnerTrip.findById(tripId);
+        // Try to find the trip - first by tripId, then by bookingId + date
+        let trip = null;
+        
+        if (tripId) {
+            trip = await B2CPartnerTrip.findById(tripId);
+        }
+        
+        // If trip not found by tripId, try to find via booking's monthly trips for the given date
+        if (!trip && bookingId) {
+            const booking = await B2CPassengerBooking.findById(bookingId);
+            if (booking && booking.monthlyTrips && booking.monthlyTrips.length > 0) {
+                const targetDate = new Date(date);
+                const dayStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                const dayEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1);
+                
+                // Find the trip for this date from the booking's linked trips
+                trip = await B2CPartnerTrip.findOne({
+                    _id: { $in: booking.monthlyTrips },
+                    tripDate: { $gte: dayStart, $lt: dayEnd }
+                });
+            }
+            
+            // If still not found, try to find by route and date
+            if (!trip && booking) {
+                const targetDate = new Date(date);
+                const dayStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                const dayEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1);
+                
+                trip = await B2CPartnerTrip.findOne({
+                    routeId: booking.routeId,
+                    tripDate: { $gte: dayStart, $lt: dayEnd },
+                    status: { $ne: "Cancelled" }
+                });
+            }
+        }
+        
         if (!trip) {
             return res.status(404).json({
                 success: false,
-                message: "Trip not found"
+                message: "No trip found for the specified date. Please ensure a trip exists for this date."
             });
         }
 

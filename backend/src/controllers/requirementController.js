@@ -101,13 +101,26 @@ export const getOpenRequirements = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, vehicleType, location } = req.query;
 
-        // Build query for open requirements
+        const partnerId = req.userId;
+        
+        // Build query for open requirements - PUBLIC published + INVITE_ONLY where partner is invited
         let query = {
             status: "PUBLISHED",
-            visibility: "PUBLIC",
-            quotationDeadline: { $gt: new Date() },
+            $or: [
+                { visibility: "PUBLIC" },
+                { visibility: "INVITE_ONLY", invitedPartners: partnerId }
+            ],
             isDeleted: false
         };
+        
+        // Only filter by deadline if deadline exists
+        query.$and = [
+            { $or: [
+                { quotationDeadline: { $gt: new Date() } },
+                { quotationDeadline: { $exists: false } },
+                { quotationDeadline: null }
+            ]}
+        ];
 
         // Add search filters
         if (search) {

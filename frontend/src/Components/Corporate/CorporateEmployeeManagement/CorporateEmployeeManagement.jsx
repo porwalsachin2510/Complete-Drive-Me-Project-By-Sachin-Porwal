@@ -73,9 +73,20 @@ function CorporateEmployeeManagement() {
     try {
       // Backend: GET /api/corporate-operations/assigned-routes-status
       const response = await api.get('/corporate-operations/assigned-routes-status');
-      setAvailableRoutes(response.data.data);
+      const routesData = response.data?.data;
+      // Ensure availableRoutes is always an array
+      if (Array.isArray(routesData)) {
+        setAvailableRoutes(routesData);
+      } else if (routesData && Array.isArray(routesData.routes)) {
+        setAvailableRoutes(routesData.routes);
+      } else if (routesData && Array.isArray(routesData.assignedRoutes)) {
+        setAvailableRoutes(routesData.assignedRoutes);
+      } else {
+        setAvailableRoutes([]);
+      }
     } catch (error) {
       console.error("Error fetching routes:", error);
+      setAvailableRoutes([]);
     }
   };
 
@@ -101,12 +112,22 @@ function CorporateEmployeeManagement() {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Validate that we have employees to upload
+      if (!bulkUploadData.employees || !Array.isArray(bulkUploadData.employees) || bulkUploadData.employees.length === 0) {
+        alert("No employees data to upload. Please select a valid JSON file.");
+        return;
+      }
+      
       // Backend: POST /api/corporate-employees/bulk-upload
       const response = await api.post('/corporate-employees/bulk-upload', bulkUploadData);
       setShowBulkUploadModal(false);
       setBulkUploadData({ employees: [] });
       fetchEmployees();
-      alert(`Bulk upload completed! ${response.data.data.successful.length} successful, ${response.data.data.failed.length} failed`);
+      
+      const successCount = response.data?.data?.successful?.length || response.data?.data?.created || 0;
+      const failCount = response.data?.data?.failed?.length || response.data?.data?.errors || 0;
+      alert(`Bulk upload completed! ${successCount} successful, ${failCount} failed`);
     } catch (error) {
       console.error("Error in bulk upload:", error);
       alert(error.response?.data?.message || "Failed to complete bulk upload");
@@ -430,9 +451,9 @@ function CorporateEmployeeManagement() {
                     }))}
                   >
                     <option value="">Select Route</option>
-                    {availableRoutes.map((route) => (
+                    {Array.isArray(availableRoutes) && availableRoutes.map((route) => (
                       <option key={route._id} value={route._id}>
-                        {route.fromLocation} → {route.toLocation}
+                        {route.fromLocation || route.from} → {route.toLocation || route.to}
                       </option>
                     ))}
                   </select>

@@ -116,8 +116,37 @@ export const createB2CMonthlyPass = async (req, res) => {
             });
         }
 
-        // Calculate dates
-        const startDate = paymentDate ? new Date(paymentDate) : new Date();
+        // Calculate dates - SMART START DATE LOGIC
+        // If today's trip time has already passed, start from next day
+        let startDate = paymentDate ? new Date(paymentDate) : new Date();
+        
+        // Parse outboundTripTime (e.g., "8:00 AM", "10:00 AM") and compare with current time
+        if (outboundTripTime) {
+            const now = new Date();
+            const todayTripTime = new Date(now);
+            
+            // Parse time string like "8:00 AM" or "10:00 AM"
+            const timeParts = outboundTripTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (timeParts) {
+                let hours = parseInt(timeParts[1]);
+                const minutes = parseInt(timeParts[2]);
+                const ampm = timeParts[3].toUpperCase();
+                
+                if (ampm === 'PM' && hours !== 12) hours += 12;
+                if (ampm === 'AM' && hours === 12) hours = 0;
+                
+                todayTripTime.setHours(hours, minutes, 0, 0);
+                
+                // If current time is past today's trip time, start from tomorrow
+                if (now >= todayTripTime) {
+                    startDate = new Date(now);
+                    startDate.setDate(startDate.getDate() + 1);
+                    startDate.setHours(0, 0, 0, 0);
+                    console.log("[v0] Trip time already passed today, starting from next day:", startDate);
+                }
+            }
+        }
+        
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + durationMonths);
 

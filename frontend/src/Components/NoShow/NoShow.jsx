@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import './NoShow.css';
 
-const NoShow = ({ tripId, onNoShowMarked }) => {
+const NoShow = ({ tripId, bookingId, onNoShowMarked }) => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     reason: '',
@@ -37,7 +37,8 @@ const NoShow = ({ tripId, onNoShowMarked }) => {
 
     try {
       const response = await api.post('/no-show/mark', {
-        tripId,
+        tripId: tripId || undefined,
+        bookingId: bookingId || undefined,
         ...formData
       });
 

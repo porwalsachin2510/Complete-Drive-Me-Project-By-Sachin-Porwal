@@ -2,18 +2,32 @@ import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { sendRealTimeNotification } from "./socketService.js";
 
-// Create notification
+// Create notification with null safety
 export const createNotification = async (notificationData) => {
     try {
-        const notification = new Notification(notificationData);
+        // Sanitize notification data to prevent undefined values
+        const sanitizedData = {
+            ...notificationData,
+            title: notificationData.title || "Notification",
+            message: (notificationData.message || "You have a new notification").replace(/undefined/g, "N/A"),
+            type: notificationData.type || "GENERAL",
+        };
+        
+        // Ensure userId exists
+        if (!sanitizedData.userId) {
+            console.error("[v0] Notification skipped: no userId provided");
+            return null;
+        }
+        
+        const notification = new Notification(sanitizedData);
         await notification.save();
 
         // Send real-time notification if user is online
-        await sendRealTimeNotification(notificationData.userId, {
-            type: notificationData.type,
-            title: notificationData.title,
-            message: notificationData.message,
-            data: notificationData.data,
+        await sendRealTimeNotification(sanitizedData.userId, {
+            type: sanitizedData.type,
+            title: sanitizedData.title,
+            message: sanitizedData.message,
+            data: sanitizedData.data || {},
             notificationId: notification._id,
             createdAt: notification.createdAt,
         });
@@ -22,7 +36,8 @@ export const createNotification = async (notificationData) => {
         return notification;
     } catch (error) {
         console.error("[v0] Error creating notification:", error);
-        throw error;
+        // Don't throw - notifications should not break main flow
+        return null;
     }
 };
 
@@ -95,18 +110,20 @@ export const sendTripStartNotification = async (tripId, driverId) => {
         await trip.save();
 
         // Send notifications to all confirmed passengers
-        for (const passenger of trip.passengers) {
-            if (passenger.userId && passenger.status === "Confirmed") {
+        const passengers = trip.passengers || [];
+        for (const passenger of passengers) {
+            if (passenger.userId && (passenger.status === "Confirmed" || passenger.status === "Boarded")) {
                 await createNotification({
-                    userId: passenger.userId._id,
+                    userId: passenger.userId._id || passenger.userId,
                     type: "TRIP_STARTED",
                     title: "Trip Started!",
-                    message: `Your trip has started. Driver is en route to your pickup point.`,
+                    message: `Your trip from ${trip.fromLocation || 'pickup'} to ${trip.toLocation || 'destination'} has started. Driver is en route.`,
                     data: {
                         tripId: trip._id,
-                        driverInfo: trip.driverInfo,
-                        vehicleInfo: trip.vehicleInfo,
-                        currentLocation: trip.currentLocation,
+                        driverInfo: trip.driverInfo || {},
+                        vehicleInfo: trip.vehicleInfo || {},
+                        fromLocation: trip.fromLocation || '',
+                        toLocation: trip.toLocation || '',
                     },
                 });
 

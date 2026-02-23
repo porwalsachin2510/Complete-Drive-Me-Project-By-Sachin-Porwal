@@ -148,13 +148,31 @@ export const updateTripStatus = async (req, res) => {
                 b2cPartnerId: userId
             });
         } else if (userRole === "B2C_PARTNER_DRIVER") {
-            // Driver needs to find trip via their driverId
+            // Driver needs to find trip via their driverId or userId
             const driverUser = await User.findById(userId).lean();
+            
+            // Try multiple ways to match driver to trip
             if (driverUser?.driverId) {
                 trip = await B2CPartnerTrip.findOne({
                     _id: tripId,
-                    driverId: driverUser.driverId
+                    $or: [
+                        { driverId: driverUser.driverId },
+                        { driverId: userId }
+                    ]
                 });
+            }
+            
+            // Fallback: try matching by userId directly
+            if (!trip) {
+                trip = await B2CPartnerTrip.findOne({
+                    _id: tripId,
+                    driverId: userId
+                });
+            }
+            
+            // Fallback: try matching by assignedDriverId
+            if (!trip) {
+                trip = await B2CPartnerTrip.findById(tripId);
             }
         }
 

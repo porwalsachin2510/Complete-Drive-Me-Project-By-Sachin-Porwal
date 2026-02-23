@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import api from "../../utils/api";
 import "./DailyTripsInBooking.css";
 
-const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
+const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange, currentUserId, onTripStart, onTripComplete }) => {
   const [dailyTrips, setDailyTrips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("upcoming"); // "upcoming", "all", "today"
@@ -36,8 +36,9 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
   const handleStartTrip = async (tripId) => {
     try {
       setActionLoading(tripId);
-      await api.put(`/b2c-trips/status/${tripId}`, { status: "Started" });
+      await api.put(`/b2c-daily-trips/status/${tripId}`, { status: "Started" });
       if (onTripStatusChange) onTripStatusChange("STARTED", tripId);
+      if (onTripStart) onTripStart(tripId);
       await fetchDailyTrips();
     } catch (error) {
       console.error("[DailyTrips] Error starting trip:", error?.response?.data || error.message);
@@ -51,8 +52,9 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
   const handleCompleteTrip = async (tripId) => {
     try {
       setActionLoading(tripId);
-      await api.put(`/b2c-trips/status/${tripId}`, { status: "Completed" });
+      await api.put(`/b2c-daily-trips/status/${tripId}`, { status: "Completed" });
       if (onTripStatusChange) onTripStatusChange("COMPLETED", tripId);
+      if (onTripComplete) onTripComplete(tripId);
       await fetchDailyTrips();
     } catch (error) {
       console.error("[DailyTrips] Error completing trip:", error?.response?.data || error.message);
@@ -84,7 +86,15 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange }) => {
     return map[status] || "status-scheduled";
   };
 
-  const isDriverRole = userRole === "B2C_PARTNER" || userRole === "B2C_PARTNER_DRIVER";
+  // Only show Start/Complete buttons if current user is the actual driver for this booking
+  const isDriverRole = (() => {
+    if (userRole === "B2C_PARTNER" && booking?.isSelfDriver) return true;
+    if (userRole === "B2C_PARTNER_DRIVER") {
+      const bookingDriverId = booking?.assignedDriverId || booking?.driverId;
+      return bookingDriverId && currentUserId && bookingDriverId.toString() === currentUserId.toString();
+    }
+    return false;
+  })();
 
   // Filter trips
   const now = new Date();
