@@ -8,6 +8,7 @@ import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
 import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import commuterBookingAPI from "../../../services/commuterBookingAPI";
+import api from "../../../utils/api";
 import "./commutermybookingspage.css";
 
 const CommuterMyBookingsPage = () => {
@@ -29,6 +30,27 @@ const CommuterMyBookingsPage = () => {
   const [noShowReason, setNoShowReason] = useState("");
   const [noShowCustomReason, setNoShowCustomReason] = useState("");
   const [noShowLoading, setNoShowLoading] = useState(false);
+
+  // Download monthly pass certificate
+  const handleDownloadPassCertificate = useCallback(async (passId) => {
+    try {
+      const response = await api.get(`/monthly-pass/download/${passId}`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `monthly-pass-${passId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading pass certificate:", error);
+      alert("Failed to download pass certificate. Please try again.");
+    }
+  }, []);
 
   // Utility functions - declared first
   const getDriverLocation = useCallback(
@@ -123,7 +145,7 @@ const CommuterMyBookingsPage = () => {
     }
   }, [dispatch, auth.user, filterStatus]);
 
-  // Poll bookings every 1000ms
+  // Poll bookings every 30 seconds to reduce server load
   useEffect(() => {
     if (auth.user) {
       const pollingInterval = setInterval(() => {
@@ -133,7 +155,7 @@ const CommuterMyBookingsPage = () => {
             silent: true,
           }),
         );
-      }, 1000);
+      }, 30000);
 
       return () => clearInterval(pollingInterval);
     }
@@ -905,6 +927,28 @@ const CommuterMyBookingsPage = () => {
                           Mark No-Show
                         </button>
                       )}
+                    {booking.monthlyPassId && (
+                      <button
+                        className="btn-download-pass"
+                        onClick={() => handleDownloadPassCertificate(booking.monthlyPassId)}
+                        style={{
+                          background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)",
+                          color: "#fff",
+                          border: "none",
+                          padding: "8px 16px",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          fontWeight: "600",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download Pass
+                      </button>
+                    )}
                   </div>
 
                   {/* Daily Trips for this Booking */}

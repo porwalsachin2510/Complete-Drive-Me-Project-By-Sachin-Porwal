@@ -27,6 +27,8 @@ export default function CorporateEmployeeManagementPage() {
     pickupLocation: "",
     dropoffLocation: "",
   });
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  const [sendingInvitations, setSendingInvitations] = useState(false);
 
  
 
@@ -190,6 +192,50 @@ export default function CorporateEmployeeManagementPage() {
     }
   };
 
+  const handleSendInvitations = async () => {
+    if (selectedEmployeeIds.length === 0) {
+      alert("Please select at least one employee to send invitations.");
+      return;
+    }
+
+    if (!window.confirm(`Send invitation emails to ${selectedEmployeeIds.length} selected employee(s)?`)) {
+      return;
+    }
+
+    try {
+      setSendingInvitations(true);
+      const response = await axios.post(
+        `/api/corporate-employees/send-invitations`,
+        { employeeIds: selectedEmployeeIds },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const { summary } = response.data.data;
+      alert(`Invitations sent successfully!\nSent: ${summary.sent}\nFailed: ${summary.failed}`);
+      setSelectedEmployeeIds([]);
+    } catch (error) {
+      alert(`Failed to send invitations: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setSendingInvitations(false);
+    }
+  };
+
+  const toggleEmployeeSelection = (employeeId) => {
+    setSelectedEmployeeIds(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEmployeeIds.length === currentEmployees.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(currentEmployees.map(emp => emp._id));
+    }
+  };
+
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -211,7 +257,28 @@ export default function CorporateEmployeeManagementPage() {
             <h1>Employee Management</h1>
             <p>Manage and assign routes to your employees</p>
           </div>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {selectedEmployeeIds.length > 0 && (
+              <button
+                className="btn btn-primary"
+                onClick={handleSendInvitations}
+                disabled={sendingInvitations}
+                style={{
+                  background: sendingInvitations ? "#9e9e9e" : "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "6px",
+                  cursor: sendingInvitations ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                }}
+              >
+                {sendingInvitations
+                  ? "Sending..."
+                  : `Send Invitations (${selectedEmployeeIds.length})`}
+              </button>
+            )}
             <button
               className="btn btn-primary"
               onClick={() => setShowUploadModal(true)}
@@ -277,6 +344,14 @@ export default function CorporateEmployeeManagementPage() {
               <table className="employees-table">
                 <thead>
                   <tr>
+                    <th style={{ width: "40px" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeeIds.length === currentEmployees.length && currentEmployees.length > 0}
+                        onChange={toggleSelectAll}
+                        title="Select all"
+                      />
+                    </th>
                     <th>Employee ID</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -291,6 +366,13 @@ export default function CorporateEmployeeManagementPage() {
                   {currentEmployees.length > 0 ? (
                     currentEmployees.map((employee) => (
                       <tr key={employee._id}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedEmployeeIds.includes(employee._id)}
+                            onChange={() => toggleEmployeeSelection(employee._id)}
+                          />
+                        </td>
                         <td className="employee-id">{employee.employeeId}</td>
                         <td className="employee-name">{employee.fullName}</td>
                         <td className="employee-email">{employee.email}</td>
@@ -350,7 +432,7 @@ export default function CorporateEmployeeManagementPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="no-data">
+                      <td colSpan="9" className="no-data">
                         No employees found
                       </td>
                     </tr>

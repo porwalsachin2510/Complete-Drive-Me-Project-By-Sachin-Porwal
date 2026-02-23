@@ -33,7 +33,9 @@ export default function CorporateProfilePage() {
     monthlyBookings: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
-
+  const [feedbackSummary, setFeedbackSummary] = useState(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   
   // Fetch corporate stats from backend
   useEffect(() => {
@@ -59,6 +61,39 @@ export default function CorporateProfilePage() {
     fetchCorporateStats();
   }, []);
   
+  const fetchFeedbackSummary = async () => {
+    try {
+      setFeedbackLoading(true);
+      const response = await api.get("/corporate-employees/feedback-summary");
+      if (response.data.success) {
+        setFeedbackSummary(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching feedback summary:", error);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const handleToggleFeedback = () => {
+    if (!showFeedback && !feedbackSummary) {
+      fetchFeedbackSummary();
+    }
+    setShowFeedback(!showFeedback);
+  };
+
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <span key={i} style={{ color: i <= Math.round(rating) ? "#f59e0b" : "#d1d5db", fontSize: "16px" }}>
+          {"\u2605"}
+        </span>
+      );
+    }
+    return stars;
+  };
+
   const renderContent = () => {
     switch (corporateactiveTab) {
       case "company-profile":
@@ -195,6 +230,111 @@ export default function CorporateProfilePage() {
               <div className="corporate-stat-value">{corporateStats.activeRoutes}</div>
             </div>
           </div>
+        </div>
+
+        {/* Employee Feedback Summary */}
+        <div style={{ margin: "0 0 24px 0" }}>
+          <button
+            onClick={handleToggleFeedback}
+            style={{
+              background: showFeedback ? "#e8eaf6" : "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)",
+              color: showFeedback ? "#1a237e" : "#fff",
+              border: showFeedback ? "1px solid #c5cae9" : "none",
+              padding: "10px 24px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "600",
+              width: "100%",
+              textAlign: "left",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>Employee Feedback Summary</span>
+            <span style={{ fontSize: "12px" }}>{showFeedback ? "Hide" : "View"}</span>
+          </button>
+
+          {showFeedback && (
+            <div style={{ background: "#fff", borderRadius: "0 0 8px 8px", border: "1px solid #e0e0e0", borderTop: "none", padding: "20px" }}>
+              {feedbackLoading ? (
+                <div style={{ textAlign: "center", padding: "20px" }}>
+                  <p>Loading feedback data...</p>
+                </div>
+              ) : feedbackSummary ? (
+                <>
+                  {/* Summary Stats */}
+                  <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+                    <div style={{ flex: "1", minWidth: "120px", background: "#e8f5e9", borderRadius: "8px", padding: "16px", textAlign: "center" }}>
+                      <div style={{ fontSize: "28px", fontWeight: "700", color: "#2e7d32" }}>
+                        {feedbackSummary.averageRating || 0}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#388e3c", fontWeight: "500" }}>Avg Rating</div>
+                      <div>{renderStars(feedbackSummary.averageRating || 0)}</div>
+                    </div>
+                    <div style={{ flex: "1", minWidth: "120px", background: "#e3f2fd", borderRadius: "8px", padding: "16px", textAlign: "center" }}>
+                      <div style={{ fontSize: "28px", fontWeight: "700", color: "#1565c0" }}>
+                        {feedbackSummary.totalFeedbacks || 0}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#1976d2", fontWeight: "500" }}>Total Feedbacks</div>
+                    </div>
+                    <div style={{ flex: "1", minWidth: "120px", background: "#f3e5f5", borderRadius: "8px", padding: "16px", textAlign: "center" }}>
+                      <div style={{ fontSize: "28px", fontWeight: "700", color: "#6a1b9a" }}>
+                        {feedbackSummary.totalEmployees || 0}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#7b1fa2", fontWeight: "500" }}>Total Employees</div>
+                    </div>
+                  </div>
+
+                  {/* Rating Distribution */}
+                  {feedbackSummary.ratingDistribution && (
+                    <div style={{ marginBottom: "20px" }}>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#333" }}>Rating Distribution</h4>
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = feedbackSummary.ratingDistribution[star] || 0;
+                        const total = feedbackSummary.totalFeedbacks || 1;
+                        const pct = Math.round((count / total) * 100);
+                        return (
+                          <div key={star} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <span style={{ width: "20px", fontSize: "13px", fontWeight: "600", color: "#555" }}>{star}</span>
+                            <span style={{ color: "#f59e0b", fontSize: "14px" }}>{"\u2605"}</span>
+                            <div style={{ flex: 1, background: "#f0f0f0", borderRadius: "4px", height: "8px", overflow: "hidden" }}>
+                              <div style={{ width: `${pct}%`, background: "#f59e0b", height: "100%", borderRadius: "4px", transition: "width 0.3s ease" }} />
+                            </div>
+                            <span style={{ width: "40px", fontSize: "12px", color: "#888", textAlign: "right" }}>{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Recent Feedbacks */}
+                  {feedbackSummary.recentFeedbacks && feedbackSummary.recentFeedbacks.length > 0 && (
+                    <div>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", color: "#333" }}>Recent Employee Feedback</h4>
+                      {feedbackSummary.recentFeedbacks.map((fb, i) => (
+                        <div key={i} style={{ background: "#fafafa", borderRadius: "6px", padding: "12px", marginBottom: "8px", borderLeft: "3px solid #1a237e" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                            <span style={{ fontWeight: "600", fontSize: "13px", color: "#333" }}>{fb.employeeName}</span>
+                            <span style={{ fontSize: "11px", color: "#999" }}>{fb.date ? new Date(fb.date).toLocaleDateString() : ""}</span>
+                          </div>
+                          {fb.rating && <div>{renderStars(fb.rating)}</div>}
+                          {fb.feedback && <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#555", lineHeight: "1.4" }}>{fb.feedback}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {feedbackSummary.totalFeedbacks === 0 && (
+                    <p style={{ textAlign: "center", color: "#9e9e9e", padding: "20px" }}>No employee feedback yet.</p>
+                  )}
+                </>
+              ) : (
+                <p style={{ textAlign: "center", color: "#9e9e9e", padding: "20px" }}>Unable to load feedback data.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main Content */}

@@ -26,7 +26,8 @@ import {
 import {
     getB2CPartnerDashboardStats,
     getB2CPartnerRouteRequests,
-    respondToRouteRequest
+    respondToRouteRequest,
+    getB2CPartnerSubscriptionRenewals
 } from "../controllers/commuteSearchController.js"
 import { verifyToken, checkB2CPartnerRole } from "../middleware/auth.js"
 import { upload } from "../Config/multerConfig.js"
@@ -94,5 +95,8 @@ router.put("/route-requests/:requestId/respond", verifyToken, checkB2CPartnerRol
 // B2C Partner Profile
 router.get("/profile", verifyToken, checkB2CPartnerRole, getB2CPartnerProfile)
 router.put("/profile", verifyToken, checkB2CPartnerRole, updateB2CPartnerProfile)
+
+// B2C Partner Subscription Renewals
+router.get("/subscription-renewals", verifyToken, checkB2CPartnerRole, getB2CPartnerSubscriptionRenewals)
 
 export default router

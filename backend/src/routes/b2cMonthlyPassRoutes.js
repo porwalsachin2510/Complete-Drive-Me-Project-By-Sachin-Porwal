@@ -6,7 +6,8 @@ import {
     updateB2CDailyUsage,
     renewB2CMonthlyPass,
     cancelB2CMonthlyPass,
-    getPartnerB2CMonthlyPasses
+    getPartnerB2CMonthlyPasses,
+    downloadMonthlyPassCertificate
 } from '../controllers/b2cMonthlyPassController.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -29,6 +30,9 @@ router.post('/renew', verifyToken, renewB2CMonthlyPass);
 
 // Cancel monthly pass
 router.post('/cancel', verifyToken, cancelB2CMonthlyPass);
+
+// Download pass certificate PDF
+router.get('/download/:passId', verifyToken, downloadMonthlyPassCertificate);
 
 // Get partner monthly passes
 router.get('/partner/:partnerId', verifyToken, getPartnerB2CMonthlyPasses);

@@ -860,6 +860,53 @@ const releaseReservedSeats = async (monthlyPass) => {
     }
 };
 
+// Download Monthly Pass Certificate PDF
+export const downloadMonthlyPassCertificate = async (req, res) => {
+    try {
+        const { passId } = req.params;
+
+        const monthlyPass = await B2CMonthlyPass.findById(passId)
+            .populate('routeId', 'fromLocation toLocation')
+            .populate('passengerId', 'name email');
+
+        if (!monthlyPass) {
+            return res.status(404).json({
+                success: false,
+                message: "Monthly pass not found"
+            });
+        }
+
+        // Generate PDF on-the-fly
+        const filePath = await generatePassCertificate(monthlyPass);
+
+        // Send file as download
+        const fs = await import('fs');
+        const path = await import('path');
+
+        if (!fs.default.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "Certificate file not found. Regenerating..."
+            });
+        }
+
+        const fileName = `monthly-pass-${passId}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+        const fileStream = fs.default.createReadStream(filePath);
+        fileStream.pipe(res);
+
+    } catch (error) {
+        console.error("[v0] Error downloading pass certificate:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error downloading pass certificate",
+            error: error.message
+        });
+    }
+};
+
 // Get Partner Monthly Passes
 export const getPartnerB2CMonthlyPasses = async (req, res) => {
     try {

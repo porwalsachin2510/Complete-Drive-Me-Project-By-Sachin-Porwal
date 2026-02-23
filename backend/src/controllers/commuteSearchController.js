@@ -882,3 +882,72 @@ export const respondToRouteRequest = async (req, res) => {
         })
     }
 }
+
+// Get B2C Partner Subscription Renewal Status
+export const getB2CPartnerSubscriptionRenewals = async (req, res) => {
+    try {
+        const partnerId = req.userId
+
+        // Get all active monthly passes for this partner
+        const passes = await B2CMonthlyPass.find({
+            partnerId,
+            status: { $in: ["ACTIVE", "EXPIRED"] }
+        })
+            .populate("passengerId", "name email phone")
+            .populate("routeId", "fromLocation toLocation routeName")
+            .sort({ endDate: 1 })
+
+        const now = new Date()
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+        const renewalData = passes.map(pass => {
+            const endDate = new Date(pass.endDate)
+            const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24))
+            
+            let renewalStatus = "active"
+            if (daysRemaining <= 0) renewalStatus = "expired"
+            else if (daysRemaining <= 7) renewalStatus = "expiring_soon"
+            else if (daysRemaining <= 30) renewalStatus = "renewal_upcoming"
+
+            return {
+                passId: pass._id,
+                passenger: pass.passengerId,
+                route: pass.routeId,
+                passType: pass.passType,
+                startDate: pass.startDate,
+                endDate: pass.endDate,
+                daysRemaining: Math.max(0, daysRemaining),
+                totalAmount: pass.totalAmount,
+                autoRenewal: pass.autoRenewal,
+                renewalStatus,
+                renewalReminderSent: pass.renewalReminderSent
+            }
+        })
+
+        // Summary counts
+        const summary = {
+            total: renewalData.length,
+            active: renewalData.filter(r => r.renewalStatus === "active").length,
+            expiringSoon: renewalData.filter(r => r.renewalStatus === "expiring_soon").length,
+            renewalUpcoming: renewalData.filter(r => r.renewalStatus === "renewal_upcoming").length,
+            expired: renewalData.filter(r => r.renewalStatus === "expired").length,
+            autoRenewalEnabled: renewalData.filter(r => r.autoRenewal).length
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                renewals: renewalData,
+                summary
+            }
+        })
+
+    } catch (error) {
+        console.error("Error fetching subscription renewals:", error)
+        res.status(500).json({
+            success: false,
+            message: "Error fetching subscription renewals",
+        })
+    }
+}

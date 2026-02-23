@@ -494,6 +494,187 @@ export const approveEmployeeRegistration = async (req, res) => {
     }
 };
 
+// Send invitation emails to selected employees
+export const sendInvitationEmails = async (req, res) => {
+    try {
+        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
+        const { employeeIds } = req.body;
+
+        if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide an array of employee IDs to send invitations"
+            });
+        }
+
+        const manager = await User.findById(managerId).select("companyName fullName");
+        const results = { sent: [], failed: [] };
+
+        for (const empId of employeeIds) {
+            try {
+                const employee = await CorporateEmployee.findOne({
+                    _id: empId,
+                    companyId,
+                    managerId
+                }).populate("userId", "email fullName");
+
+                if (!employee || !employee.userId) {
+                    results.failed.push({ employeeId: empId, reason: "Employee not found or no user account" });
+                    continue;
+                }
+
+                await sendEmail({
+                    to: employee.userId.email,
+                    subject: "You are invited to join Corporate Transport - DriveMe",
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+                                <h1 style="margin: 0; font-size: 24px;">Welcome to DriveMe Corporate Transport</h1>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+                                <p>Hello <strong>${employee.fullName}</strong>,</p>
+                                <p>You have been invited by <strong>${manager?.companyName || manager?.fullName || 'your company'}</strong> to use the DriveMe corporate transport service.</p>
+                                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #1a237e; margin: 20px 0;">
+                                    <h3 style="color: #1a237e; margin-top: 0;">Your Login Credentials</h3>
+                                    <p><strong>Email:</strong> ${employee.userId.email}</p>
+                                    <p><strong>Employee ID:</strong> ${employee.employeeId}</p>
+                                    <p><strong>Department:</strong> ${employee.department || 'N/A'}</p>
+                                    <p style="color: #666; font-size: 13px;">Use your registered email to log in. If you haven't set a password yet, use the registration link below.</p>
+                                </div>
+                                <div style="text-align: center; margin: 20px 0;">
+                                    <a href="${process.env.FRONTEND_URL}/login" style="background: #1a237e; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Login to Dashboard</a>
+                                </div>
+                                <p style="color: #666; font-size: 13px; text-align: center;">If you have any questions, contact your transport coordinator.</p>
+                            </div>
+                        </div>
+                    `
+                });
+
+                results.sent.push({
+                    employeeId: empId,
+                    name: employee.fullName,
+                    email: employee.userId.email
+                });
+
+            } catch (error) {
+                results.failed.push({ employeeId: empId, reason: error.message });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Invitations sent: ${results.sent.length} successful, ${results.failed.length} failed`,
+            data: {
+                results,
+                summary: {
+                    total: employeeIds.length,
+                    sent: results.sent.length,
+                    failed: results.failed.length
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error sending invitation emails:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error sending invitation emails",
+            error: error.message
+        });
+    }
+};
+
+// Get employee feedback aggregation for corporate view
+export const getEmployeeFeedbackSummary = async (req, res) => {
+    try {
+        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
+
+        // Get all employees under this company
+        const employees = await CorporateEmployee.find({ companyId, managerId }).select("_id userId fullName");
+        const employeeUserIds = employees.map(e => e.userId);
+
+        // Get feedback data from corporate bookings
+        const CorporateBooking = (await import("../models/CorporateBooking.js")).default;
+        
+        const feedbackAggregation = await CorporateBooking.aggregate([
+            {
+                $match: {
+                    passengerId: { $in: employeeUserIds },
+                    $or: [
+                        { rating: { $exists: true, $ne: null } },
+                        { feedback: { $exists: true, $ne: "" } }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    averageRating: { $avg: "$rating" },
+                    totalFeedbacks: { $sum: 1 },
+                    ratingBreakdown: {
+                        $push: "$rating"
+                    },
+                    recentFeedbacks: {
+                        $push: {
+                            passengerId: "$passengerId",
+                            rating: "$rating",
+                            feedback: "$feedback",
+                            date: "$travelDate"
+                        }
+                    }
+                }
+            }
+        ]);
+
+        const summary = feedbackAggregation[0] || {
+            averageRating: 0,
+            totalFeedbacks: 0,
+            ratingBreakdown: [],
+            recentFeedbacks: []
+        };
+
+        // Calculate rating distribution
+        const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        (summary.ratingBreakdown || []).forEach(r => {
+            if (r >= 1 && r <= 5) ratingDistribution[Math.round(r)]++;
+        });
+
+        // Get last 10 feedbacks sorted by date
+        const recentFeedbacks = (summary.recentFeedbacks || [])
+            .filter(f => f.feedback)
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 10);
+
+        // Map passenger IDs to names
+        const employeeMap = {};
+        employees.forEach(e => { employeeMap[e.userId?.toString()] = e.fullName; });
+        recentFeedbacks.forEach(f => {
+            f.employeeName = employeeMap[f.passengerId?.toString()] || "Unknown";
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                averageRating: Math.round((summary.averageRating || 0) * 10) / 10,
+                totalFeedbacks: summary.totalFeedbacks || 0,
+                totalEmployees: employees.length,
+                ratingDistribution,
+                recentFeedbacks
+            }
+        });
+
+    } catch (error) {
+        console.error("Error getting feedback summary:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving feedback summary",
+            error: error.message
+        });
+    }
+};
+
 // Helper functions
 const processEmployeeUpload = async (employees, managerId, companyId) => {
     const results = {

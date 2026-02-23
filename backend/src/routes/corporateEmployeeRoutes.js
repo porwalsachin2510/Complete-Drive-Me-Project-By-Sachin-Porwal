@@ -9,7 +9,9 @@ import {
     getEmployeeAttendance,
     getRouteUtilization,
     approveEmployeeRegistration,
-    assignStopsToEmployee
+    assignStopsToEmployee,
+    sendInvitationEmails,
+    getEmployeeFeedbackSummary
 } from "../controllers/corporateEmployeeController.js";
 
 const router = express.Router();
@@ -23,8 +25,12 @@ router.delete("/:employeeId", verifyToken, deleteEmployee);
 router.patch("/:employeeId/assign-stops", verifyToken, assignStopsToEmployee);
 router.post("/approve/:employeeId", verifyToken, approveEmployeeRegistration);
 
+// Invitations
+router.post("/send-invitations", verifyToken, sendInvitationEmails);
+
 // Reports
 router.get("/attendance", verifyToken, getEmployeeAttendance);
 router.get("/route-utilization", verifyToken, getRouteUtilization);
+router.get("/feedback-summary", verifyToken, getEmployeeFeedbackSummary);
 
 export default router;
