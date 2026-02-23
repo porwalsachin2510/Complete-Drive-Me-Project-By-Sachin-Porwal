@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
 import "./corporateemployeemanagement.css";
-import axios from "axios";
+import api from "../../../utils/api";
 
 export default function CorporateEmployeeManagementPage() {
   const token = useSelector((state) => state.auth.token);
@@ -36,28 +36,25 @@ export default function CorporateEmployeeManagementPage() {
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `/api/corporate-employees?page=1&limit=1000`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      const response = await api.get(
+        `/corporate-employees?page=1&limit=1000`,
       );
-      setEmployees(response.data.data.employees || []);
+      setEmployees(response.data.data?.employees || response.data.employees || []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching employees:", error);
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchRoutes = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/routes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setRoutes(response.data.data.routes || []);
+      const response = await api.get(`/routes`);
+      setRoutes(response.data.data?.routes || response.data.routes || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
     }
-  }, [token]);
+  }, []);
     
   useEffect(() => {
     if (token && userId) {
