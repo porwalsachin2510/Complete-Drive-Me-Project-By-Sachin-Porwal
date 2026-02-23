@@ -113,9 +113,44 @@ function RequirementsView() {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.post('/quotations', quotationForm);
+      
+      // Build the payload matching the backend endpoint
+      const payload = {
+        vehicleOfferings: [{
+          vehicleType: quotationForm.vehicleType,
+          quantity: quotationForm.availability.availableVehicles,
+          make: quotationForm.vehicleDetails.make,
+          model: quotationForm.vehicleDetails.model,
+          year: quotationForm.vehicleDetails.year,
+          seatingCapacity: quotationForm.vehicleDetails.seatingCapacity,
+          features: quotationForm.vehicleDetails.features
+        }],
+        pricing: {
+          monthlyRate: quotationForm.pricing.monthlyRate,
+          totalAmount: quotationForm.pricing.monthlyRate * (quotationForm.terms.contractDuration || 1),
+          currency: quotationForm.pricing.currency,
+          vehicleRental: quotationForm.pricing.monthlyRate,
+          driverCharges: quotationForm.pricing.driverIncluded ? 0 : 0,
+          fuelCharges: quotationForm.pricing.fuelIncluded ? 0 : 0,
+          perVehicleBreakdown: []
+        },
+        terms: {
+          paymentTerms: quotationForm.terms.paymentTerms,
+          contractDuration: quotationForm.terms.contractDuration,
+          noticePeriod: quotationForm.terms.noticePeriod,
+          maintenanceIncluded: quotationForm.terms.maintenanceIncluded,
+          insuranceIncluded: quotationForm.terms.insuranceIncluded,
+          notes: `Payment: ${quotationForm.terms.paymentTerms}, Notice: ${quotationForm.terms.noticePeriod} days, Maintenance: ${quotationForm.terms.maintenanceIncluded ? 'Included' : 'Not included'}, Insurance: ${quotationForm.terms.insuranceIncluded ? 'Included' : 'Not included'}`
+        },
+        availability: quotationForm.availability,
+        message: quotationForm.message,
+        validUntil: quotationForm.validUntil
+      };
+
+      await api.post(`/requirements/${quotationForm.requirementId}/submit-quotation`, payload);
       setShowQuotationModal(false);
       resetQuotationForm();
+      fetchRequirements();
       alert("Quotation submitted successfully!");
     } catch (error) {
       console.error("Error submitting quotation:", error);

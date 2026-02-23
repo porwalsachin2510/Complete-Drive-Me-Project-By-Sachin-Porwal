@@ -8,7 +8,10 @@ import {
     publishRequirement,
     closeRequirement,
     deleteRequirement,
-    getRequirementStatistics
+    getRequirementStatistics,
+    submitQuotationForRequirement,
+    selectQuotationForRequirement,
+    getRequirementQuotations
 } from '../controllers/requirementController.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -43,5 +46,14 @@ router.post('/:id/close', closeRequirement);
 
 // Delete requirement (soft delete)
 router.delete('/:id', deleteRequirement);
+
+// B2B Partner submits quotation against a requirement
+router.post('/:id/submit-quotation', submitQuotationForRequirement);
+
+// Corporate selects/awards a quotation for a requirement
+router.post('/:id/select-quotation', selectQuotationForRequirement);
+
+// Get all quotations for a specific requirement (Corporate view)
+router.get('/:id/quotations', getRequirementQuotations);
 
 export default router;

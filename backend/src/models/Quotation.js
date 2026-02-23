@@ -16,6 +16,12 @@ const quotationSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        // Optional: Link to Requirement if quotation was submitted against one
+        requirementId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Requirement",
+            default: null,
+        },
         vehicles: [
             {
                 vehicleId: {
