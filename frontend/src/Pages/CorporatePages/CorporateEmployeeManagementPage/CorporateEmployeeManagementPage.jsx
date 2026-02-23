@@ -49,7 +49,7 @@ export default function CorporateEmployeeManagementPage() {
 
   const fetchRoutes = useCallback(async () => {
     try {
-      const response = await api.get(`/routes`);
+      const response = await api.get(`/corporate-employees/routes`);
       setRoutes(response.data.data?.routes || response.data.routes || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
@@ -94,12 +94,11 @@ export default function CorporateEmployeeManagementPage() {
       const formData = new FormData();
       formData.append("file", uploadFile);
 
-      const response = await axios.post(
-        `/api/corporate-employees/upload-csv`,
+      const response = await api.post(
+        `/corporate-employees/upload-csv`,
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
           onUploadProgress: (progressEvent) => {
@@ -131,14 +130,13 @@ export default function CorporateEmployeeManagementPage() {
     }
 
     try {
-      const response = await axios.put(
-        `/api/corporate-employees/${selectedEmployee._id}/assign-route`,
+      const response = await api.put(
+        `/corporate-employees/${selectedEmployee._id}/assign-route`,
         {
           routeId: assignmentData.routeId,
           pickupLocation: assignmentData.pickupLocation,
           dropoffLocation: assignmentData.dropoffLocation,
         },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       alert("Route assigned successfully!");
@@ -160,9 +158,7 @@ export default function CorporateEmployeeManagementPage() {
   const handleDeleteEmployee = async (employeeId) => {
     if (window.confirm("Are you sure you want to delete this employee?")) {
       try {
-        await axios.delete(`/api/corporate-employees/${employeeId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.delete(`/corporate-employees/${employeeId}`);
         alert("Employee deleted successfully!");
         fetchEmployees();
       } catch (error) {
@@ -175,10 +171,9 @@ export default function CorporateEmployeeManagementPage() {
 
   const handleDeactivateEmployee = async (employeeId) => {
     try {
-      await axios.put(
-        `/api/corporate-employees/${employeeId}/deactivate`,
+      await api.put(
+        `/corporate-employees/${employeeId}/deactivate`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } },
       );
       alert("Employee deactivated successfully!");
       fetchEmployees();
@@ -201,10 +196,9 @@ export default function CorporateEmployeeManagementPage() {
 
     try {
       setSendingInvitations(true);
-      const response = await axios.post(
-        `/api/corporate-employees/send-invitations`,
+      const response = await api.post(
+        `/corporate-employees/send-invitations`,
         { employeeIds: selectedEmployeeIds },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const { summary } = response.data.data;

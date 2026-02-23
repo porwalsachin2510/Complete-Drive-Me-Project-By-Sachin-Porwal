@@ -996,3 +996,168 @@ export const assignStopsToEmployee = async (req, res) => {
         });
     }
 };
+
+// Assign route to employee (used by CorporateEmployeeManagement frontend)
+export const assignRouteToEmployee = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const { routeId, pickupLocation, dropoffLocation } = req.body;
+        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
+
+        if (!routeId) {
+            return res.status(400).json({
+                success: false,
+                message: "routeId is required"
+            });
+        }
+
+        const employee = await CorporateEmployee.findOne({
+            _id: employeeId,
+            companyId,
+            managerId
+        });
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found"
+            });
+        }
+
+        const route = await Route.findById(routeId);
+        if (!route) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found"
+            });
+        }
+
+        // Update employee transport details with route assignment
+        employee.transportDetails = employee.transportDetails || {};
+        employee.transportDetails.assignedRoute = routeId;
+        employee.transportDetails.pickupPoint = pickupLocation || route.fromLocation;
+        employee.transportDetails.dropOffPoint = dropoffLocation || route.toLocation;
+        employee.routeId = routeId;
+
+        await employee.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Route assigned to employee successfully",
+            data: {
+                employeeId: employee._id,
+                routeId: route._id,
+                routeName: route.fromLocation + " → " + route.toLocation,
+                pickupLocation: employee.transportDetails.pickupPoint,
+                dropoffLocation: employee.transportDetails.dropOffPoint
+            }
+        });
+
+    } catch (error) {
+        console.error("Error assigning route to employee:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error assigning route to employee",
+            error: error.message
+        });
+    }
+};
+
+// Deactivate employee
+export const deactivateEmployee = async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
+
+        const employee = await CorporateEmployee.findOne({
+            _id: employeeId,
+            companyId,
+            managerId
+        });
+
+        if (!employee) {
+            return res.status(404).json({
+                success: false,
+                message: "Employee not found"
+            });
+        }
+
+        employee.isActive = false;
+        employee.deactivatedAt = new Date();
+        employee.deactivatedBy = managerId;
+        await employee.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Employee deactivated successfully",
+            data: {
+                employeeId: employee._id,
+                fullName: employee.fullName,
+                isActive: employee.isActive
+            }
+        });
+
+    } catch (error) {
+        console.error("Error deactivating employee:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error deactivating employee",
+            error: error.message
+        });
+    }
+};
+
+// Get corporate routes (for route assignment dropdown)
+export const getCorporateRoutes = async (req, res) => {
+    try {
+        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
+
+        // Find routes associated with this corporate via contracts
+        const contracts = await Contract.find({
+            corporateId: companyId,
+            status: { $in: ["ACTIVE", "APPROVED"] }
+        }).select("routes");
+
+        const contractRouteIds = contracts.reduce((acc, contract) => {
+            if (contract.routes && Array.isArray(contract.routes)) {
+                acc.push(...contract.routes);
+            }
+            return acc;
+        }, []);
+
+        // Get routes that belong to contracts OR are directly assigned to this corporate
+        const routes = await Route.find({
+            $or: [
+                { _id: { $in: contractRouteIds } },
+                { corporateId: companyId },
+                { createdBy: managerId }
+            ]
+        }).select("fromLocation toLocation routeName stopPoints distance duration");
+
+        res.status(200).json({
+            success: true,
+            data: {
+                routes: routes.map(r => ({
+                    _id: r._id,
+                    routeName: r.routeName || `${r.fromLocation} → ${r.toLocation}`,
+                    fromLocation: r.fromLocation,
+                    toLocation: r.toLocation,
+                    stopPoints: r.stopPoints,
+                    distance: r.distance,
+                    duration: r.duration
+                }))
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching corporate routes:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching routes",
+            error: error.message
+        });
+    }
+};
