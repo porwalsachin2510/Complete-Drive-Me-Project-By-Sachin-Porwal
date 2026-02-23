@@ -633,6 +633,80 @@ const generateRouteEfficiencyReport = async (contractId, startDate, endDate) => 
     }
 };
 
+// @desc    Get available vehicles for assignment
+// @route   GET /api/b2b-operations/vehicles/available
+// @access  Private (B2B_PARTNER)
+export const getAvailableVehicles = async (req, res) => {
+    try {
+        const partnerId = req.userId;
+        const { vehicleType } = req.query;
+        
+        const Vehicle = (await import("../models/Vehicle.js")).default;
+        
+        const query = {
+            ownerId: partnerId,
+            status: { $in: ["ACTIVE", "AVAILABLE"] }
+        };
+        
+        if (vehicleType) {
+            query.type = vehicleType;
+        }
+        
+        const vehicles = await Vehicle.find(query)
+            .select("vehicleNumber type capacity make model year status features")
+            .lean();
+        
+        // Filter out vehicles that are already assigned to active contracts
+        const assignedVehicleIds = await VehicleAssignment.distinct("vehicleId", {
+            partnerId,
+            status: { $in: ["ASSIGNED", "IN_USE"] }
+        });
+        
+        const availableVehicles = vehicles.filter(
+            v => !assignedVehicleIds.some(id => id.toString() === v._id.toString())
+        );
+        
+        res.json({
+            success: true,
+            data: { vehicles: availableVehicles }
+        });
+    } catch (error) {
+        console.error("Error fetching available vehicles:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch available vehicles" });
+    }
+};
+
+// @desc    Get available drivers for assignment
+// @route   GET /api/b2b-operations/drivers/available
+// @access  Private (B2B_PARTNER)
+export const getAvailableDrivers = async (req, res) => {
+    try {
+        const partnerId = req.userId;
+        
+        const Driver = (await import("../models/Driver.js")).default;
+        const User = (await import("../models/User.js")).default;
+        
+        // Find drivers associated with this partner
+        const drivers = await User.find({
+            $or: [
+                { parentId: partnerId, role: "B2B_PARTNER_DRIVER" },
+                { _id: partnerId, role: "B2B_PARTNER" }
+            ],
+            isActive: true
+        })
+            .select("fullName email whatsappNumber role")
+            .lean();
+        
+        res.json({
+            success: true,
+            data: { drivers }
+        });
+    } catch (error) {
+        console.error("Error fetching available drivers:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch available drivers" });
+    }
+};
+
 const generateVehicleUtilizationReport = async (contractId, startDate, endDate) => {
     try {
         const assignments = await VehicleAssignment.find({ contractId })

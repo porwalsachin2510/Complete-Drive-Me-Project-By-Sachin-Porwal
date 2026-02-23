@@ -94,8 +94,10 @@ function CorporateEmployeeManagement() {
     e.preventDefault();
     try {
       setLoading(true);
-      // Backend: POST /api/corporate-employee-users/register
-      await api.post('/corporate-employee-users/register', employeeForm);
+      // Backend: POST /api/corporate-employees/bulk-upload with single employee
+      await api.post('/corporate-employees/bulk-upload', {
+        employees: [employeeForm]
+      });
       setShowAddModal(false);
       resetEmployeeForm();
       fetchEmployees();
@@ -138,7 +140,7 @@ function CorporateEmployeeManagement() {
 
   const handleUpdateTransport = async (employeeId, transportData) => {
     try {
-      await api.put(`/employees/${employeeId}/transport`, transportData);
+      await api.put(`/corporate-employees/${employeeId}`, transportData);
       fetchEmployees();
       alert("Transport details updated successfully!");
     } catch (error) {
@@ -153,7 +155,7 @@ function CorporateEmployeeManagement() {
     }
 
     try {
-      await api.delete(`/employees/${employeeId}`);
+      await api.delete(`/corporate-employees/${employeeId}`);
       fetchEmployees();
       alert("Employee deleted successfully!");
     } catch (error) {

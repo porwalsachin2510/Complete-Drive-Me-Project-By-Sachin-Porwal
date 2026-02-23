@@ -41,19 +41,19 @@ const B2B_PartnerVehicleAssignmentForm = () => {
       try {
         // Fetch available vehicles
         const vehiclesResponse = await api.get(
-          `/b2b/vehicles/available?vehicleType=${currentAssignment.contractId?.vehicleType}`
+          `/b2b-operations/vehicles/available`, {
+            params: { vehicleType: currentAssignment.contractId?.vehicleType }
+          }
         );
-        const vehiclesData = await vehiclesResponse.json();
-        if (isMounted && vehiclesResponse.ok) {
-          setAvailableVehicles(vehiclesData.vehicles);
+        if (isMounted && vehiclesResponse.data?.success) {
+          setAvailableVehicles(vehiclesResponse.data.data?.vehicles || vehiclesResponse.data.vehicles || []);
         }
 
         // Fetch available drivers if needed
         if (currentAssignment.contractId?.includeDriver) {
-          const driversResponse = await api.get(`/b2b/drivers/available`);
-          const driversData = await driversResponse.json();
-          if (isMounted && driversResponse.ok) {
-            setAvailableDrivers(driversData.drivers);
+          const driversResponse = await api.get(`/b2b-operations/drivers/available`);
+          if (isMounted && driversResponse.data?.success) {
+            setAvailableDrivers(driversResponse.data.data?.drivers || driversResponse.data.drivers || []);
           }
         }
 

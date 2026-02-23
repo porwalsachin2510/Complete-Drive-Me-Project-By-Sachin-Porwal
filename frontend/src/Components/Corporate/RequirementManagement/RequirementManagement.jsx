@@ -13,6 +13,10 @@ function RequirementManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statistics, setStatistics] = useState(null);
+  const [showQuotationsModal, setShowQuotationsModal] = useState(false);
+  const [quotationsForRequirement, setQuotationsForRequirement] = useState([]);
+  const [selectedRequirementForQuotations, setSelectedRequirementForQuotations] = useState(null);
+  const [loadingQuotations, setLoadingQuotations] = useState(false);
 
   // Form state
   const [requirementForm, setRequirementForm] = useState({
@@ -168,6 +172,43 @@ function RequirementManagement() {
     } catch (error) {
       console.error("Error deleting requirement:", error);
       alert(error.response?.data?.message || "Failed to delete requirement");
+    }
+  };
+
+  const handleViewQuotations = async (requirement) => {
+    try {
+      setLoadingQuotations(true);
+      setSelectedRequirementForQuotations(requirement);
+      setShowQuotationsModal(true);
+      const response = await api.get(`/requirements/${requirement._id}/quotations`);
+      setQuotationsForRequirement(response.data.data.quotations || []);
+    } catch (error) {
+      console.error("Error fetching quotations:", error);
+      alert(error.response?.data?.message || "Failed to fetch quotations");
+    } finally {
+      setLoadingQuotations(false);
+    }
+  };
+
+  const handleSelectQuotation = async (requirementId, quotationId) => {
+    if (!window.confirm("Are you sure you want to select this quotation? Other quotations will be rejected.")) {
+      return;
+    }
+    try {
+      setLoadingQuotations(true);
+      await api.post(`/requirements/${requirementId}/select-quotation`, {
+        quotationId,
+        message: "Quotation selected for contract creation"
+      });
+      alert("Quotation selected successfully! You can now proceed to create a contract.");
+      setShowQuotationsModal(false);
+      fetchRequirements();
+      fetchStatistics();
+    } catch (error) {
+      console.error("Error selecting quotation:", error);
+      alert(error.response?.data?.message || "Failed to select quotation");
+    } finally {
+      setLoadingQuotations(false);
     }
   };
 
@@ -445,6 +486,14 @@ function RequirementManagement() {
                                 onClick={() => handleDeleteRequirement(requirement._id)}
                               >
                                 Delete
+                              </button>
+                            )}
+                            {(requirement.status === "PUBLISHED" || requirement.status === "CLOSED") && (
+                              <button
+                                className="btn btn-sm btn-primary"
+                                onClick={() => handleViewQuotations(requirement)}
+                              >
+                                Quotations ({requirement.quotations?.length || 0})
                               </button>
                             )}
                           </div>
@@ -760,6 +809,135 @@ function RequirementManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quotations Modal */}
+      {showQuotationsModal && selectedRequirementForQuotations && (
+        <div className="modal-overlay">
+          <div className="modal large-modal">
+            <div className="modal-header">
+              <h3>Quotations for: {selectedRequirementForQuotations.title}</h3>
+              <button
+                className="close-btn"
+                onClick={() => {
+                  setShowQuotationsModal(false);
+                  setQuotationsForRequirement([]);
+                  setSelectedRequirementForQuotations(null);
+                }}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', padding: '20px' }}>
+              {loadingQuotations ? (
+                <div className="loading">Loading quotations...</div>
+              ) : quotationsForRequirement.length === 0 ? (
+                <div className="empty-state" style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
+                  <p style={{ fontSize: '16px', fontWeight: '500' }}>No quotations received yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>
+                    B2B Partners will submit quotations after viewing your published requirement.
+                  </p>
+                </div>
+              ) : (
+                <div className="quotations-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {quotationsForRequirement.map((quotation) => (
+                    <div
+                      key={quotation._id}
+                      className="quotation-card"
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        backgroundColor: quotation.status === 'ACCEPTED' ? '#f0fdf4' : '#fff'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+                            {quotation.fleetOwnerId?.companyName || quotation.fleetOwnerId?.businessName || quotation.fleetOwnerId?.fullName || 'B2B Partner'}
+                          </h4>
+                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#6b7280' }}>
+                            {quotation.fleetOwnerId?.email}
+                          </p>
+                        </div>
+                        <span
+                          className="status-badge"
+                          style={{
+                            backgroundColor:
+                              quotation.status === 'QUOTED' ? '#3b82f6' :
+                              quotation.status === 'ACCEPTED' ? '#10b981' :
+                              quotation.status === 'REJECTED' ? '#ef4444' : '#6b7280',
+                            color: '#fff',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          {quotation.status}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                        <div style={{ background: '#f9fafb', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '600' }}>Total Amount</div>
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>
+                            {quotation.quotedPrice?.totalAmount?.toLocaleString() || 0} {quotation.quotedPrice?.currency || 'KWD'}
+                          </div>
+                        </div>
+                        <div style={{ background: '#f9fafb', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '600' }}>Valid Until</div>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                            {quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString() : 'N/A'}
+                          </div>
+                        </div>
+                        <div style={{ background: '#f9fafb', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', fontWeight: '600' }}>Submitted</div>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                            {quotation.respondedAt ? new Date(quotation.respondedAt).toLocaleDateString() : new Date(quotation.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {quotation.quotedPrice?.breakdown && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px', fontSize: '13px' }}>
+                          <div><span style={{ color: '#6b7280' }}>Vehicle Rental:</span> {quotation.quotedPrice.breakdown.vehicleRental?.toLocaleString() || 0} KWD</div>
+                          <div><span style={{ color: '#6b7280' }}>Driver:</span> {quotation.quotedPrice.breakdown.driverCharges?.toLocaleString() || 0} KWD</div>
+                          <div><span style={{ color: '#6b7280' }}>Fuel:</span> {quotation.quotedPrice.breakdown.fuelCharges?.toLocaleString() || 0} KWD</div>
+                        </div>
+                      )}
+
+                      {quotation.responseMessage && (
+                        <div style={{ padding: '10px', background: '#f0f4ff', borderRadius: '8px', marginBottom: '12px', fontSize: '13px', color: '#374151' }}>
+                          <strong>Partner Message:</strong> {quotation.responseMessage}
+                        </div>
+                      )}
+
+                      {quotation.status === 'QUOTED' && (
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            className="btn btn-success"
+                            onClick={() => handleSelectQuotation(selectedRequirementForQuotations._id, quotation._id)}
+                            disabled={loadingQuotations}
+                            style={{ padding: '8px 20px', fontSize: '13px' }}
+                          >
+                            Select This Quotation
+                          </button>
+                        </div>
+                      )}
+
+                      {quotation.status === 'ACCEPTED' && (
+                        <div style={{ padding: '10px', background: '#dcfce7', borderRadius: '8px', fontSize: '13px', color: '#166534', fontWeight: '500', textAlign: 'center' }}>
+                          Selected Quotation - Contract can now be created
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

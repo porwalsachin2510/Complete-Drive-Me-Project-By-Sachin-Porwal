@@ -6,7 +6,9 @@ import {
     allocateEmployeesToSeats,
     handleTemporaryTransfer,
     getOperationsDashboard,
-    generateClientReports
+    generateClientReports,
+    getAvailableVehicles,
+    getAvailableDrivers
 } from "../controllers/b2bOperationsController.js";
 
 const router = express.Router();
@@ -16,6 +18,10 @@ router.post("/dedicated-routes", verifyToken, checkB2BPartnerRole, createDedicat
 router.get("/vehicle/:vehicleId/seat-map", verifyToken, checkB2BPartnerRole, getVehicleSeatMap);
 router.post("/allocate-seats", verifyToken, checkB2BPartnerRole, allocateEmployeesToSeats);
 router.post("/temporary-transfer", verifyToken, checkB2BPartnerRole, handleTemporaryTransfer);
+
+// Available vehicles and drivers for assignment
+router.get("/vehicles/available", verifyToken, checkB2BPartnerRole, getAvailableVehicles);
+router.get("/drivers/available", verifyToken, checkB2BPartnerRole, getAvailableDrivers);
 
 // Dashboard and reporting
 router.get("/dashboard", verifyToken, checkB2BPartnerRole, getOperationsDashboard);

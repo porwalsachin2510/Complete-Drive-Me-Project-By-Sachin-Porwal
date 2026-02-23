@@ -15,7 +15,7 @@ import { verifyToken, checkFleetOwnerRole } from "../middleware/auth.js"
 // Get all assignments for fleet owner
 router.get("/assignments", verifyToken, checkFleetOwnerRole, getAllAssignments)
 
-router.get("/assignment/:assignmentId", getAssignmentById)
+router.get("/assignment/:assignmentId", verifyToken, getAssignmentById)
 
 // Get contract for assignment (Fleet Owner)
 router.get("/contract/:contractId", verifyToken, checkFleetOwnerRole, getContractForAssignment)
@@ -26,12 +26,12 @@ router.post("/contract/:contractId/assign", verifyToken, checkFleetOwnerRole, as
 router.put("/assignment/:assignmentId", verifyToken, checkFleetOwnerRole, updateAssignment)
 
 // Get assigned vehicles
-router.get("/contract/:contractId/assignments", getAssignedVehicles)
+router.get("/contract/:contractId/assignments", verifyToken, getAssignedVehicles)
 
 // Update assignment status
-router.put("/assignment/:assignmentId/status", updateAssignmentStatus)
+router.put("/assignment/:assignmentId/status", verifyToken, updateAssignmentStatus)
 
 // Report damage
-router.post("/assignment/:assignmentId/damage", reportDamage)
+router.post("/assignment/:assignmentId/damage", verifyToken, reportDamage)
 
 export default router
