@@ -56,19 +56,21 @@ function CorporateEmployeeManagement() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      // Backend: GET /api/corporate-employees (corporateEmployeeRoutes.js)
-      const response = await api.get('/corporate-employees', {
-        params: {
-          page: currentPage,
-          limit: 10,
-          search: searchTerm || undefined,
-          status: filterStatus !== "all" ? filterStatus : undefined
-        }
-      });
-      setEmployees(response.data.data.employees);
-      setTotalPages(response.data.data.pagination.pages);
+      const params = {
+        page: currentPage,
+        limit: 10,
+        search: searchTerm || undefined,
+      };
+      // Map frontend filter to backend isActive param
+      if (filterStatus === "active") params.isActive = "true";
+      else if (filterStatus === "inactive") params.isActive = "false";
+      
+      const response = await api.get('/corporate-employees', { params });
+      setEmployees(response.data.data.employees || []);
+      setTotalPages(response.data.data.pagination?.totalPages || response.data.data.pagination?.pages || 1);
     } catch (error) {
       console.error("Error fetching employees:", error);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -99,9 +101,22 @@ function CorporateEmployeeManagement() {
     e.preventDefault();
     try {
       setLoading(true);
-      // Backend: POST /api/corporate-employees/bulk-upload with single employee
+      // Convert form to flat format that backend bulkUpload expects
+      const employeeData = {
+        fullName: `${employeeForm.personalInfo.firstName} ${employeeForm.personalInfo.lastName}`.trim(),
+        email: employeeForm.personalInfo.email,
+        contactNumber: employeeForm.personalInfo.phoneNumber,
+        department: employeeForm.personalInfo.department,
+        designation: employeeForm.personalInfo.designation,
+        workLocation: employeeForm.personalInfo.workLocation,
+        residentialAddress: employeeForm.residentialAddress,
+        routeId: employeeForm.transportDetails.assignedRoute || undefined,
+        pickupLocation: employeeForm.transportDetails.pickupPoint,
+        dropoffLocation: employeeForm.transportDetails.dropOffPoint,
+        workShift: employeeForm.transportDetails.shiftType
+      };
       await api.post('/corporate-employees/bulk-upload', {
-        employees: [employeeForm]
+        employees: [employeeData]
       });
       setShowAddModal(false);
       resetEmployeeForm();
@@ -171,12 +186,15 @@ function CorporateEmployeeManagement() {
 
   const resetEmployeeForm = () => {
     setEmployeeForm({
-      fullName: "",
-      email: "",
-      whatsappNumber: "",
-      department: "",
-      designation: "",
-      workLocation: "",
+      personalInfo: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+        department: "",
+        designation: "",
+        workLocation: ""
+      },
       residentialAddress: {
         street: "",
         area: "",
@@ -214,7 +232,7 @@ function CorporateEmployeeManagement() {
       {
         fullName: "John Doe",
         email: "john@company.com",
-        whatsappNumber: "+1234567890",
+        contactNumber: "+1234567890",
         department: "IT",
         designation: "Software Engineer",
         workLocation: "Main Office",
@@ -225,10 +243,10 @@ function CorporateEmployeeManagement() {
           state: "NY",
           postalCode: "10001"
         },
-        assignedRoute: "",
-        pickupPoint: "",
-        dropOffPoint: "",
-        shiftType: "FULL_DAY"
+        routeId: "",
+        pickupLocation: "",
+        dropoffLocation: "",
+        workShift: "FULL_DAY"
       }
     ];
 
@@ -239,6 +257,64 @@ function CorporateEmployeeManagement() {
     a.download = 'employee_template.json';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSendInvitations = async () => {
+    if (selectedEmployeeIds.length === 0) {
+      alert("Please select at least one employee to send invitations.");
+      return;
+    }
+    if (!window.confirm(`Send invitations to ${selectedEmployeeIds.length} employee(s)?`)) {
+      return;
+    }
+    try {
+      setSendingInvitations(true);
+      const response = await api.post('/corporate-employees/send-invitations', {
+        employeeIds: selectedEmployeeIds
+      });
+      const sent = response.data?.data?.results?.sent?.length || 0;
+      const failed = response.data?.data?.results?.failed?.length || 0;
+      alert(`Invitations sent: ${sent} successful, ${failed} failed`);
+      setSelectedEmployeeIds([]);
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+      alert(error.response?.data?.message || "Failed to send invitations");
+    } finally {
+      setSendingInvitations(false);
+    }
+  };
+
+  const toggleEmployeeSelection = (empId) => {
+    setSelectedEmployeeIds(prev =>
+      prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEmployeeIds.length === employees.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(employees.map(e => e._id));
+    }
+  };
+
+  // Helper to extract display fields from the nested model
+  const getEmployeeName = (emp) => emp.fullName || `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim() || emp.userId?.fullName || 'N/A';
+  const getEmployeeEmail = (emp) => emp.personalInfo?.email || emp.userId?.email || 'N/A';
+  const getEmployeePhone = (emp) => emp.personalInfo?.phoneNumber || 'N/A';
+  const getEmployeeDepartment = (emp) => emp.personalInfo?.department || 'N/A';
+  const getEmployeeDesignation = (emp) => emp.personalInfo?.designation || 'N/A';
+  const getEmployeeRoute = (emp) => {
+    if (emp.transportDetails?.assignedRoute?.routeName) return emp.transportDetails.assignedRoute.routeName;
+    if (emp.transportDetails?.assignedRoute?.fromLocation && emp.transportDetails?.assignedRoute?.toLocation) {
+      return `${emp.transportDetails.assignedRoute.fromLocation} - ${emp.transportDetails.assignedRoute.toLocation}`;
+    }
+    return 'Not Assigned';
+  };
+  const getEmployeeStatus = (emp) => {
+    if (emp.accessControl?.isActive === false) return false;
+    if (emp.accessControl?.isActive === true) return true;
+    return true; // default active
   };
 
   const renderContent = () => {
@@ -276,8 +352,17 @@ function CorporateEmployeeManagement() {
                   className="btn btn-secondary"
                   onClick={() => setShowBulkUploadModal(true)}
                 >
-                  📤 Bulk Upload
+                  Bulk Upload
                 </button>
+                {selectedEmployeeIds.length > 0 && (
+                  <button
+                    className="btn btn-success"
+                    onClick={handleSendInvitations}
+                    disabled={sendingInvitations}
+                  >
+                    {sendingInvitations ? "Sending..." : `Send Invitations (${selectedEmployeeIds.length})`}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -288,6 +373,13 @@ function CorporateEmployeeManagement() {
                 <table>
                   <thead>
                     <tr>
+                      <th>
+                        <input
+                          type="checkbox"
+                          checked={selectedEmployeeIds.length === employees.length && employees.length > 0}
+                          onChange={toggleSelectAll}
+                        />
+                      </th>
                       <th>Name</th>
                       <th>Email</th>
                       <th>Phone</th>
@@ -299,41 +391,55 @@ function CorporateEmployeeManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((employee) => (
-                      <tr key={employee._id}>
-                        <td>{employee.fullName}</td>
-                        <td>{employee.email}</td>
-                        <td>{employee.whatsappNumber}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>
-                          <span className="status-badge active">Active</span>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <button
-                              className="btn btn-sm btn-info"
-                              onClick={() => setSelectedEmployee(employee)}
-                            >
-                              View
-                            </button>
-                            <button
-                              className="btn btn-sm btn-warning"
-                              onClick={() => setSelectedEmployee(employee)}
-                            >
-                              Edit Transport
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteEmployee(employee._id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
+                    {employees.length === 0 ? (
+                      <tr>
+                        <td colSpan="9" style={{ textAlign: "center", padding: "20px", color: "#888" }}>
+                          No employees found. Add employees to get started.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      employees.map((employee) => {
+                        const isActive = getEmployeeStatus(employee);
+                        return (
+                          <tr key={employee._id}>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={selectedEmployeeIds.includes(employee._id)}
+                                onChange={() => toggleEmployeeSelection(employee._id)}
+                              />
+                            </td>
+                            <td>{getEmployeeName(employee)}</td>
+                            <td>{getEmployeeEmail(employee)}</td>
+                            <td>{getEmployeePhone(employee)}</td>
+                            <td>{getEmployeeDepartment(employee)}</td>
+                            <td>{getEmployeeDesignation(employee)}</td>
+                            <td>{getEmployeeRoute(employee)}</td>
+                            <td>
+                              <span className={`status-badge ${isActive ? 'active' : 'inactive'}`}>
+                                {isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="action-buttons">
+                                <button
+                                  className="btn btn-sm btn-info"
+                                  onClick={() => setSelectedEmployee(employee)}
+                                >
+                                  View
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => handleDeleteEmployee(employee._id)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -403,46 +509,76 @@ function CorporateEmployeeManagement() {
                 <div className="form-row">
                   <input
                     type="text"
-                    placeholder="Full Name"
-                    value={employeeForm.fullName}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, fullName: e.target.value }))}
+                    placeholder="First Name"
+                    value={employeeForm.personalInfo.firstName}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, firstName: e.target.value }
+                    }))}
                     required
                   />
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={employeeForm.personalInfo.lastName}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, lastName: e.target.value }
+                    }))}
+                    required
+                  />
+                </div>
+                <div className="form-row">
                   <input
                     type="email"
                     placeholder="Email"
-                    value={employeeForm.email}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, email: e.target.value }))}
+                    value={employeeForm.personalInfo.email}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, email: e.target.value }
+                    }))}
+                    required
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={employeeForm.personalInfo.phoneNumber}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, phoneNumber: e.target.value }
+                    }))}
                     required
                   />
                 </div>
                 <div className="form-row">
-                  <input
-                    type="tel"
-                    placeholder="WhatsApp Number"
-                    value={employeeForm.whatsappNumber}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                    required
-                  />
                   <input
                     type="text"
                     placeholder="Department"
-                    value={employeeForm.department}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, department: e.target.value }))}
+                    value={employeeForm.personalInfo.department}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, department: e.target.value }
+                    }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Designation"
+                    value={employeeForm.personalInfo.designation}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, designation: e.target.value }
+                    }))}
                   />
                 </div>
                 <div className="form-row">
                   <input
                     type="text"
-                    placeholder="Designation"
-                    value={employeeForm.designation}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, designation: e.target.value }))}
-                  />
-                  <input
-                    type="text"
                     placeholder="Work Location"
-                    value={employeeForm.workLocation}
-                    onChange={(e) => setEmployeeForm(prev => ({ ...prev, workLocation: e.target.value }))}
+                    value={employeeForm.personalInfo.workLocation}
+                    onChange={(e) => setEmployeeForm(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, workLocation: e.target.value }
+                    }))}
                   />
                 </div>
               </div>
@@ -567,7 +703,7 @@ function CorporateEmployeeManagement() {
                     <div className="preview-list">
                       {bulkUploadData.employees.slice(0, 5).map((emp, index) => (
                         <div key={index} className="preview-item">
-                          {emp.fullName} - {emp.email}
+                          {emp.fullName || `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`} - {emp.email || emp.personalInfo?.email || 'N/A'}
                         </div>
                       ))}
                       {bulkUploadData.employees.length > 5 && (

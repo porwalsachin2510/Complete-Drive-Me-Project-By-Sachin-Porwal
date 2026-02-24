@@ -279,12 +279,12 @@ export const getEmployees = async (req, res) => {
 export const updateEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
-        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
         const updates = req.body;
 
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            managerId
+            companyId
         });
 
         if (!employee) {
@@ -294,16 +294,32 @@ export const updateEmployee = async (req, res) => {
             });
         }
 
-        // Update employee
-        Object.assign(employee, updates);
+        // Apply nested updates correctly
+        if (updates.personalInfo) {
+            Object.assign(employee.personalInfo, updates.personalInfo);
+        }
+        if (updates.transportDetails) {
+            Object.assign(employee.transportDetails, updates.transportDetails);
+        }
+        if (updates.residentialAddress) {
+            Object.assign(employee.residentialAddress, updates.residentialAddress);
+        }
+        if (updates.accessControl) {
+            Object.assign(employee.accessControl, updates.accessControl);
+        }
+        if (updates.employeeId) {
+            employee.employeeId = updates.employeeId;
+        }
         await employee.save();
 
         // Update user account if needed
-        if (updates.fullName || updates.email) {
-            await User.findByIdAndUpdate(employee.userId, {
-                ...(updates.fullName && { fullName: updates.fullName }),
-                ...(updates.email && { email: updates.email })
-            });
+        if (updates.personalInfo?.email || updates.personalInfo?.firstName) {
+            const userUpdate = {};
+            if (updates.personalInfo?.email) userUpdate.email = updates.personalInfo.email;
+            if (updates.personalInfo?.firstName) {
+                userUpdate.fullName = `${updates.personalInfo.firstName} ${updates.personalInfo.lastName || employee.personalInfo.lastName || ''}`.trim();
+            }
+            await User.findByIdAndUpdate(employee.userId, userUpdate);
         }
 
         res.status(200).json({
@@ -329,11 +345,11 @@ export const updateEmployee = async (req, res) => {
 export const deleteEmployee = async (req, res) => {
     try {
         const { employeeId } = req.params;
-        const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
 
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            managerId
+            companyId
         });
 
         if (!employee) {
@@ -380,7 +396,7 @@ export const getEmployeeAttendance = async (req, res) => {
             limit = 50 
         } = req.query;
 
-        const query = { companyId, managerId };
+        const query = { companyId };
         
         if (startDate && endDate) {
             query.date = {
@@ -432,7 +448,7 @@ export const getRouteUtilization = async (req, res) => {
             limit = 20 
         } = req.query;
 
-        const query = { companyId, managerId };
+        const query = { companyId };
         
         if (startDate && endDate) {
             query.date = {
@@ -474,10 +490,11 @@ export const approveEmployeeRegistration = async (req, res) => {
     try {
         const { employeeId } = req.params;
         const managerId = req.userId;
+        const companyId = await resolveCompanyId(req.userId);
 
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            managerId
+            companyId
         });
 
         if (!employee) {
@@ -535,8 +552,7 @@ export const sendInvitationEmails = async (req, res) => {
             try {
                 const employee = await CorporateEmployee.findOne({
                     _id: empId,
-                    companyId,
-                    managerId
+                    companyId
                 }).populate("userId", "email fullName");
 
                 if (!employee || !employee.userId) {
@@ -974,7 +990,7 @@ export const assignStopsToEmployee = async (req, res) => {
         // Get employee
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            managerId
+            companyId: await resolveCompanyId(req.userId)
         });
 
         if (!employee) {
@@ -1069,8 +1085,7 @@ export const assignRouteToEmployee = async (req, res) => {
 
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            companyId,
-            managerId
+            companyId
         });
 
         if (!employee) {
@@ -1128,8 +1143,7 @@ export const deactivateEmployee = async (req, res) => {
 
         const employee = await CorporateEmployee.findOne({
             _id: employeeId,
-            companyId,
-            managerId
+            companyId
         });
 
         if (!employee) {
