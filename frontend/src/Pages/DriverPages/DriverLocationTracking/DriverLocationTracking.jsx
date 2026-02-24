@@ -54,12 +54,40 @@ function DriverLocationTracking() {
     // Join driver room for socket events
     if (socket && user?._id) {
       socket.emit('join-driver-room', user._id);
+      console.log('[v0] Driver room joined on mount');
     }
 
     return () => {
       stopLocationTracking();
     };
   }, [socket, user]);
+
+  // Socket listeners for location confirmation and trip events
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listen for location confirmation
+    socket.on('location-confirmed', (data) => {
+      console.log('[v0] Location confirmed by server:', data);
+    });
+
+    // Listen for trip completion from passengers/system
+    socket.on('trip-completed', (data) => {
+      console.log('[v0] Trip completed event received:', data);
+      setTripStatus('completed');
+    });
+
+    // Listen for emergency alerts
+    socket.on('emergency-alert', (data) => {
+      console.log('[v0] Emergency alert received:', data);
+    });
+
+    return () => {
+      socket.off('location-confirmed');
+      socket.off('trip-completed');
+      socket.off('emergency-alert');
+    };
+  }, [socket]);
 
   const startLocationTracking = async () => {
     if (!navigator.geolocation) {
@@ -176,7 +204,8 @@ function DriverLocationTracking() {
             lng: location.longitude,
           },
           timestamp: new Date().toISOString(),
-          bookingId: currentTrip.bookingId || currentTrip._id,
+          bookingId: currentTrip.bookingId || currentTrip._id, // CRITICAL: Include bookingId
+          tripId: currentTrip._id,  // NEW: Include tripId
         });
       }
     } catch (error) {
@@ -194,14 +223,28 @@ function DriverLocationTracking() {
       const response = await api.post(`/driver/trips/${currentTrip._id}/start`);
       if (response.data.success) {
         setTripStatus("started");
+        
+        // JOIN BOOKING ROOM for real-time location sharing
+        if (socket) {
+          const bookingId = currentTrip.bookingId || currentTrip._id;
+          socket.emit('join_booking_room', bookingId);
+          console.log('[v0] Driver joined booking room:', bookingId);
+          
+          // Also join driver-specific room
+          socket.emit('join-driver-room', user._id);
+          console.log('[v0] Driver joined driver room:', user._id);
+        }
+
         await startLocationTracking();
 
         // Emit socket event for real-time notification to passengers
         if (socket) {
           socket.emit('start-trip', {
             bookingId: currentTrip.bookingId || currentTrip._id,
+            tripId: currentTrip._id,
             driverId: user?._id,
           });
+          console.log('[v0] Trip start event emitted');
         }
       }
     } catch (error) {

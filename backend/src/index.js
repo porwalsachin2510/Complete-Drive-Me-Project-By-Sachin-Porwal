@@ -129,30 +129,30 @@ io.on('connection', (socket) => {
 
     // B2C Driver updates location (new event)
     socket.on('driver-location-update', (locationData) => {
-        console.log('🚗 Received driver-location-update:', locationData);
+        console.log('[v0] 🚗 Received driver-location-update:', locationData);
         
-        const { driverId, location, timestamp, bookingId } = locationData
+        const { driverId, location, timestamp, bookingId, tripId } = locationData
 
         if (!location || !location.lat || !location.lng) {
-            console.log('❌ Invalid location data received:', locationData)
+            console.log('[v0] ❌ Invalid location data received:', locationData)
             return
         }
 
-        // Store driver location
+        // Store driver location with additional metadata
         activeDrivers.set(driverId, {
             lat: location.lat,
             lng: location.lng,
             lastUpdated: new Date(),
-            socketId: socket.id
+            socketId: socket.id,
+            bookingId,
+            tripId
         })
 
-        console.log(`✅ Driver ${driverId} location stored: ${location.lat}, ${location.lng}`)
+        console.log(`[v0] ✅ Driver ${driverId} location stored: ${location.lat}, ${location.lng}`)
 
-        // Broadcast to specific booking room
+        // Emit to specific booking room (MOST IMPORTANT - ensures correct passengers get updates)
         if (bookingId) {
-            const roomName = `booking-${bookingId}`
-            console.log(`📡 Broadcasting to room: ${roomName}`)
-            
+            const roomName = `booking-${bookingId}`;
             io.to(roomName).emit('driver-location-update', {
                 driverId,
                 location: {
@@ -160,21 +160,36 @@ io.on('connection', (socket) => {
                     lng: location.lng
                 },
                 timestamp: timestamp || new Date().toISOString(),
-                bookingId
-            })
-            
-            console.log(`✅ Emitted driver-location-update to room ${roomName}`)
+                bookingId,
+                tripId
+            });
+            console.log(`[v0] 📡 Emitted to booking room: ${roomName}`);
         }
 
-        // Also broadcast general location update
-        socket.broadcast.emit('location-update', {
-            driverId,
+        // Also emit to trip room if available
+        if (tripId) {
+            const tripRoomName = `trip-${tripId}`;
+            io.to(tripRoomName).emit('driver-location-update', {
+                driverId,
+                location: {
+                    lat: location.lat,
+                    lng: location.lng
+                },
+                timestamp: timestamp || new Date().toISOString(),
+                bookingId,
+                tripId
+            });
+            console.log(`[v0] 📡 Emitted to trip room: ${tripRoomName}`);
+        }
+
+        // Emit to driver's own room for confirmation
+        io.to(`driver-${driverId}`).emit('location-confirmed', {
             lat: location.lat,
             lng: location.lng,
-            timestamp: timestamp || new Date()
-        })
+            timestamp: new Date().toISOString()
+        });
 
-        console.log(`🌐 B2C Driver ${driverId} location updated: ${location.lat}, ${location.lng} for booking ${bookingId}`)
+        console.log(`[v0] 🌐 B2C Driver ${driverId} location updated: ${location.lat}, ${location.lng} for booking ${bookingId}`)
     })
 
     // Driver accepts booking

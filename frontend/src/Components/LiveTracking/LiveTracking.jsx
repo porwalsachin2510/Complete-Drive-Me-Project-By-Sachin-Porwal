@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
+import { SocketContext } from "../../context/SocketContext"; // NEW
 import "./livetracking.css";
 
 const LiveTracking = ({
@@ -10,13 +11,55 @@ const LiveTracking = ({
   driverName,
   vehicleModel,
   driverPhone,
+  bookingId,  // NEW: Add bookingId as prop
+  onLocationUpdate,  // NEW: Callback when location updates
 }) => {
+  const { socket } = useContext(SocketContext); // NEW
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
+  const [liveDriverLocation, setLiveDriverLocation] = useState(driverLocation); // NEW
   const markersRef = useRef({});
   const directionsRendererRef = useRef(null);
   const [distance, setDistance] = useState(null);
   const [eta, setEta] = useState(null);
+
+  // NEW: Set up Socket.io listener for real-time location updates
+  useEffect(() => {
+    if (!socket || !bookingId) return;
+
+    // Join booking room
+    socket.emit('join_booking_room', bookingId);
+    console.log('[v0] Passenger joined booking room:', bookingId);
+
+    // Listen for driver location updates
+    socket.on('driver-location-update', (locationData) => {
+      console.log('[v0] Received driver-location-update:', locationData);
+      
+      if (locationData && locationData.location) {
+        const newLocation = {
+          lat: locationData.location.lat,
+          lng: locationData.location.lng
+        };
+        
+        setLiveDriverLocation(newLocation);
+        
+        // Call callback if provided
+        if (onLocationUpdate) {
+          onLocationUpdate(newLocation);
+        }
+      }
+    });
+
+    // Listen for trip completion
+    socket.on('trip-completed', (data) => {
+      console.log('[v0] Trip completed:', data);
+    });
+
+    return () => {
+      socket.off('driver-location-update');
+      socket.off('trip-completed');
+    };
+  }, [socket, bookingId, onLocationUpdate]);
 
   // Initialize Google Map
   useEffect(() => {
@@ -58,7 +101,7 @@ const LiveTracking = ({
     };
   }, []);
 
-  // Update markers
+  // Update markers - use live location instead of prop
   useEffect(() => {
     if (!map || !window.google) return;
 
@@ -71,10 +114,10 @@ const LiveTracking = ({
 
     const newMarkers = {};
 
-    // Driver marker
-    if (driverLocation) {
+    // Driver marker - use live location
+    if (liveDriverLocation) {  // CHANGED: Use liveDriverLocation instead of driverLocation
       newMarkers.driver = new window.google.maps.Marker({
-        position: driverLocation,
+        position: liveDriverLocation,
         map,
         title: `Driver: ${driverName}`,
         icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
@@ -133,7 +176,7 @@ const LiveTracking = ({
     markersRef.current = newMarkers;
   }, [
     map,
-    driverLocation,
+    liveDriverLocation,  // CHANGED: Listen to liveDriverLocation
     passangerLocation,
     destination,
     driverName,
@@ -141,9 +184,9 @@ const LiveTracking = ({
     driverPhone,
   ]);
 
-  // Draw route
+  // Draw route - use live location
   useEffect(() => {
-    if (!map || !driverLocation || !destination || !window.google) return;
+    if (!map || !liveDriverLocation || !destination || !window.google) return;
 
     const directionsService = new window.google.maps.DirectionsService();
 
@@ -165,7 +208,7 @@ const LiveTracking = ({
 
     directionsService.route(
       {
-        origin: driverLocation,
+        origin: liveDriverLocation,  // CHANGED: Use liveDriverLocation
         destination: destination,
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
@@ -188,7 +231,7 @@ const LiveTracking = ({
         directionsRendererRef.current.setMap(null);
       }
     };
-  }, [map, driverLocation, destination]);
+  }, [map, liveDriverLocation, destination]);
 
   return (
     <div className="live-tracking-container">
