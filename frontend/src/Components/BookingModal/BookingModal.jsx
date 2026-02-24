@@ -48,15 +48,36 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
   const [passDuration, setPassDuration] = useState(1); // months
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedDays, setSelectedDays] = useState([]); // Selected travel days (Mon-Sun)
   
 
-  // Set default pickup/dropoff points when route changes
+  // Set default pickup/dropoff points and selected days when route changes
   useEffect(() => {
     if (route) {
       setSelectedPickupPoint(route.fromLocation || "");
       setSelectedDropoffPoint(route.toLocation || "");
       setSelectedReturnPickupPoint(route.toLocation || "");
       setSelectedReturnDropoffPoint(route.fromLocation || "");
+      
+      // Initialize selected days from route's available days
+      const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const routeDays = route.availableDays || route.schedule?.availableDays || [];
+      
+      if (Array.isArray(routeDays) && routeDays.length > 0) {
+        setSelectedDays(routeDays.map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase()));
+      } else if (typeof routeDays === 'string') {
+        if (routeDays.toLowerCase() === 'daily' || routeDays.toLowerCase() === 'all') {
+          setSelectedDays(allDays);
+        } else if (routeDays.toLowerCase() === 'weekdays') {
+          setSelectedDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+        } else if (routeDays.toLowerCase() === 'weekends') {
+          setSelectedDays(['Saturday', 'Sunday']);
+        } else {
+          setSelectedDays(allDays);
+        }
+      } else {
+        setSelectedDays(allDays);
+      }
     }
   }, [route]);
 
@@ -181,26 +202,31 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
     }
   };
 
-  // Calculate travel days per month based on route's available days
+  // Calculate travel days per month based on user's selected days
   const getTravelDaysPerMonth = () => {
-    const availableDays = route.availableDays || route.schedule?.availableDays || [];
-    
-    // If availableDays is a string like "Daily", "Weekdays", etc.
-    if (typeof availableDays === 'string') {
-      if (availableDays.toLowerCase() === 'daily' || availableDays.toLowerCase() === 'all') return 30;
-      if (availableDays.toLowerCase() === 'weekdays') return 22;
-      if (availableDays.toLowerCase() === 'weekends') return 8;
+    if (selectedDays.length === 0) return 0;
+    if (selectedDays.length === 7) return 30; // Full week ~ 30 days
+    // Approximate: (selected days per week / 7) * 30 days in month
+    return Math.round((selectedDays.length / 7) * 30);
+  };
+
+  // Toggle a day in selectedDays
+  const toggleDay = (day) => {
+    const routeDays = route.availableDays || route.schedule?.availableDays || [];
+    const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    // Get the available days for this route
+    let allowedDays = allDays;
+    if (Array.isArray(routeDays) && routeDays.length > 0) {
+      allowedDays = routeDays.map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
     }
+    // Only allow toggling days that the route operates on
+    if (!allowedDays.includes(day)) return;
     
-    // If availableDays is an array of day names
-    if (Array.isArray(availableDays) && availableDays.length > 0) {
-      const dayCount = availableDays.length;
-      // Approximate days per month = (dayCount / 7) * 30
-      return Math.round((dayCount / 7) * 30);
-    }
-    
-    // Default: whole week = ~30 days/month
-    return 30;
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day) 
+        : [...prev, day]
+    );
   };
 
   const availableSeats = route.availableSeats ?? route.totalSeats ?? 10;
@@ -352,6 +378,7 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
       returnDropoffLocation: selectedReturnDropoffPoint || (selectedPassType === 'ROUND_TRIP' ? route.fromLocation : ''),
       durationMonths: passDuration,
       numberOfSeats: numberOfSeats, // 
+      selectedDays: selectedDays, // Days user selected for travel
       totalAmount: Number.parseFloat(totalAmount),
       paymentMethod: method,
       notes: notes
@@ -809,6 +836,45 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
                 </div>
               )}
 
+              {/* TRAVEL DAYS SELECTION */}
+              <div className="days-selection-card">
+                <div className="days-selection-header">
+                  <h3><FaCalendarAlt style={{marginRight: 8}} />Select Travel Days</h3>
+                  <span className="days-count">{selectedDays.length} days/week</span>
+                </div>
+                <div className="days-selection-body">
+                  <div className="days-grid">
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                      const routeDays = route.availableDays || route.schedule?.availableDays || [];
+                      const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                      let allowedDays = allDays;
+                      if (Array.isArray(routeDays) && routeDays.length > 0) {
+                        allowedDays = routeDays.map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
+                      }
+                      const isAllowed = allowedDays.includes(day);
+                      const isSelected = selectedDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          className={`day-chip ${isSelected ? 'selected' : ''} ${!isAllowed ? 'disabled' : ''}`}
+                          onClick={() => toggleDay(day)}
+                          disabled={!isAllowed}
+                          title={!isAllowed ? 'Route not available on this day' : ''}
+                        >
+                          {day.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="days-presets">
+                    <button type="button" className="preset-btn" onClick={() => setSelectedDays(['Monday','Tuesday','Wednesday','Thursday','Friday'])}>Weekdays</button>
+                    <button type="button" className="preset-btn" onClick={() => setSelectedDays(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'])}>All Days</button>
+                    <button type="button" className="preset-btn" onClick={() => setSelectedDays(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])}>Mon-Sat</button>
+                  </div>
+                </div>
+              </div>
+
               {/* PASS DURATION */}
               <div className="duration-card">
                 <div className="duration-header">
@@ -876,7 +942,7 @@ const BookingModal = ({ route, isOpen, onClose, isCorporate, onSuccess }) => {
                 </div>
                 <div className="price-row">
                   <span>Travel Days/Month</span>
-                  <span>~{travelDaysPerMonth} days ({route.availableDays || 'Daily'})</span>
+                  <span>~{travelDaysPerMonth} days ({selectedDays.length} days/week)</span>
                 </div>
                 <div className="price-row">
                   <span>Monthly Price (per seat)</span>

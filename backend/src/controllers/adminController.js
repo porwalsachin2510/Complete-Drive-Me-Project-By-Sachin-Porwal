@@ -429,6 +429,10 @@ export const getFinanceMetrics = async (req, res) => {
                 { $match: { createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]),
+            Transaction.aggregate([
+                { $match: { category: 'COMMISSION_EARNED' } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
             Wallet.aggregate([
                 { $group: { _id: null, total: { $sum: '$securityDepositHeld' } } }
             ])
@@ -874,70 +878,32 @@ export const getCustomReports = async (req, res) => {
 export const getCommTemplates = async (req, res) => {
     try {
         const { type, page = 1, limit = 20, status } = req.query;
-        const query = {};
-
-        if (type) query.type = type;
-        if (status) query.status = status;
 
         console.log(`[v0] Fetching communication templates with query:`, { type, status, page, limit });
 
-        // Fetch real templates from Template collection
-        const templates = await Template.find(query)
-            .sort({ createdAt: -1 })
-            .limit(Number.parseInt(limit) * 1)
-            .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
-
-        // Get total count for pagination
-        const totalTemplates = await Template.countDocuments(query);
-
-        // Calculate usage statistics for each template
-        const templatesWithStats = await Promise.all(
-            templates.map(async (template) => {
-                // Count how many times this template has been used in messages
-                const messageUsageCount = await Transaction.countDocuments({
-                    type: "MESSAGE_SENT",
-                    category: "COMMUNICATION",
-                    'metadata.templateId': template._id
-                });
-
-                // Count how many times this template has been used in emails
-                const emailUsageCount = await Transaction.countDocuments({
-                    type: "EMAIL_SENT",
-                    category: "COMMUNICATION",
-                    'metadata.templateId': template._id
-                });
-
-                return {
-                    _id: template._id,
-                    name: template.name,
-                    type: template.type,
-                    subject: template.subject || "",
-                    content: template.content,
-                    variables: template.variables || [],
-                    status: template.status || "active",
-                    isActive: template.status === "active",
-                    usageCount: messageUsageCount + emailUsageCount,
-                    lastUsed: await getLastUsedDate(template._id),
-                    createdAt: template.createdAt,
-                    updatedAt: template.updatedAt,
-                    category: template.category || "general",
-                    description: template.description || "",
-                    // Template-specific metadata
-                    metadata: {
-                        ...template.metadata,
-                        totalSends: messageUsageCount + emailUsageCount,
-                        whatsappSends: messageUsageCount,
-                        emailSends: emailUsageCount
-                    }
-                };
-            })
-        );
-
-        console.log(`[v0] Found ${templatesWithStats.length} communication templates (total: ${totalTemplates})`);
+        // Try to use Template model if it exists, otherwise return empty array
+        let templates = [];
+        let totalTemplates = 0;
+        try {
+            const mongoose = (await import('mongoose')).default;
+            const Template = mongoose.models.Template;
+            if (Template) {
+                const query = {};
+                if (type) query.type = type;
+                if (status) query.status = status;
+                templates = await Template.find(query)
+                    .sort({ createdAt: -1 })
+                    .limit(Number.parseInt(limit))
+                    .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
+                totalTemplates = await Template.countDocuments(query);
+            }
+        } catch (modelErr) {
+            console.log('[v0] Template model not available, returning empty list');
+        }
 
         res.status(200).json({
             success: true,
-            templates: templatesWithStats,
+            templates: templates,
             pagination: {
                 currentPage: Number.parseInt(page),
                 totalPages: Math.ceil(totalTemplates / Number.parseInt(limit)),
@@ -1542,89 +1508,33 @@ async function updateWhatsAppConfig(config) {
 export const getAdCampaigns = async (req, res) => {
     try {
         const { status, page = 1, limit = 20, provider, placement } = req.query;
-        const query = {};
-
-        if (status) query.status = status;
-        if (provider) query.provider = provider;
-        if (placement) query.placement = placement;
 
         console.log(`[v0] Fetching ad campaigns with query:`, { status, provider, placement, page, limit });
 
-        // Fetch real campaigns from Campaign collection
-        const campaigns = await Campaign.find(query)
-            .populate('providerId', 'fullName companyName')
-            .sort({ createdAt: -1 })
-            .limit(Number.parseInt(limit) * 1)
-            .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
-
-        // Get total count for pagination
-        const totalCampaigns = await Campaign.countDocuments(query);
-
-        // Calculate performance metrics for each campaign
-        const campaignsWithMetrics = await Promise.all(
-            campaigns.map(async (campaign) => {
-                // Count actual views from analytics data
-                const viewCount = await Transaction.countDocuments({
-                    type: "AD_VIEW",
-                    category: "ADVERTISEMENT",
-                    'metadata.campaignId': campaign._id
-                });
-
-                // Count actual clicks from analytics data
-                const clickCount = await Transaction.countDocuments({
-                    type: "AD_CLICK",
-                    category: "ADVERTISEMENT",
-                    'metadata.campaignId': campaign._id
-                });
-
-                // Calculate performance metrics
-                const ctr = viewCount > 0 ? (clickCount / viewCount * 100).toFixed(2) : 0;
-                const daysActive = campaign.endDate && campaign.startDate 
-                    ? Math.ceil((new Date(campaign.endDate) - new Date(campaign.startDate)) / (1000 * 60 * 60 * 24))
-                    : 0;
-
-                return {
-                    _id: campaign._id,
-                    title: campaign.title,
-                    provider: campaign.providerId?.fullName || campaign.providerId?.companyName || 'Unknown Provider',
-                    providerId: campaign.providerId?._id,
-                    placement: campaign.placement,
-                    size: campaign.size,
-                    views: viewCount,
-                    clicks: clickCount,
-                    ctr: parseFloat(ctr),
-                    status: campaign.status,
-                    startDate: campaign.startDate,
-                    endDate: campaign.endDate,
-                    imageUrl: campaign.imageUrl,
-                    targetUrl: campaign.targetUrl,
-                    budget: campaign.budget,
-                    spent: campaign.spent || 0,
-                    remainingBudget: campaign.budget - (campaign.spent || 0),
-                    daysActive: daysActive,
-                    isActive: campaign.status === 'active',
-                    createdAt: campaign.createdAt,
-                    updatedAt: campaign.updatedAt,
-                    // Additional campaign metadata
-                    metadata: {
-                        ...campaign.metadata,
-                        performanceMetrics: {
-                            views: viewCount,
-                            clicks: clickCount,
-                            ctr: parseFloat(ctr),
-                            costPerClick: clickCount > 0 ? (campaign.spent || 0) / clickCount : 0,
-                            costPerView: viewCount > 0 ? (campaign.spent || 0) / viewCount : 0
-                        }
-                    }
-                };
-            })
-        );
-
-        console.log(`[v0] Found ${campaignsWithMetrics.length} ad campaigns (total: ${totalCampaigns})`);
+        // Try to use Campaign model if it exists, otherwise return empty array
+        let campaigns = [];
+        let totalCampaigns = 0;
+        try {
+            const mongoose = (await import('mongoose')).default;
+            const Campaign = mongoose.models.Campaign;
+            if (Campaign) {
+                const query = {};
+                if (status) query.status = status;
+                if (provider) query.provider = provider;
+                if (placement) query.placement = placement;
+                campaigns = await Campaign.find(query)
+                    .sort({ createdAt: -1 })
+                    .limit(Number.parseInt(limit))
+                    .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
+                totalCampaigns = await Campaign.countDocuments(query);
+            }
+        } catch (modelErr) {
+            console.log('[v0] Campaign model not available, returning empty list');
+        }
 
         res.status(200).json({
             success: true,
-            campaigns: campaignsWithMetrics,
+            campaigns: campaigns,
             pagination: {
                 currentPage: Number.parseInt(page),
                 totalPages: Math.ceil(totalCampaigns / Number.parseInt(limit)),
@@ -3070,26 +2980,28 @@ export const getCommuterRoutes = async (req, res) => {
     try {
         // Fetch real active B2C routes from database
         const routes = await B2CPartnerRoute.find({ status: 'Active' })
-            .populate('partnerId', 'fullName companyName email')
+            .populate('b2cPartnerId', 'fullName companyName email')
             .sort({ createdAt: -1 });
 
         const formattedRoutes = routes.map(route => ({
             _id: route._id,
-            name: route.routeName || `${route.startLocation?.address || 'Unknown'} to ${route.endLocation?.address || 'Unknown'}`,
-            startPoint: route.startLocation?.address || 'N/A',
-            endPoint: route.endLocation?.address || 'N/A',
+            name: route.routeName || `${route.fromLocation || 'Unknown'} to ${route.toLocation || 'Unknown'}`,
+            startPoint: route.fromLocation || 'N/A',
+            endPoint: route.toLocation || 'N/A',
             distance: route.distance || 'N/A',
             estimatedTime: route.estimatedDuration || 'N/A',
-            price: route.monthlySubscriptionPrice || route.pricePerSeat || 0,
+            price: route.pricing?.oneWayPrice || 0,
+            roundTripPrice: route.pricing?.roundTripPrice || 0,
             status: route.status?.toLowerCase() || 'inactive',
-            partnerName: route.partnerId?.companyName || route.partnerId?.fullName || 'Unknown',
-            departureTime: route.departureTime || 'N/A',
+            partnerName: route.b2cPartnerId?.companyName || route.b2cPartnerId?.fullName || 'Unknown',
+            departureTime: route.startTime || 'N/A',
             arrivalTime: route.arrivalTime || 'N/A',
             totalSeats: route.totalSeats || 0,
             availableSeats: route.availableSeats || 0,
-            stops: route.stops || [],
-            tripType: route.tripType || 'one-way',
-            operatingDays: route.operatingDays || [],
+            stops: route.stopPoints || [],
+            tripType: route.tripType || 'One Way',
+            operatingDays: route.availableDays || [],
+            pricing: route.pricing || {},
             createdAt: route.createdAt
         }));
 

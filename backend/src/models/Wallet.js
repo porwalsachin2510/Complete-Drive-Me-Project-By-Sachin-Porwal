@@ -11,7 +11,7 @@ const walletSchema = new mongoose.Schema(
 
         role: {
             type: String,
-            enum: ["COMMUTER", "CORPORATE", "B2C_PARTNER", "B2C_PARTNER_DRIVER", "B2B_PARTNER", "ADMIN"],
+            enum: ["COMMUTER", "CORPORATE", "CORPORATE_EMPLOYEE", "B2C_PARTNER", "B2C_PARTNER_DRIVER", "B2B_PARTNER", "ADMIN"],
             required: true,
         },
 

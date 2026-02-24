@@ -167,9 +167,9 @@ router.put("/payments/online/toggle", verifyToken, checkAdminRole, toggleOnlineP
 
 // Payments
 router.get("/payments/pending", verifyToken, checkAdminRole, getPendingPayments)
+router.get("/payments/stats", verifyToken, checkAdminRole, getPaymentStats)
 router.get("/payments/:paymentId", verifyToken, checkAdminRole, getPaymentDetails)
 router.put("/payments/:paymentId/verify", verifyToken, checkAdminRole, verifyPayment)
-router.get("/payments/stats", verifyToken, checkAdminRole, getPaymentStats)
 
 // Contracts
 router.get("/contracts", verifyToken, checkAdminRole, getAllContracts)

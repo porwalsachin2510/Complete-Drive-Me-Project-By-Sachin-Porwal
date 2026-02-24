@@ -3,6 +3,7 @@ import B2CPartnerTrip from "../models/B2CPartnerTrip.js";
 import B2CMonthlyPass from "../models/B2CMonthlyPass.js";
 import User from "../models/User.js";
 import B2CPartnerDriver from "../models/B2CPartnerDriver.js";
+import mongoose from "mongoose";
 
 // Get passenger's travel history
 export const getPassengerTravelHistory = async (req, res) => {
@@ -339,7 +340,7 @@ export const getTravelStatistics = async (req, res) => {
 const calculatePassengerStatistics = async (passengerId, startDate, endDate, groupBy = "month") => {
     try {
         const matchStage = {
-            passengerId: mongoose.Types.ObjectId(passengerId)
+            passengerId: new mongoose.Types.ObjectId(passengerId)
         };
 
         if (startDate && endDate) {
