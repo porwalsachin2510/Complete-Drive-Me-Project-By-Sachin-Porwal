@@ -970,8 +970,16 @@ export const getCommMessages = async (req, res) => {
                 // Get template details if templateId exists
                 let templateDetails = null;
                 if (message.metadata?.templateId) {
-                    templateDetails = await Template.findById(message.metadata.templateId)
-                        .select('name type subject');
+                    try {
+                        const mongoose = (await import('mongoose')).default;
+                        const TemplateModel = mongoose.models.Template;
+                        if (TemplateModel) {
+                            templateDetails = await TemplateModel.findById(message.metadata.templateId)
+                                .select('name type subject');
+                        }
+                    } catch (err) {
+                        // Template model not available
+                    }
                 }
 
                 return {

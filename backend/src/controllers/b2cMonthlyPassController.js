@@ -24,6 +24,7 @@ export const createB2CMonthlyPass = async (req, res) => {
             returnDropoffLocation,
             durationMonths,
             numberOfSeats,
+            selectedDays,
             totalAmount,
             paymentMethod,
             notes,
@@ -147,6 +148,20 @@ export const createB2CMonthlyPass = async (req, res) => {
             }
         }
         
+        // Also ensure startDate falls on one of the selected travel days
+        const travelDays = Array.isArray(selectedDays) && selectedDays.length > 0 ? selectedDays : null;
+        if (travelDays) {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            let maxSkip = 7;
+            while (maxSkip > 0) {
+                const dayName = dayNames[startDate.getDay()];
+                if (travelDays.map(d => d.toLowerCase()).includes(dayName.toLowerCase())) break;
+                startDate.setDate(startDate.getDate() + 1);
+                maxSkip--;
+            }
+            console.log("[v0] Adjusted startDate to next selected travel day:", startDate, "Selected days:", travelDays);
+        }
+        
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + durationMonths);
 
@@ -180,6 +195,7 @@ export const createB2CMonthlyPass = async (req, res) => {
             endDate,
             durationMonths,
             totalAmount,
+            selectedDays: travelDays || [],
             paymentMethod,
             adminCommission,
             partnerEarnings,
