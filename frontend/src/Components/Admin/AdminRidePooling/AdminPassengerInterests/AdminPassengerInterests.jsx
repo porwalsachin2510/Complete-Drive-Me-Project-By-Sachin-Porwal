@@ -47,11 +47,18 @@ const AdminPassengerInterests = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "active": return "#28a745"
+      case "approved": return "#28a745"
       case "pending": return "#ffc107"
-      case "inactive": return "#dc3545"
+      case "under_review": return "#17a2b8"
+      case "rejected": return "#dc3545"
+      case "completed": return "#6f42c1"
       default: return "#6c757d"
     }
+  }
+
+  const formatStatus = (status) => {
+    if (!status) return "Pending"
+    return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ")
   }
 
   if (loading) {
@@ -72,9 +79,11 @@ const AdminPassengerInterests = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="pending">Pending</option>
-            <option value="inactive">Inactive</option>
+            <option value="PENDING">Pending</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="COMPLETED">Completed</option>
           </select>
           <input
             type="text"
@@ -117,7 +126,7 @@ const AdminPassengerInterests = () => {
                     className="status-badge" 
                     style={{ backgroundColor: getStatusColor(interest.status) }}
                   >
-                    {interest.status}
+                    {formatStatus(interest.status)}
                   </span>
                 </td>
                 <td>{interest.matchedRoutes}</td>
@@ -128,22 +137,22 @@ const AdminPassengerInterests = () => {
                       <>
                         <button 
                           className="approve-btn"
-                          onClick={() => handleStatusChange(interest._id, 'active')}
+                          onClick={() => handleStatusChange(interest._id, 'APPROVED')}
                         >
                           Approve
                         </button>
                         <button 
                           className="reject-btn"
-                          onClick={() => handleStatusChange(interest._id, 'inactive')}
+                          onClick={() => handleStatusChange(interest._id, 'REJECTED')}
                         >
                           Reject
                         </button>
                       </>
                     )}
-                    {interest.status === 'active' && (
+                    {interest.status === 'approved' && (
                       <button 
                         className="deactivate-btn"
-                        onClick={() => handleStatusChange(interest._id, 'inactive')}
+                        onClick={() => handleStatusChange(interest._id, 'REJECTED')}
                       >
                         Deactivate
                       </button>

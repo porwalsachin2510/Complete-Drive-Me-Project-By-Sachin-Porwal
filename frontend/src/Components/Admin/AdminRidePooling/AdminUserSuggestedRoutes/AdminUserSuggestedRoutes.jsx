@@ -69,8 +69,11 @@ const AdminUserSuggestedRoutes = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "approved": return "#28a745"
-      case "under-review": return "#ffc107"
+      case "under-review": 
+      case "under_review": 
+      case "pending": return "#ffc107"
       case "rejected": return "#dc3545"
+      case "completed": return "#6f42c1"
       default: return "#6c757d"
     }
   }
@@ -100,9 +103,10 @@ const AdminUserSuggestedRoutes = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">All Status</option>
-            <option value="under-review">Under Review</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="PENDING">Pending</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
           </select>
           <input
             type="text"
@@ -164,7 +168,7 @@ const AdminUserSuggestedRoutes = () => {
                 <td>
                   <div className="action-buttons">
                     <button className="view-btn">View Details</button>
-                    {route.status === 'under-review' && (
+                    {(route.status === 'under-review' || route.status === 'under_review' || route.status === 'pending') && (
                       <>
                         <button 
                           className="approve-btn"

@@ -8,6 +8,8 @@ import Vehicle from "../models/Vehicle.js";
 import B2CPartnerRoute from "../models/B2CPartnerRoute.js";
 import B2CPassengerBooking from "../models/B2CPassengerBooking.js";
 import B2CPartnerVehicle from "../models/B2CPartnerVehicle.js";
+import RouteRequest from "../models/RouteRequest.js";
+import Quotation from "../models/Quotation.js";
 // Get all users for admin
 export const getAllUsers = async (req, res) => {
     try {
@@ -1694,19 +1696,19 @@ export const toggleAdCampaignStatus = async (req, res) => {
 // Get ride pooling statistics for admin
 export const getRidePoolingStats = async (req, res) => {
     try {
-        const stats = {
-            totalPassengers: 1250,
-            activeRoutes: 45,
-            suggestedRoutes: 23,
-            matchedRides: 890
-        };
+        const [totalPassengers, activeRoutes, suggestedRoutes, matchedRides] = await Promise.all([
+            User.countDocuments({ role: "COMMUTER" }),
+            B2CPartnerRoute.countDocuments({ status: "Active", isActive: true }),
+            RouteRequest.countDocuments({ status: { $in: ["PENDING", "UNDER_REVIEW"] } }),
+            B2CPassengerBooking.countDocuments({ bookingStatus: { $in: ["CONFIRMED", "ACCEPTED", "IN_PROGRESS", "COMPLETED"] } })
+        ]);
 
         res.status(200).json({
             success: true,
-            stats
+            stats: { totalPassengers, activeRoutes, suggestedRoutes, matchedRides }
         });
     } catch (error) {
-        console.error("[v0] Error fetching ride pooling stats:", error);
+        console.error("Error fetching ride pooling stats:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching ride pooling statistics",
@@ -1721,40 +1723,51 @@ export const getPassengerInterests = async (req, res) => {
         const { status, page = 1, limit = 20 } = req.query;
         const query = {};
 
-        if (status) query.status = status;
+        if (status && status !== "All Status") {
+            query.status = status.toUpperCase();
+        }
 
-        const interests = [
-            {
-                _id: 'interest-001',
-                passengerId: 'PASS-001',
-                passengerName: 'Ahmed Mohammed',
-                pickupLocation: 'Kuwait City',
-                dropoffLocation: 'Salmiya',
-                preferredTime: '08:00 AM',
-                frequency: 'daily',
-                status: 'active',
-                createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-                matchedRoutes: 2
-            },
-            {
-                _id: 'interest-002',
-                passengerId: 'PASS-002',
-                passengerName: 'Fatima Al-Rashid',
-                pickupLocation: 'Hawalli',
-                dropoffLocation: 'Jahra',
-                preferredTime: '09:30 AM',
-                frequency: 'weekdays',
-                status: 'pending',
-                createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                matchedRoutes: 0
-            }
-        ];
+        const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
-        const total = interests.length;
+        const [interests, total] = await Promise.all([
+            RouteRequest.find(query)
+                .populate("passengerId", "fullName email whatsappNumber")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number.parseInt(limit)),
+            RouteRequest.countDocuments(query)
+        ]);
+
+        // Find matched routes count for each interest
+        const formattedInterests = await Promise.all(
+            interests.map(async (interest) => {
+                const matchedRoutes = await B2CPartnerRoute.countDocuments({
+                    fromLocation: { $regex: interest.pickupLocation, $options: "i" },
+                    toLocation: { $regex: interest.dropoffLocation, $options: "i" },
+                    status: "Active",
+                    isActive: true
+                });
+
+                return {
+                    _id: interest._id,
+                    passengerId: interest.passengerId?._id || interest.passengerId,
+                    passengerName: interest.passengerId?.fullName || "Unknown",
+                    pickupLocation: interest.pickupLocation,
+                    dropoffLocation: interest.dropoffLocation,
+                    preferredTime: interest.preferredTime,
+                    frequency: interest.requestType ? interest.requestType.toLowerCase() : "daily",
+                    status: interest.status ? interest.status.toLowerCase() : "pending",
+                    createdAt: interest.createdAt,
+                    matchedRoutes,
+                    travelDays: interest.travelDays,
+                    expectedStartDate: interest.expectedStartDate
+                };
+            })
+        );
 
         res.status(200).json({
             success: true,
-            interests,
+            interests: formattedInterests,
             pagination: {
                 total,
                 page: Number.parseInt(page),
@@ -1762,7 +1775,7 @@ export const getPassengerInterests = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("[v0] Error fetching passenger interests:", error);
+        console.error("Error fetching passenger interests:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching passenger interests",
@@ -1777,46 +1790,43 @@ export const getUserSuggestedRoutes = async (req, res) => {
         const { status, page = 1, limit = 20 } = req.query;
         const query = {};
 
-        if (status) query.status = status;
+        if (status && status !== "all") {
+            query.status = status.toUpperCase();
+        }
 
-        const routes = [
-            {
-                _id: 'route-001',
-                userId: 'USER-001',
-                userName: 'Khalid Ahmed',
-                routeName: 'Airport Express',
-                startPoint: 'Kuwait Airport',
-                endPoint: 'Kuwait City',
-                waypoints: ['Farwaniya', 'Shuwaikh'],
-                estimatedTime: '45 mins',
-                distance: '25 km',
-                suggestedPrice: 2.50,
-                status: 'under-review',
-                votes: 15,
-                createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-            },
-            {
-                _id: 'route-002',
-                userId: 'USER-002',
-                userName: 'Noura Al-Mutairi',
-                routeName: 'University Shuttle',
-                startPoint: 'Kuwait University',
-                endPoint: 'Salmiya',
-                waypoints: ['Jabriya', 'Salwa'],
-                estimatedTime: '30 mins',
-                distance: '18 km',
-                suggestedPrice: 1.80,
-                status: 'approved',
-                votes: 23,
-                createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            }
-        ];
+        const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
-        const total = routes.length;
+        const [requests, total] = await Promise.all([
+            RouteRequest.find(query)
+                .populate("passengerId", "fullName email whatsappNumber")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number.parseInt(limit)),
+            RouteRequest.countDocuments(query)
+        ]);
+
+        const formattedRoutes = requests.map((req) => ({
+            _id: req._id,
+            userId: req.passengerId?._id || req.passengerId,
+            userName: req.passengerId?.fullName || "Unknown",
+            routeName: `${req.pickupLocation} to ${req.dropoffLocation}`,
+            startPoint: req.pickupLocation,
+            endPoint: req.dropoffLocation,
+            waypoints: [],
+            estimatedTime: "N/A",
+            distance: "N/A",
+            suggestedPrice: req.estimatedPrice || 0,
+            status: req.status ? req.status.toLowerCase().replace("_", "-") : "pending",
+            votes: req.demandCount || 1,
+            createdAt: req.createdAt,
+            requestType: req.requestType,
+            travelDays: req.travelDays,
+            preferredTime: req.preferredTime
+        }));
 
         res.status(200).json({
             success: true,
-            routes,
+            routes: formattedRoutes,
             pagination: {
                 total,
                 page: Number.parseInt(page),
@@ -1824,7 +1834,7 @@ export const getUserSuggestedRoutes = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("[v0] Error fetching user suggested routes:", error);
+        console.error("Error fetching user suggested routes:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching user suggested routes",
@@ -1838,16 +1848,23 @@ export const approveSuggestedRoute = async (req, res) => {
     try {
         const { routeId } = req.params;
         
-        // Here you would update the actual route status
-        // For demo, we'll just log the approval
-        console.log(`Approving suggested route ${routeId}`);
+        const routeRequest = await RouteRequest.findByIdAndUpdate(
+            routeId,
+            { status: "APPROVED" },
+            { new: true }
+        ).populate("passengerId", "fullName email");
+
+        if (!routeRequest) {
+            return res.status(404).json({ success: false, message: "Route request not found" });
+        }
         
         res.status(200).json({
             success: true,
-            message: "Route approved successfully"
+            message: "Route approved successfully",
+            route: routeRequest
         });
     } catch (error) {
-        console.error("[v0] Error approving suggested route:", error);
+        console.error("Error approving suggested route:", error);
         res.status(500).json({
             success: false,
             message: "Error approving suggested route",
@@ -1862,16 +1879,23 @@ export const rejectSuggestedRoute = async (req, res) => {
         const { routeId } = req.params;
         const { reason } = req.body;
         
-        // Here you would update the actual route status
-        // For demo, we'll just log the rejection
-        console.log(`Rejecting suggested route ${routeId}:`, reason);
+        const routeRequest = await RouteRequest.findByIdAndUpdate(
+            routeId,
+            { status: "REJECTED", providerResponse: reason || "Rejected by admin" },
+            { new: true }
+        ).populate("passengerId", "fullName email");
+
+        if (!routeRequest) {
+            return res.status(404).json({ success: false, message: "Route request not found" });
+        }
         
         res.status(200).json({
             success: true,
-            message: "Route rejected successfully"
+            message: "Route rejected successfully",
+            route: routeRequest
         });
     } catch (error) {
-        console.error("[v0] Error rejecting suggested route:", error);
+        console.error("Error rejecting suggested route:", error);
         res.status(500).json({
             success: false,
             message: "Error rejecting suggested route",
@@ -1883,21 +1907,39 @@ export const rejectSuggestedRoute = async (req, res) => {
 // Get B2B statistics for admin
 export const getB2BStats = async (req, res) => {
     try {
-        const stats = {
-            totalB2BProviders: 15,
-            activeB2BProviders: 12,
-            totalB2CProviders: 28,
-            activeB2CProviders: 24,
-            totalListings: 156,
-            activeListings: 142
-        };
+        const [
+            totalB2BProviders,
+            activeB2BProviders,
+            totalB2CProviders,
+            activeB2CProviders,
+            totalVehicleListings,
+            activeVehicleListings,
+            totalRouteListings,
+            activeRouteListings
+        ] = await Promise.all([
+            User.countDocuments({ role: "B2B_PARTNER" }),
+            User.countDocuments({ role: "B2B_PARTNER", status: "ACTIVE" }),
+            User.countDocuments({ role: "B2C_PARTNER" }),
+            User.countDocuments({ role: "B2C_PARTNER", status: "ACTIVE" }),
+            Vehicle.countDocuments({}),
+            Vehicle.countDocuments({ status: "AVAILABLE", isActive: true }),
+            B2CPartnerRoute.countDocuments({}),
+            B2CPartnerRoute.countDocuments({ status: "Active", isActive: true })
+        ]);
 
         res.status(200).json({
             success: true,
-            stats
+            stats: {
+                totalB2BProviders,
+                activeB2BProviders,
+                totalB2CProviders,
+                activeB2CProviders,
+                totalListings: totalVehicleListings + totalRouteListings,
+                activeListings: activeVehicleListings + activeRouteListings
+            }
         });
     } catch (error) {
-        console.error("[v0] Error fetching B2B stats:", error);
+        console.error("Error fetching B2B stats:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching B2B statistics",
@@ -1909,47 +1951,58 @@ export const getB2BStats = async (req, res) => {
 // Get B2B providers for admin
 export const getB2BProviders = async (req, res) => {
     try {
-        const { status, page = 1, limit = 20 } = req.query;
-        const query = {};
+        const { status, page = 1, limit = 20, search } = req.query;
+        const query = { role: "B2B_PARTNER" };
 
-        if (status) query.status = status;
+        if (status && status !== "all") {
+            query.status = status.toUpperCase();
+        }
+        if (search) {
+            query.$or = [
+                { fullName: { $regex: search, $options: "i" } },
+                { companyName: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } }
+            ];
+        }
 
-        const providers = [
-            {
-                _id: 'b2b-001',
-                companyName: 'Kuwait Transport Co.',
-                contactPerson: 'Mohammed Al-Ahmad',
-                email: 'info@kwtransport.com',
-                phone: '+965 22345678',
-                fleetSize: 45,
-                activeVehicles: 42,
-                status: 'active',
-                rating: 4.5,
-                totalContracts: 8,
-                revenue: 125000,
-                createdAt: new Date(Date.now() - 6 * 12 * 30 * 24 * 60 * 60 * 1000)
-            },
-            {
-                _id: 'b2b-002',
-                companyName: 'Gulf Logistics',
-                contactPerson: 'Salem Al-Khalid',
-                email: 'contact@gulflg.com',
-                phone: '+965 23456789',
-                fleetSize: 32,
-                activeVehicles: 28,
-                status: 'active',
-                rating: 4.2,
-                totalContracts: 5,
-                revenue: 89000,
-                createdAt: new Date(Date.now() - 4 * 12 * 30 * 24 * 60 * 60 * 1000)
-            }
-        ];
+        const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
-        const total = providers.length;
+        const [providers, total] = await Promise.all([
+            User.find(query)
+                .select("fullName companyName email whatsappNumber status createdAt fleetManagement")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number.parseInt(limit)),
+            User.countDocuments(query)
+        ]);
+
+        // Enrich providers with fleet size and contract counts
+        const enrichedProviders = await Promise.all(
+            providers.map(async (provider) => {
+                const [vehicleCount, activeVehicles, totalContracts] = await Promise.all([
+                    Vehicle.countDocuments({ fleetOwnerId: provider._id }),
+                    Vehicle.countDocuments({ fleetOwnerId: provider._id, status: "AVAILABLE", isActive: true }),
+                    Contract.countDocuments({ fleetOwnerId: provider._id })
+                ]);
+
+                return {
+                    _id: provider._id,
+                    companyName: provider.companyName || provider.fullName,
+                    contactPerson: provider.fullName,
+                    email: provider.email,
+                    phone: provider.whatsappNumber,
+                    fleetSize: vehicleCount,
+                    activeVehicles,
+                    status: provider.status ? provider.status.toLowerCase() : "pending",
+                    totalContracts,
+                    createdAt: provider.createdAt
+                };
+            })
+        );
 
         res.status(200).json({
             success: true,
-            providers,
+            providers: enrichedProviders,
             pagination: {
                 total,
                 page: Number.parseInt(page),
@@ -1957,7 +2010,7 @@ export const getB2BProviders = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("[v0] Error fetching B2B providers:", error);
+        console.error("Error fetching B2B providers:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching B2B providers",
@@ -1969,47 +2022,59 @@ export const getB2BProviders = async (req, res) => {
 // Get B2C providers for admin (from B2B listings)
 export const getB2CProvidersFromB2B = async (req, res) => {
     try {
-        const { status, page = 1, limit = 20 } = req.query;
-        const query = {};
+        const { status, page = 1, limit = 20, search } = req.query;
+        const query = { role: "B2C_PARTNER" };
 
-        if (status) query.status = status;
+        if (status && status !== "all") {
+            query.status = status.toUpperCase();
+        }
+        if (search) {
+            query.$or = [
+                { fullName: { $regex: search, $options: "i" } },
+                { companyName: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } }
+            ];
+        }
 
-        const providers = [
-            {
-                _id: 'b2c-b2b-001',
-                companyName: 'City Bus Services',
-                contactPerson: 'Ahmed Hassan',
-                email: 'operations@citybus.com',
-                phone: '+965 24567890',
-                routes: 12,
-                activeRoutes: 10,
-                status: 'active',
-                rating: 4.3,
-                totalBookings: 1250,
-                revenue: 67000,
-                createdAt: new Date(Date.now() - 8 * 12 * 30 * 24 * 60 * 60 * 1000)
-            },
-            {
-                _id: 'b2c-b2b-002',
-                companyName: 'Express Shuttle',
-                contactPerson: 'Nasser Al-Mutairi',
-                email: 'info@expressshuttle.com',
-                phone: '+965 25678901',
-                routes: 8,
-                activeRoutes: 7,
-                status: 'active',
-                rating: 4.6,
-                totalBookings: 890,
-                revenue: 45000,
-                createdAt: new Date(Date.now() - 3 * 12 * 30 * 24 * 60 * 60 * 1000)
-            }
-        ];
+        const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
-        const total = providers.length;
+        const [providers, total] = await Promise.all([
+            User.find(query)
+                .select("fullName companyName email whatsappNumber status createdAt serviceType")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number.parseInt(limit)),
+            User.countDocuments(query)
+        ]);
+
+        // Enrich providers with route counts and booking stats
+        const enrichedProviders = await Promise.all(
+            providers.map(async (provider) => {
+                const [totalRoutes, activeRoutes, totalBookings] = await Promise.all([
+                    B2CPartnerRoute.countDocuments({ b2cPartnerId: provider._id }),
+                    B2CPartnerRoute.countDocuments({ b2cPartnerId: provider._id, status: "Active", isActive: true }),
+                    B2CPassengerBooking.countDocuments({ b2cPartnerId: provider._id })
+                ]);
+
+                return {
+                    _id: provider._id,
+                    companyName: provider.companyName || provider.fullName,
+                    contactPerson: provider.fullName,
+                    email: provider.email,
+                    phone: provider.whatsappNumber,
+                    routes: totalRoutes,
+                    activeRoutes,
+                    status: provider.status ? provider.status.toLowerCase() : "pending",
+                    totalBookings,
+                    serviceType: provider.serviceType,
+                    createdAt: provider.createdAt
+                };
+            })
+        );
 
         res.status(200).json({
             success: true,
-            providers,
+            providers: enrichedProviders,
             pagination: {
                 total,
                 page: Number.parseInt(page),
@@ -2017,7 +2082,7 @@ export const getB2CProvidersFromB2B = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("[v0] Error fetching B2C providers from B2B:", error);
+        console.error("Error fetching B2C providers from B2B:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching B2C providers",
@@ -2031,19 +2096,30 @@ export const suspendB2BProvider = async (req, res) => {
     try {
         const { providerId } = req.params;
         
-        // Here you would update the actual provider status
-        // For demo, we'll just log the suspension
-        console.log(`Suspending B2B provider ${providerId}`);
+        const provider = await User.findOneAndUpdate(
+            { _id: providerId, role: { $in: ["B2B_PARTNER", "B2C_PARTNER"] } },
+            { 
+                status: "SUSPENDED", 
+                suspendedAt: new Date(),
+                suspendedBy: req.user?.id || null
+            },
+            { new: true }
+        ).select("-password");
+
+        if (!provider) {
+            return res.status(404).json({ success: false, message: "Provider not found" });
+        }
         
         res.status(200).json({
             success: true,
-            message: "B2B provider suspended successfully"
+            message: `${provider.role === "B2B_PARTNER" ? "B2B" : "B2C"} provider suspended successfully`,
+            provider
         });
     } catch (error) {
-        console.error("[v0] Error suspending B2B provider:", error);
+        console.error("Error suspending provider:", error);
         res.status(500).json({
             success: false,
-            message: "Error suspending B2B provider",
+            message: "Error suspending provider",
             error: error.message,
         });
     }
@@ -2054,19 +2130,75 @@ export const activateB2BProvider = async (req, res) => {
     try {
         const { providerId } = req.params;
         
-        // Here you would update the actual provider status
-        // For demo, we'll just log the activation
-        console.log(`Activating B2B provider ${providerId}`);
+        const provider = await User.findOneAndUpdate(
+            { _id: providerId, role: { $in: ["B2B_PARTNER", "B2C_PARTNER"] } },
+            { 
+                status: "ACTIVE", 
+                activatedAt: new Date(),
+                activatedBy: req.user?.id || null
+            },
+            { new: true }
+        ).select("-password");
+
+        if (!provider) {
+            return res.status(404).json({ success: false, message: "Provider not found" });
+        }
         
         res.status(200).json({
             success: true,
-            message: "B2B provider activated successfully"
+            message: `${provider.role === "B2B_PARTNER" ? "B2B" : "B2C"} provider activated successfully`,
+            provider
         });
     } catch (error) {
-        console.error("[v0] Error activating B2B provider:", error);
+        console.error("Error activating provider:", error);
         res.status(500).json({
             success: false,
-            message: "Error activating B2B provider",
+            message: "Error activating provider",
+            error: error.message,
+        });
+    }
+};
+
+// Update passenger interest status
+export const updatePassengerInterestStatus = async (req, res) => {
+    try {
+        const { interestId } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "COMPLETED"];
+        if (!validStatuses.includes(status?.toUpperCase())) {
+            return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
+        }
+
+        const routeRequest = await RouteRequest.findByIdAndUpdate(
+            interestId,
+            { status: status.toUpperCase() },
+            { new: true }
+        ).populate("passengerId", "fullName email whatsappNumber");
+
+        if (!routeRequest) {
+            return res.status(404).json({ success: false, message: "Passenger interest not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Passenger interest ${status.toLowerCase()} successfully`,
+            interest: {
+                _id: routeRequest._id,
+                passengerId: routeRequest.passengerId?._id,
+                passengerName: routeRequest.passengerId?.fullName,
+                pickupLocation: routeRequest.pickupLocation,
+                dropoffLocation: routeRequest.dropoffLocation,
+                preferredTime: routeRequest.preferredTime,
+                status: routeRequest.status.toLowerCase(),
+                createdAt: routeRequest.createdAt
+            }
+        });
+    } catch (error) {
+        console.error("Error updating passenger interest status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error updating passenger interest status",
             error: error.message,
         });
     }

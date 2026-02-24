@@ -50,6 +50,7 @@ import {
     getB2CProvidersFromB2B,
     suspendB2BProvider,
     activateB2BProvider,
+    updatePassengerInterestStatus,
     toggleOnlinePayments,
     getOnlinePaymentStatus,
     getB2CRoutes,
@@ -150,6 +151,7 @@ router.put("/ads/campaigns/:campaignId/status", verifyToken, checkAdminRole, tog
 // Ride Pooling Management
 router.get("/ride-pooling/stats", verifyToken, checkAdminRole, getRidePoolingStats)
 router.get("/ride-pooling/passenger-interests", verifyToken, checkAdminRole, getPassengerInterests)
+router.put("/ride-pooling/passenger-interests/:interestId/status", verifyToken, checkAdminRole, updatePassengerInterestStatus)
 router.get("/ride-pooling/suggested-routes", verifyToken, checkAdminRole, getUserSuggestedRoutes)
 router.put("/ride-pooling/suggested-routes/:routeId/approve", verifyToken, checkAdminRole, approveSuggestedRoute)
 router.put("/ride-pooling/suggested-routes/:routeId/reject", verifyToken, checkAdminRole, rejectSuggestedRoute)

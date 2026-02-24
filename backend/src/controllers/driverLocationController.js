@@ -17,10 +17,11 @@ export const getActiveTrip = async (req, res) => {
         const trip = await B2CPartnerTrip.findOne({
             $or: [
                 { driverId: driverId },
-                { 'assignedDriver': driverId }
+                { 'assignedDriver': driverId },
+                { b2cPartnerId: driverId }
             ],
-            status: { $in: ['SCHEDULED', 'IN_PROGRESS'] }
-        }).populate('routeId passengers.user');
+            status: { $in: ['Scheduled', 'In Progress', 'SCHEDULED', 'IN_PROGRESS'] }
+        }).populate('routeId passengers.userId');
 
         if (!trip) {
             return res.json({

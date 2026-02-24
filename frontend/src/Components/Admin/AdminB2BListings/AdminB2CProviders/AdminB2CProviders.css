@@ -122,6 +122,16 @@
   color: #1e40af;
 }
 
+.ad-dash-b2c-providers-status-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ad-dash-b2c-providers-status-suspended {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .ad-dash-b2c-providers-actions {
   display: flex;
   gap: 8px;
