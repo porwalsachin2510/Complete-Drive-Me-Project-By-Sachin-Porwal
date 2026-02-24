@@ -10,20 +10,25 @@ function CorporateEmployeeManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  const [sendingInvitations, setSendingInvitations] = useState(false);
   const [availableRoutes, setAvailableRoutes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Form states
+  // Form states - match backend CorporateEmployee model schema
   const [employeeForm, setEmployeeForm] = useState({
-    fullName: "",
-    email: "",
-    whatsappNumber: "",
-    department: "",
-    designation: "",
-    workLocation: "",
+    personalInfo: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
+      department: "",
+      designation: "",
+      workLocation: ""
+    },
     residentialAddress: {
       street: "",
       area: "",

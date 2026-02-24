@@ -40,8 +40,8 @@ export const registerCorporateEmployee = async (req, res) => {
         const existingEmployee = await CorporateEmployee.findOne({
             $or: [
                 { employeeId },
-                { email },
-                { contactNumber }
+                { "personalInfo.email": email },
+                { "personalInfo.phoneNumber": contactNumber }
             ]
         });
 
@@ -64,23 +64,38 @@ export const registerCorporateEmployee = async (req, res) => {
 
         await user.save();
 
-        // Create corporate employee record
+        // Parse full name into first/last
+        const nameParts = (fullName || "").trim().split(/\s+/);
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || firstName;
+
+        // Create corporate employee record with correct schema mapping
         const employee = new CorporateEmployee({
             userId: user._id,
             companyId: company._id,
-            managerId: company._id, // Company admin acts as manager
             employeeId,
-            fullName,
-            email,
-            contactNumber,
-            department,
-            designation,
-            workShift,
-            pickupLocation,
-            dropoffLocation,
-            isActive: true,
-            isVerified: true, // Auto-verify for corporate employees
-            registeredAt: new Date()
+            personalInfo: {
+                firstName,
+                lastName,
+                email,
+                phoneNumber: contactNumber || "",
+                department: department || "",
+                designation: designation || "",
+                workLocation: ""
+            },
+            transportDetails: {
+                pickupPoint: pickupLocation || "",
+                dropOffPoint: dropoffLocation || "",
+                shiftType: workShift || "FULL_DAY",
+                transportStatus: "ACTIVE"
+            },
+            accessControl: {
+                isActive: true,
+                accessLevel: "EMPLOYEE"
+            },
+            documents: {
+                verificationStatus: "VERIFIED"
+            }
         });
 
         await employee.save();
@@ -115,9 +130,8 @@ export const getEmployeeDashboard = async (req, res) => {
 
         // Get employee details
         const employee = await CorporateEmployee.findOne({ userId })
-            .populate('companyId', 'companyName businessName')
-            .populate('routeId', 'routeName fromLocation toLocation pickupPoints dropoffPoints')
-            .populate('vehicleId', 'vehicleNumber vehicleType capacity');
+            .populate('companyId', 'companyName businessName fullName')
+            .populate('transportDetails.assignedRoute', 'routeName fromLocation toLocation pickupPoints dropoffPoints stopPoints');
 
         if (!employee) {
             return res.status(404).json({
@@ -141,18 +155,18 @@ export const getEmployeeDashboard = async (req, res) => {
                 employee: {
                     employeeId: employee.employeeId,
                     fullName: employee.fullName,
-                    email: employee.email,
-                    contactNumber: employee.contactNumber,
-                    department: employee.department,
-                    designation: employee.designation,
-                    workShift: employee.workShift,
-                    pickupLocation: employee.pickupLocation,
-                    dropoffLocation: employee.dropoffLocation,
-                    route: employee.routeId
+                    email: employee.personalInfo?.email,
+                    phoneNumber: employee.personalInfo?.phoneNumber,
+                    department: employee.personalInfo?.department,
+                    designation: employee.personalInfo?.designation,
+                    shiftType: employee.transportDetails?.shiftType,
+                    pickupPoint: employee.transportDetails?.pickupPoint,
+                    dropOffPoint: employee.transportDetails?.dropOffPoint,
+                    route: employee.transportDetails?.assignedRoute
                 },
                 company: {
-                    companyName: employee.companyId.companyName,
-                    businessName: employee.companyId.businessName
+                    companyName: employee.companyId?.companyName || employee.companyId?.fullName,
+                    businessName: employee.companyId?.businessName
                 },
                 travelHistory,
                 upcomingTrips,
@@ -177,8 +191,7 @@ export const getAssignedRoute = async (req, res) => {
         const userId = req.userId;
 
         const employee = await CorporateEmployee.findOne({ userId })
-            .populate('routeId', 'routeName fromLocation toLocation pickupPoints dropoffPoints')
-            .populate('vehicleId', 'vehicleNumber vehicleType capacity');
+            .populate('transportDetails.assignedRoute', 'routeName fromLocation toLocation pickupPoints dropoffPoints stopPoints');
 
         if (!employee) {
             return res.status(404).json({
@@ -187,28 +200,27 @@ export const getAssignedRoute = async (req, res) => {
             });
         }
 
+        const assignedRoute = employee.transportDetails?.assignedRoute;
+
         // Get schedule details
-        const schedule = await getRouteSchedule(employee.routeId._id);
+        const schedule = assignedRoute?._id ? await getRouteSchedule(assignedRoute._id) : { schedule: [] };
 
         res.status(200).json({
             success: true,
             data: {
-                route: {
-                    routeName: employee.routeId.routeName,
-                    fromLocation: employee.routeId.fromLocation,
-                    toLocation: employee.routeId.toLocation,
-                    pickupPoints: employee.routeId.pickupPoints,
-                    dropoffPoints: employee.routeId.dropoffPoints
-                },
-                vehicle: employee.vehicleId ? {
-                    vehicleNumber: employee.vehicleId.vehicleNumber,
-                    vehicleType: employee.vehicleId.vehicleType,
-                    capacity: employee.vehicleId.capacity
+                route: assignedRoute ? {
+                    routeName: assignedRoute.routeName,
+                    fromLocation: assignedRoute.fromLocation,
+                    toLocation: assignedRoute.toLocation,
+                    pickupPoints: assignedRoute.pickupPoints,
+                    dropoffPoints: assignedRoute.dropoffPoints,
+                    stopPoints: assignedRoute.stopPoints
                 } : null,
+                vehicle: null, // Will be populated from VehicleAssignment when available
                 schedule,
-                seatNumber: employee.seatNumber,
-                pickupLocation: employee.pickupLocation,
-                dropoffLocation: employee.dropoffLocation
+                seatNumber: employee.transportDetails?.seatNumber,
+                pickupPoint: employee.transportDetails?.pickupPoint,
+                dropOffPoint: employee.transportDetails?.dropOffPoint
             }
         });
 
@@ -319,11 +331,12 @@ export const markNotTravelingToday = async (req, res) => {
         );
 
         // Also record in the employee's attendance
-        if (!employee.attendanceLog) employee.attendanceLog = [];
-        employee.attendanceLog.push({
+        if (!employee.attendance) employee.attendance = {};
+        if (!employee.attendance.dailyAttendance) employee.attendance.dailyAttendance = [];
+        employee.attendance.dailyAttendance.push({
             date: today,
             status: "ABSENT",
-            reason: reason || "Reported not traveling"
+            notes: reason || "Reported not traveling"
         });
         await employee.save();
 
@@ -532,11 +545,10 @@ const getEmployeeTravelHistory = async (userId, period) => {
 const getUpcomingTrips = async (userId) => {
     try {
         const employee = await CorporateEmployee.findOne({ userId })
-            .populate('routeId', 'fromLocation toLocation stopPoints')
-            .populate('vehicleId', 'vehicleNumber vehicleType capacity')
+            .populate('transportDetails.assignedRoute', 'fromLocation toLocation stopPoints')
             .populate('companyId', 'companyName');
 
-        if (!employee || !employee.routeId) {
+        if (!employee || !employee.transportDetails?.assignedRoute) {
             return { trips: [] };
         }
 
@@ -560,7 +572,7 @@ const getUpcomingTrips = async (userId) => {
             date: booking.travelDate.toISOString().split('T')[0],
             time: booking.travelPath.find(path => path.isFromLocation)?.time || 'Not specified',
             route: `${booking.routeId?.fromLocation || 'Unknown'} → ${booking.routeId?.toLocation || 'Unknown'}`,
-            vehicleNumber: employee.vehicleId?.vehicleNumber || booking.vehiclePlate || 'Not assigned',
+            vehicleNumber: booking.vehiclePlate || 'Not assigned',
             driverName: booking.driverId?.fullName || 'Not assigned',
             driverContact: booking.driverId?.contactNumber || booking.driverPhoneNumber || 'Not available',
             bookingId: booking._id,
@@ -579,11 +591,10 @@ const getUpcomingTrips = async (userId) => {
 const getAssignedVehicleInfo = async (userId) => {
     try {
         const employee = await CorporateEmployee.findOne({ userId })
-            .populate('routeId', 'fromLocation toLocation')
-            .populate('vehicleId', 'vehicleNumber vehicleType capacity')
+            .populate('transportDetails.assignedRoute', 'fromLocation toLocation')
             .populate('companyId', 'companyName');
 
-        if (!employee || !employee.vehicleId) {
+        if (!employee) {
             return {
                 vehicleNumber: null,
                 vehicleType: null,
@@ -594,20 +605,25 @@ const getAssignedVehicleInfo = async (userId) => {
             };
         }
 
-        // Get vehicle assignment for this employee
-        const vehicleAssignment = await VehicleAssignment.findOne({
-            contractId: { $in: await Contract.find({ corporateOwnerId: employee.companyId }).distinct('_id') },
-            vehicleId: employee.vehicleId._id
-        })
-        .populate('driverId', 'fullName contactNumber');
+        // Get vehicle assignment for this employee through contracts
+        let vehicleAssignment = null;
+        try {
+            const contracts = await Contract.find({ corporateOwnerId: employee.companyId }).distinct('_id');
+            vehicleAssignment = await VehicleAssignment.findOne({
+                contractId: { $in: contracts }
+            }).populate('vehicleId', 'vehicleNumber vehicleType capacity')
+              .populate('driverId', 'fullName contactNumber');
+        } catch (e) {
+            // Ignore if vehicle assignment not found
+        }
 
         return {
-            vehicleNumber: employee.vehicleId.vehicleNumber,
-            vehicleType: employee.vehicleId.vehicleType,
-            capacity: employee.vehicleId.capacity,
+            vehicleNumber: vehicleAssignment?.vehicleId?.vehicleNumber || null,
+            vehicleType: vehicleAssignment?.vehicleId?.vehicleType || null,
+            capacity: vehicleAssignment?.vehicleId?.capacity || null,
             driverName: vehicleAssignment?.driverId?.fullName || 'Not assigned',
             driverContact: vehicleAssignment?.driverId?.contactNumber || 'Not available',
-            seatNumber: employee.seatNumber || 'Not assigned'
+            seatNumber: employee.transportDetails?.seatNumber || 'Not assigned'
         };
 
     } catch (error) {
@@ -847,13 +863,16 @@ const sendWelcomeEmail = async (user, employee) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Welcome to Corporate Transport System",
-            template: "employeeWelcome",
-            data: {
-                employeeName: employee.fullName,
-                companyName: employee.companyName,
-                loginUrl: `${process.env.FRONTEND_URL}/login`
-            }
+            subject: "Welcome to Corporate Transport System - DriveMe",
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Welcome to DriveMe Corporate Transport!</h2>
+                    <p>Hello <strong>${employee.fullName || user.fullName}</strong>,</p>
+                    <p>You have been successfully registered for the corporate transport system.</p>
+                    <p>You can now login and view your assigned route, schedule, and manage your daily travel.</p>
+                    <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" style="background: #1a237e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">Login Now</a>
+                </div>
+            `
         });
     } catch (error) {
         console.error("Error sending welcome email:", error);
@@ -862,20 +881,24 @@ const sendWelcomeEmail = async (user, employee) => {
 
 const notifyManagerOfAbsence = async (employee, reason) => {
     try {
-        // Get manager
         const manager = await User.findById(employee.companyId);
         if (manager) {
             await sendEmail({
                 to: manager.email,
-                subject: "Employee Absence Report",
-                template: "employeeAbsence",
-                data: {
-                    managerName: manager.fullName,
-                    employeeName: employee.fullName,
-                    employeeEmail: employee.email,
-                    reason,
-                    date: new Date()
-                }
+                subject: "Employee Absence Report - DriveMe",
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2>Employee Absence Report</h2>
+                        <p>Hello <strong>${manager.fullName}</strong>,</p>
+                        <p>An employee has reported absence from today's transport service.</p>
+                        <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                            <p><strong>Employee:</strong> ${employee.fullName || employee.personalInfo?.firstName + ' ' + employee.personalInfo?.lastName}</p>
+                            <p><strong>Email:</strong> ${employee.personalInfo?.email || 'N/A'}</p>
+                            <p><strong>Reason:</strong> ${reason || 'Not provided'}</p>
+                            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                `
             });
         }
     } catch (error) {
@@ -885,22 +908,24 @@ const notifyManagerOfAbsence = async (employee, reason) => {
 
 const notifyManagerOfRouteChange = async (employee, changeRequest) => {
     try {
-        // Get manager
         const manager = await User.findById(employee.companyId);
         if (manager) {
             await sendEmail({
                 to: manager.email,
-                subject: "Route Change Request",
-                template: "routeChangeRequest",
-                data: {
-                    managerName: manager.fullName,
-                    employeeName: employee.fullName,
-                    employeeEmail: employee.email,
-                    currentRoute: changeRequest.currentRouteId,
-                    newRoute: changeRequest.newRouteId,
-                    reason: changeRequest.reason,
-                    effectiveDate: changeRequest.effectiveDate
-                }
+                subject: "Route Change Request - DriveMe",
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2>Route Change Request</h2>
+                        <p>Hello <strong>${manager.fullName}</strong>,</p>
+                        <p>An employee has requested a route change.</p>
+                        <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                            <p><strong>Employee:</strong> ${employee.fullName || employee.personalInfo?.firstName + ' ' + employee.personalInfo?.lastName}</p>
+                            <p><strong>Reason:</strong> ${changeRequest.reason || 'Not provided'}</p>
+                            <p><strong>Effective Date:</strong> ${changeRequest.effectiveDate ? new Date(changeRequest.effectiveDate).toLocaleDateString() : 'ASAP'}</p>
+                        </div>
+                        <p>Please review and approve/reject this request from your dashboard.</p>
+                    </div>
+                `
             });
         }
     } catch (error) {

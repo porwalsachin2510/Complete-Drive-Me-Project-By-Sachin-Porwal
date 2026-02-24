@@ -39,9 +39,9 @@ export const bulkUploadEmployees = async (req, res) => {
                 // Check if employee already exists
                 const existingEmployee = await CorporateEmployee.findOne({
                     $or: [
-                        { email: employeeData.email },
+                        { "personalInfo.email": employeeData.email },
                         { employeeId: employeeData.employeeId },
-                        { contactNumber: employeeData.contactNumber }
+                        { "personalInfo.phoneNumber": employeeData.contactNumber || employeeData.whatsappNumber }
                     ]
                 });
 
@@ -66,24 +66,41 @@ export const bulkUploadEmployees = async (req, res) => {
 
                 await user.save();
 
-                // Create corporate employee record
+                // Parse full name into first/last
+                const nameParts = (employeeData.fullName || "").trim().split(/\s+/);
+                const firstName = nameParts[0] || "";
+                const lastName = nameParts.slice(1).join(" ") || firstName;
+
+                // Create corporate employee record with correct schema mapping
                 const corporateEmployee = new CorporateEmployee({
                     userId: user._id,
                     companyId: companyId,
-                    managerId: managerId,
                     employeeId: employeeData.employeeId,
-                    fullName: employeeData.fullName,
-                    email: employeeData.email,
-                    contactNumber: employeeData.contactNumber,
-                    department: employeeData.department,
-                    designation: employeeData.designation,
-                    workShift: employeeData.workShift,
-                    pickupLocation: employeeData.pickupLocation,
-                    dropoffLocation: employeeData.dropoffLocation,
-                    routeId: employeeData.routeId,
-                    seatNumber: employeeData.seatNumber,
-                    isActive: true,
-                    isVerified: false
+                    personalInfo: {
+                        firstName,
+                        lastName,
+                        email: employeeData.email,
+                        phoneNumber: employeeData.contactNumber || employeeData.whatsappNumber || "",
+                        department: employeeData.department || "",
+                        designation: employeeData.designation || "",
+                        workLocation: employeeData.workLocation || ""
+                    },
+                    residentialAddress: employeeData.residentialAddress || {},
+                    transportDetails: {
+                        assignedRoute: employeeData.routeId || employeeData.transportDetails?.assignedRoute || undefined,
+                        seatNumber: employeeData.seatNumber || employeeData.transportDetails?.seatNumber || undefined,
+                        pickupPoint: employeeData.pickupLocation || employeeData.transportDetails?.pickupPoint || "",
+                        dropOffPoint: employeeData.dropoffLocation || employeeData.transportDetails?.dropOffPoint || "",
+                        shiftType: employeeData.workShift || employeeData.transportDetails?.shiftType || "FULL_DAY",
+                        transportStatus: "ACTIVE"
+                    },
+                    accessControl: {
+                        isActive: true,
+                        accessLevel: "EMPLOYEE"
+                    },
+                    documents: {
+                        verificationStatus: "PENDING"
+                    }
                 });
 
                 await corporateEmployee.save();
@@ -208,25 +225,26 @@ export const getEmployees = async (req, res) => {
             search 
         } = req.query;
 
-        const query = { companyId, managerId };
+        const query = { companyId };
         
-        if (department) query.department = department;
-        if (designation) query.designation = designation;
-        if (workShift) query.workShift = workShift;
-        if (isActive !== undefined) query.isActive = isActive === 'true';
+        if (department) query["personalInfo.department"] = department;
+        if (designation) query["personalInfo.designation"] = designation;
+        if (workShift) query["transportDetails.shiftType"] = workShift;
+        if (isActive !== undefined) query["accessControl.isActive"] = isActive === 'true';
         
         if (search) {
             query.$or = [
-                { fullName: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
+                { "personalInfo.firstName": { $regex: search, $options: 'i' } },
+                { "personalInfo.lastName": { $regex: search, $options: 'i' } },
+                { "personalInfo.email": { $regex: search, $options: 'i' } },
                 { employeeId: { $regex: search, $options: 'i' } },
-                { contactNumber: { $regex: search, $options: 'i' } }
+                { "personalInfo.phoneNumber": { $regex: search, $options: 'i' } }
             ];
         }
 
         const employees = await CorporateEmployee.find(query)
-            .populate('userId', 'email isActive')
-            .populate('routeId', 'routeName fromLocation toLocation')
+            .populate('userId', 'email isActive fullName')
+            .populate('transportDetails.assignedRoute', 'routeName fromLocation toLocation')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
@@ -326,8 +344,8 @@ export const deleteEmployee = async (req, res) => {
         }
 
         // Deactivate employee instead of deleting
-        employee.isActive = false;
-        employee.deactivatedAt = new Date();
+        employee.accessControl.isActive = false;
+        employee.transportDetails.transportStatus = "TERMINATED";
         await employee.save();
 
         // Deactivate user account
@@ -469,8 +487,10 @@ export const approveEmployeeRegistration = async (req, res) => {
             });
         }
 
-        employee.isVerified = true;
-        employee.approvedAt = new Date();
+        employee.documents.verificationStatus = "VERIFIED";
+        employee.documents.verifiedAt = new Date();
+        employee.documents.verifiedBy = managerId;
+        employee.accessControl.isActive = true;
         await employee.save();
 
         // Activate user account
@@ -533,13 +553,13 @@ export const sendInvitationEmails = async (req, res) => {
                                 <h1 style="margin: 0; font-size: 24px;">Welcome to DriveMe Corporate Transport</h1>
                             </div>
                             <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-                                <p>Hello <strong>${employee.fullName}</strong>,</p>
+                                <p>Hello <strong>${employee.personalInfo?.firstName || employee.fullName || 'Employee'} ${employee.personalInfo?.lastName || ''}</strong>,</p>
                                 <p>You have been invited by <strong>${manager?.companyName || manager?.fullName || 'your company'}</strong> to use the DriveMe corporate transport service.</p>
                                 <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #1a237e; margin: 20px 0;">
                                     <h3 style="color: #1a237e; margin-top: 0;">Your Login Credentials</h3>
                                     <p><strong>Email:</strong> ${employee.userId.email}</p>
                                     <p><strong>Employee ID:</strong> ${employee.employeeId}</p>
-                                    <p><strong>Department:</strong> ${employee.department || 'N/A'}</p>
+                                    <p><strong>Department:</strong> ${employee.personalInfo?.department || 'N/A'}</p>
                                     <p style="color: #666; font-size: 13px;">Use your registered email to log in. If you haven't set a password yet, use the registration link below.</p>
                                 </div>
                                 <div style="text-align: center; margin: 20px 0;">
@@ -553,7 +573,7 @@ export const sendInvitationEmails = async (req, res) => {
 
                 results.sent.push({
                     employeeId: empId,
-                    name: employee.fullName,
+                    name: employee.fullName || `${employee.personalInfo?.firstName || ''} ${employee.personalInfo?.lastName || ''}`.trim(),
                     email: employee.userId.email
                 });
 
@@ -592,7 +612,7 @@ export const getEmployeeFeedbackSummary = async (req, res) => {
         const companyId = await resolveCompanyId(req.userId);
 
         // Get all employees under this company
-        const employees = await CorporateEmployee.find({ companyId, managerId }).select("_id userId fullName");
+        const employees = await CorporateEmployee.find({ companyId }).select("_id userId personalInfo");
         const employeeUserIds = employees.map(e => e.userId);
 
         // Get feedback data from corporate bookings
@@ -649,7 +669,7 @@ export const getEmployeeFeedbackSummary = async (req, res) => {
 
         // Map passenger IDs to names
         const employeeMap = {};
-        employees.forEach(e => { employeeMap[e.userId?.toString()] = e.fullName; });
+        employees.forEach(e => { employeeMap[e.userId?.toString()] = e.fullName || `${e.personalInfo?.firstName || ''} ${e.personalInfo?.lastName || ''}`.trim(); });
         recentFeedbacks.forEach(f => {
             f.employeeName = employeeMap[f.passengerId?.toString()] || "Unknown";
         });
@@ -688,7 +708,7 @@ const processEmployeeUpload = async (employees, managerId, companyId) => {
             // Check if employee already exists
             const existingEmployee = await CorporateEmployee.findOne({
                 $or: [
-                    { email: employeeData.email },
+                    { "personalInfo.email": employeeData.email },
                     { employeeId: employeeData.employeeId }
                 ]
             });
@@ -713,14 +733,40 @@ const processEmployeeUpload = async (employees, managerId, companyId) => {
 
             await user.save();
 
-            // Create corporate employee record
+            // Create corporate employee record with correct schema mapping
+            const nameParts = (employeeData.fullName || "").trim().split(/\s+/);
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || firstName;
+
             const corporateEmployee = new CorporateEmployee({
                 userId: user._id,
                 companyId: companyId,
-                managerId: managerId,
-                ...employeeData,
-                isActive: true,
-                isVerified: false
+                employeeId: employeeData.employeeId,
+                personalInfo: {
+                    firstName,
+                    lastName,
+                    email: employeeData.email,
+                    phoneNumber: employeeData.contactNumber || employeeData.whatsappNumber || "",
+                    department: employeeData.department || "",
+                    designation: employeeData.designation || "",
+                    workLocation: employeeData.workLocation || ""
+                },
+                residentialAddress: employeeData.residentialAddress || {},
+                transportDetails: {
+                    assignedRoute: employeeData.routeId || employeeData.transportDetails?.assignedRoute || undefined,
+                    seatNumber: employeeData.seatNumber || undefined,
+                    pickupPoint: employeeData.pickupLocation || employeeData.transportDetails?.pickupPoint || "",
+                    dropOffPoint: employeeData.dropoffLocation || employeeData.transportDetails?.dropOffPoint || "",
+                    shiftType: employeeData.workShift || employeeData.transportDetails?.shiftType || "FULL_DAY",
+                    transportStatus: "ACTIVE"
+                },
+                accessControl: {
+                    isActive: true,
+                    accessLevel: "EMPLOYEE"
+                },
+                documents: {
+                    verificationStatus: "PENDING"
+                }
             });
 
             await corporateEmployee.save();
@@ -746,14 +792,20 @@ const sendEmployeeInvitation = async (user, employeeData) => {
     try {
         await sendEmail({
             to: user.email,
-            subject: "Welcome to Corporate Transport System",
-            template: "employeeInvitation",
-            data: {
-                employeeName: employeeData.fullName,
-                companyName: employeeData.companyName,
-                loginUrl: `${process.env.FRONTEND_URL}/login`,
-                tempPassword: "tempPassword123"
-            }
+            subject: "Welcome to Corporate Transport System - DriveMe",
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Welcome to DriveMe Corporate Transport</h2>
+                    <p>Hello <strong>${employeeData.fullName || 'Employee'}</strong>,</p>
+                    <p>You have been added to the corporate transport system.</p>
+                    <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <p><strong>Login Email:</strong> ${user.email}</p>
+                        <p><strong>Temporary Password:</strong> tempPassword123</p>
+                    </div>
+                    <p>Please login and change your password immediately.</p>
+                    <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" style="background: #1a237e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">Login Now</a>
+                </div>
+            `
         });
     } catch (error) {
         console.error("Error sending employee invitation:", error);
@@ -766,13 +818,16 @@ const sendEmployeeApproval = async (employee) => {
         if (user) {
             await sendEmail({
                 to: user.email,
-                subject: "Your Registration Has Been Approved",
-                template: "employeeApproval",
-                data: {
-                    employeeName: employee.fullName,
-                    companyName: employee.companyName,
-                    loginUrl: `${process.env.FRONTEND_URL}/login`
-                }
+                subject: "Your Registration Has Been Approved - DriveMe",
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2>Registration Approved!</h2>
+                        <p>Hello <strong>${employee.fullName || user.fullName}</strong>,</p>
+                        <p>Your registration for the corporate transport system has been approved.</p>
+                        <p>You can now login and start using the service.</p>
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" style="background: #1a237e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 10px;">Login Now</a>
+                    </div>
+                `
             });
         }
     } catch (error) {
@@ -1084,9 +1139,8 @@ export const deactivateEmployee = async (req, res) => {
             });
         }
 
-        employee.isActive = false;
-        employee.deactivatedAt = new Date();
-        employee.deactivatedBy = managerId;
+        employee.accessControl.isActive = false;
+        employee.transportDetails.transportStatus = "TERMINATED";
         await employee.save();
 
         res.status(200).json({
@@ -1095,7 +1149,7 @@ export const deactivateEmployee = async (req, res) => {
             data: {
                 employeeId: employee._id,
                 fullName: employee.fullName,
-                isActive: employee.isActive
+                isActive: employee.accessControl.isActive
             }
         });
 
