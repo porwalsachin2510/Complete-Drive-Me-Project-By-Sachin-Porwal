@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import api from "../../utils/api";
 import "./DailyTripsInBooking.css";
 
-const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange, currentUserId, onTripStart, onTripComplete }) => {
+const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange, currentUserId, currentDriverId, onTripStart, onTripComplete }) => {
   const [dailyTrips, setDailyTrips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("upcoming"); // "upcoming", "all", "today"
@@ -91,7 +91,12 @@ const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange, currentUse
     if (userRole === "B2C_PARTNER" && booking?.isSelfDriver) return true;
     if (userRole === "B2C_PARTNER_DRIVER") {
       const bookingDriverId = booking?.assignedDriverId || booking?.driverId;
-      return bookingDriverId && currentUserId && bookingDriverId.toString() === currentUserId.toString();
+      if (!bookingDriverId) return false;
+      const driverIdStr = bookingDriverId.toString();
+      // Check both user._id and user.driverId since assignedDriverId may reference B2CPartnerDriver doc
+      if (currentUserId && driverIdStr === currentUserId.toString()) return true;
+      if (currentDriverId && driverIdStr === currentDriverId.toString()) return true;
+      return false;
     }
     return false;
   })();

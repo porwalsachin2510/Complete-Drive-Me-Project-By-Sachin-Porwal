@@ -86,6 +86,12 @@ const b2CMonthlyPassSchema = new mongoose.Schema({
         max: 12,
     },
     
+    // Selected travel days (e.g., ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+    selectedDays: {
+        type: [String],
+        default: [],
+    },
+    
     // Pricing
     totalAmount: {
         type: Number,

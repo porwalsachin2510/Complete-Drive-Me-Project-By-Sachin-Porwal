@@ -394,6 +394,7 @@ const B2C_PartnerBookingsPage = () => {
                   booking={booking}
                   userRole={auth.user?.role}
                   currentUserId={auth.user?._id}
+                  currentDriverId={auth.user?.driverId}
                   onTripStatusChange={(status, tripId) => {
                     // Refresh bookings after trip status change
                     dispatch(getPartnerBookings({ status: filterStatus }));

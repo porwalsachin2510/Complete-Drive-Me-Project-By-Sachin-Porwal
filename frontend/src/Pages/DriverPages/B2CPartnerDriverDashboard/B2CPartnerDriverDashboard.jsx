@@ -582,6 +582,7 @@ function B2CPartnerDriverDashboard() {
                         booking={booking}
                         userRole={user?.role}
                         currentUserId={user?._id}
+                        currentDriverId={user?.driverId}
                         onTripStatusChange={(status, tripId) => {
                           dispatch(getPartnerDriverBookings({ status: "ALL" }));
                         }}
