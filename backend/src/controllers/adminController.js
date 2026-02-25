@@ -2808,31 +2808,87 @@ export const getB2CEarningsPayments = async (req, res) => {
 export const getB2CPartnerEarnings = async (req, res) => {
     try {
         const { period = 'monthly' } = req.query;
-        
-        const earnings = {
-            total: "2130.779 KWD",
-            thisWeek: "70.257 KWD",
-            thisWeekChange: "+12%",
-            today: "20.164 KWD",
-        };
+        const userId = req.userId;
 
-        const transactions = [
-            { date: "2025-11-04", trips: 5, amount: "+8.766 KWD", status: "Paid" },
-            { date: "2025-10-09", trips: 2, amount: "+13.200 KWD", status: "Paid" },
-            { date: "2025-09-16", trips: 2, amount: "+9.808 KWD", status: "Paid" },
-            { date: "2025-09-02", trips: 1, amount: "+6.725 KWD", status: "Paid" },
-            { date: "2025-08-24", trips: 1, amount: "+10.780 KWD", status: "Paid" },
-        ];
+        // Date ranges
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekStart = new Date(todayStart);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const lastWeekStart = new Date(weekStart);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 7);
 
-        res.status(200).json({ 
-            success: true, 
-            earnings,
-            transactions 
+        // Get all completed payments/transactions for this partner
+        const [totalResult, todayResult, thisWeekResult, lastWeekResult] = await Promise.all([
+            Payment.aggregate([
+                { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), status: { $in: ['COMPLETED', 'PROCESSING'] }, type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Payment.aggregate([
+                { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), status: { $in: ['COMPLETED', 'PROCESSING'] }, type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] }, createdAt: { $gte: todayStart } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Payment.aggregate([
+                { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), status: { $in: ['COMPLETED', 'PROCESSING'] }, type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] }, createdAt: { $gte: weekStart } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]),
+            Payment.aggregate([
+                { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), status: { $in: ['COMPLETED', 'PROCESSING'] }, type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] }, createdAt: { $gte: lastWeekStart, $lt: weekStart } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ])
+        ]);
+
+        const totalEarnings = totalResult[0]?.total || 0;
+        const todayEarnings = todayResult[0]?.total || 0;
+        const thisWeekEarnings = thisWeekResult[0]?.total || 0;
+        const lastWeekEarnings = lastWeekResult[0]?.total || 0;
+
+        // Calculate week-over-week change
+        let weekChange = "0%";
+        if (lastWeekEarnings > 0) {
+            const pctChange = ((thisWeekEarnings - lastWeekEarnings) / lastWeekEarnings * 100).toFixed(0);
+            weekChange = pctChange >= 0 ? `+${pctChange}%` : `${pctChange}%`;
+        } else if (thisWeekEarnings > 0) {
+            weekChange = "+100%";
+        }
+
+        // Get transaction history grouped by date
+        const transactionHistory = await Payment.aggregate([
+            { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), status: { $in: ['COMPLETED', 'PROCESSING'] }, type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] } } },
+            { $sort: { createdAt: -1 } },
+            { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                trips: { $sum: 1 },
+                totalAmount: { $sum: '$amount' },
+                status: { $first: '$status' }
+            }},
+            { $sort: { _id: -1 } },
+            { $limit: 20 }
+        ]);
+
+        const transactions = transactionHistory.map(t => ({
+            date: t._id,
+            trips: t.trips,
+            amount: `+${t.totalAmount.toFixed(3)} KWD`,
+            status: t.status === 'COMPLETED' ? 'Paid' : 'Pending'
+        }));
+
+        res.status(200).json({
+            success: true,
+            earnings: {
+                total: `${totalEarnings.toFixed(3)} KWD`,
+                thisWeek: `${thisWeekEarnings.toFixed(3)} KWD`,
+                thisWeekChange: weekChange,
+                today: `${todayEarnings.toFixed(3)} KWD`,
+            },
+            transactions
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: "Error fetching B2C fleet data" 
+        console.error("Error fetching B2C earnings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching earnings data",
+            error: error.message
         });
     }
 };

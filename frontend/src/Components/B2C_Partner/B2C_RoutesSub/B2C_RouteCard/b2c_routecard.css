@@ -329,6 +329,197 @@
   background: #f56565;
 }
 
+/* Edit Route Modal */
+.b2c-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.b2c-modal-content.b2c-edit-modal {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.b2c-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.b2c-modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.b2c-modal-close {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #718096;
+  transition: all 0.2s;
+}
+
+.b2c-modal-close:hover {
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.b2c-edit-error {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.b2c-edit-form {
+  padding: 24px;
+}
+
+.b2c-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.b2c-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.b2c-edit-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.b2c-edit-field input,
+.b2c-edit-field select {
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2d3748;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.b2c-edit-field input:focus,
+.b2c-edit-field select:focus {
+  outline: none;
+  border-color: #4299e1;
+}
+
+.b2c-days-field {
+  margin-bottom: 20px;
+}
+
+.b2c-days-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.b2c-day-btn {
+  padding: 6px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.b2c-day-btn.active {
+  background: #4299e1;
+  color: white;
+  border-color: #4299e1;
+}
+
+.b2c-day-btn:hover:not(.active) {
+  border-color: #a0aec0;
+}
+
+.b2c-edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #edf2f7;
+}
+
+.b2c-cancel-btn {
+  padding: 10px 24px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.b2c-cancel-btn:hover {
+  border-color: #a0aec0;
+  color: #4a5568;
+}
+
+.b2c-save-btn {
+  padding: 10px 24px;
+  background: #4299e1;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.b2c-save-btn:hover {
+  background: #3182ce;
+}
+
+.b2c-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.b2c-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .b2c-route-header {

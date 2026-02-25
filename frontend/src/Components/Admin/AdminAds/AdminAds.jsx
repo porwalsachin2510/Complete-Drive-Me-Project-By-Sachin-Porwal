@@ -18,7 +18,7 @@ function AdminAds() {
     totalRevenue: 0
   })
 
-  const [formData, setFormData] = useState({
+  const defaultFormData = {
     title: "",
     provider: "",
     placement: "top",
@@ -28,8 +28,11 @@ function AdminAds() {
     endDate: "",
     status: "active",
     targetUrl: "",
-    budget: 0
-  })
+    description: "",
+    budget: 0,
+    dailyBudget: 0
+  }
+  const [formData, setFormData] = useState(defaultFormData)
 
   useEffect(() => {
     fetchCampaigns()
@@ -61,18 +64,7 @@ function AdminAds() {
     try {
       await api.post('/admin/ads/campaigns', formData)
       setShowCreateModal(false)
-      setFormData({
-        title: "",
-        provider: "",
-        placement: "top",
-        size: "728x90",
-        imageUrl: "",
-        startDate: "",
-        endDate: "",
-        status: "active",
-        targetUrl: "",
-        budget: 0
-      })
+      setFormData(defaultFormData)
       fetchCampaigns()
       fetchStats()
     } catch (error) {
@@ -85,18 +77,7 @@ function AdminAds() {
       await api.put(`/admin/ads/campaigns/${selectedCampaign._id}`, formData)
       setShowEditModal(false)
       setSelectedCampaign(null)
-      setFormData({
-        title: "",
-        provider: "",
-        placement: "top",
-        size: "728x90",
-        imageUrl: "",
-        startDate: "",
-        endDate: "",
-        status: "active",
-        targetUrl: "",
-        budget: 0
-      })
+      setFormData(defaultFormData)
       fetchCampaigns()
       fetchStats()
     } catch (error) {
@@ -330,13 +311,36 @@ function AdminAds() {
               </div>
               
               <div className="form-group">
-                <label>Budget</label>
-                <input
-                  type="number"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({...formData, budget: Number(e.target.value)})}
-                  placeholder="Budget amount"
+                <label>Description</label>
+                <textarea
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Campaign description"
+                  rows={3}
                 />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Budget (KWD)</label>
+                  <input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({...formData, budget: Number(e.target.value)})}
+                    placeholder="Budget amount"
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Daily Budget (KWD)</label>
+                  <input
+                    type="number"
+                    value={formData.dailyBudget || 0}
+                    onChange={(e) => setFormData({...formData, dailyBudget: Number(e.target.value)})}
+                    placeholder="Daily budget"
+                    min="0"
+                  />
+                </div>
               </div>
               
               <div className="form-group">
@@ -387,9 +391,143 @@ function AdminAds() {
           <div className="modal">
             <h3>Edit Campaign</h3>
             <div className="form">
-              {/* Same form fields as create modal */}
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  placeholder="Campaign title"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Provider</label>
+                <input
+                  type="text"
+                  value={formData.provider}
+                  onChange={(e) => setFormData({...formData, provider: e.target.value})}
+                  placeholder="Provider name"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Placement</label>
+                  <select
+                    value={formData.placement}
+                    onChange={(e) => setFormData({...formData, placement: e.target.value})}
+                  >
+                    <option value="top">Top Banner</option>
+                    <option value="sidebar">Sidebar</option>
+                    <option value="footer">Footer</option>
+                    <option value="popup">Popup</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Size</label>
+                  <select
+                    value={formData.size}
+                    onChange={(e) => setFormData({...formData, size: e.target.value})}
+                  >
+                    <option value="728x90">728x90</option>
+                    <option value="300x250">300x250</option>
+                    <option value="120x60">120x60</option>
+                    <option value="468x60">468x60</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label>Image URL</label>
+                <input
+                  type="url"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Target URL</label>
+                <input
+                  type="url"
+                  value={formData.targetUrl}
+                  onChange={(e) => setFormData({...formData, targetUrl: e.target.value})}
+                  placeholder="https://example.com"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Campaign description"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Budget (KWD)</label>
+                  <input
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => setFormData({...formData, budget: Number(e.target.value)})}
+                    placeholder="Budget amount"
+                    min="0"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Daily Budget (KWD)</label>
+                  <input
+                    type="number"
+                    value={formData.dailyBudget || 0}
+                    onChange={(e) => setFormData({...formData, dailyBudget: Number(e.target.value)})}
+                    placeholder="Daily budget"
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    value={formData.startDate ? formData.startDate.substring(0, 10) : ""}
+                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    value={formData.endDate ? formData.endDate.substring(0, 10) : ""}
+                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                >
+                  <option value="active">Active</option>
+                  <option value="paused">Paused</option>
+                  <option value="draft">Draft</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              
               <div className="modal-actions">
-                <button className="cancel-btn" onClick={() => setShowEditModal(false)}>
+                <button className="cancel-btn" onClick={() => { setShowEditModal(false); setSelectedCampaign(null); }}>
                   Cancel
                 </button>
                 <button className="save-btn" onClick={handleUpdateCampaign}>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import api from "../../../utils/api";
+import Navbar from "../../../Components/Navbar/Navbar";
+import Footer from "../../../Components/Footer/Footer";
 import "./employeedashboard.css";
 
 export default function EmployeeDashboard() {
@@ -129,10 +131,14 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState("employee");
+
   return (
+    <>
+    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
     <div className="employee-dashboard">
       <div className="dashboard-header">
-        <h1>Welcome, {user?.fullName}</h1>
+        <h1>Welcome, {user?.fullName || "Employee"}</h1>
         <p className="subtitle">Corporate Employee Transportation Dashboard</p>
       </div>
 
@@ -171,6 +177,8 @@ export default function EmployeeDashboard() {
 
       <div className="dashboard-content">{renderContent()}</div>
     </div>
+    <Footer />
+    </>
   );
 }
 

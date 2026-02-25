@@ -19,6 +19,7 @@ import {
 import {
     createB2CPartnerRoute,
     getB2CPartnerRoutes,
+    updateB2CPartnerRoute,
     deleteB2CPartnerRoute,
     getRouteTripSeatAvailability,
     getPublicRouteTripSeatAvailability
@@ -78,6 +79,7 @@ router.delete("/drivers/:driverId", verifyToken, checkB2CPartnerRole, deleteB2CP
 // B2C Partner Routes
 router.get("/routes", verifyToken, checkB2CPartnerRole, getB2CPartnerRoutes)
 router.post("/routes", verifyToken, checkB2CPartnerRole, createB2CPartnerRoute)
+router.put("/routes/:routeId", verifyToken, checkB2CPartnerRole, updateB2CPartnerRoute)
 router.delete("/routes/:routeId", verifyToken, checkB2CPartnerRole, deleteB2CPartnerRoute)
 router.get("/routes/:routeId/trips/seat-availability", verifyToken, checkB2CPartnerRole, getRouteTripSeatAvailability)
 router.get("/public/routes/:routeId/trips/seat-availability", getPublicRouteTripSeatAvailability)
