@@ -50,6 +50,12 @@ export const generateTripsForSchedule = async (scheduleId, daysAhead = 7) => {
             return { success: false, message: "Schedule not active" };
         }
 
+        // Skip trip generation if no driver or vehicle assigned
+        if (!schedule.assignedDriver && !schedule.assignedVehicle) {
+            console.log(`[v0] Skipping trip generation for schedule ${scheduleId} - no driver or vehicle assigned`);
+            return { success: false, message: "No driver or vehicle assigned to schedule" };
+        }
+
         // Get route start date to avoid generating trips before route creation
         const routeStartDate = new Date(schedule.routeId.routeStartDate || schedule.startDate || Date.now());
         routeStartDate.setHours(0, 0, 0, 0);

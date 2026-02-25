@@ -97,6 +97,18 @@ const userSchema = new mongoose.Schema(
         },
 
         companyLogo: String,
+        contactPerson: {
+            type: String,
+            default: null,
+        },
+        contactEmail: {
+            type: String,
+            default: null,
+        },
+        contactPhone: {
+            type: String,
+            default: null,
+        },
         // B2C Partner specific
         serviceType: {
             type: String,

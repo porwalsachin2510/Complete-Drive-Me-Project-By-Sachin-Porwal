@@ -10,6 +10,7 @@ import B2CPassengerBooking from "../models/B2CPassengerBooking.js";
 import B2CPartnerVehicle from "../models/B2CPartnerVehicle.js";
 import RouteRequest from "../models/RouteRequest.js";
 import Quotation from "../models/Quotation.js";
+import Campaign from "../models/Campaign.js";
 // Get all users for admin
 export const getAllUsers = async (req, res) => {
     try {
@@ -1518,33 +1519,24 @@ async function updateWhatsAppConfig(config) {
 export const getAdCampaigns = async (req, res) => {
     try {
         const { status, page = 1, limit = 20, provider, placement } = req.query;
+        const query = {};
+        if (status && status !== 'all') query.status = status;
+        if (provider) query.provider = provider;
+        if (placement) query.placement = placement;
 
-        console.log(`[v0] Fetching ad campaigns with query:`, { status, provider, placement, page, limit });
-
-        // Try to use Campaign model if it exists, otherwise return empty array
-        let campaigns = [];
-        let totalCampaigns = 0;
-        try {
-            const mongoose = (await import('mongoose')).default;
-            const Campaign = mongoose.models.Campaign;
-            if (Campaign) {
-                const query = {};
-                if (status) query.status = status;
-                if (provider) query.provider = provider;
-                if (placement) query.placement = placement;
-                campaigns = await Campaign.find(query)
-                    .sort({ createdAt: -1 })
-                    .limit(Number.parseInt(limit))
-                    .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
-                totalCampaigns = await Campaign.countDocuments(query);
-            }
-        } catch (modelErr) {
-            console.log('[v0] Campaign model not available, returning empty list');
-        }
+        const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
+        const [campaigns, totalCampaigns] = await Promise.all([
+            Campaign.find(query)
+                .populate('createdBy', 'fullName email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(Number.parseInt(limit)),
+            Campaign.countDocuments(query)
+        ]);
 
         res.status(200).json({
             success: true,
-            campaigns: campaigns,
+            campaigns,
             pagination: {
                 currentPage: Number.parseInt(page),
                 totalPages: Math.ceil(totalCampaigns / Number.parseInt(limit)),
@@ -1553,7 +1545,7 @@ export const getAdCampaigns = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("[v0] Error fetching ad campaigns:", error);
+        console.error("Error fetching ad campaigns:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching campaigns",
@@ -1565,20 +1557,35 @@ export const getAdCampaigns = async (req, res) => {
 // Get ad statistics for admin
 export const getAdStats = async (req, res) => {
     try {
-        const stats = {
-            totalCampaigns: 2,
-            activeCampaigns: 2,
-            totalViews: 57756,
-            totalClicks: 1650,
-            totalRevenue: 8500
-        };
+        const [totalCampaigns, activeCampaigns, aggregateResult] = await Promise.all([
+            Campaign.countDocuments(),
+            Campaign.countDocuments({ status: 'active' }),
+            Campaign.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalViews: { $sum: '$views' },
+                        totalClicks: { $sum: '$clicks' },
+                        totalRevenue: { $sum: '$revenue' }
+                    }
+                }
+            ])
+        ]);
+
+        const agg = aggregateResult[0] || { totalViews: 0, totalClicks: 0, totalRevenue: 0 };
 
         res.status(200).json({
             success: true,
-            stats
+            stats: {
+                totalCampaigns,
+                activeCampaigns,
+                totalViews: agg.totalViews,
+                totalClicks: agg.totalClicks,
+                totalRevenue: agg.totalRevenue
+            }
         });
     } catch (error) {
-        console.error("[v0] Error fetching ad stats:", error);
+        console.error("Error fetching ad stats:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching ad statistics",
@@ -1590,25 +1597,43 @@ export const getAdStats = async (req, res) => {
 // Create ad campaign
 export const createAdCampaign = async (req, res) => {
     try {
-        const campaignData = req.body;
-        
-        // Here you would create the actual campaign
-        // For demo, we'll just log the creation
-        console.log("Creating campaign:", campaignData);
-        
+        const { title, provider, placement, size, imageUrl, targetUrl, description, budget, dailyBudget, costPerClick, costPerView, startDate, endDate, status, targetAudience } = req.body;
+
+        if (!title || !startDate || !endDate) {
+            return res.status(400).json({ success: false, message: "Title, start date and end date are required" });
+        }
+
+        const campaign = new Campaign({
+            title,
+            provider: provider || '',
+            placement: placement || 'banner',
+            size: size || '728x90',
+            imageUrl: imageUrl || '',
+            targetUrl: targetUrl || '',
+            description: description || '',
+            budget: budget || 0,
+            dailyBudget: dailyBudget || 0,
+            costPerClick: costPerClick || 0,
+            costPerView: costPerView || 0,
+            startDate,
+            endDate,
+            status: status || 'draft',
+            targetAudience: targetAudience || 'all',
+            createdBy: req.user._id || req.user.id,
+            views: 0,
+            clicks: 0,
+            revenue: 0,
+        });
+
+        await campaign.save();
+
         res.status(201).json({
             success: true,
             message: "Campaign created successfully",
-            campaign: {
-                _id: 'camp-' + Date.now(),
-                ...campaignData,
-                views: 0,
-                clicks: 0,
-                createdAt: new Date()
-            }
+            campaign
         });
     } catch (error) {
-        console.error("[v0] Error creating campaign:", error);
+        console.error("Error creating campaign:", error);
         res.status(500).json({
             success: false,
             message: "Error creating campaign",
@@ -1621,23 +1646,26 @@ export const createAdCampaign = async (req, res) => {
 export const updateAdCampaign = async (req, res) => {
     try {
         const { campaignId } = req.params;
-        const campaignData = req.body;
-        
-        // Here you would update the actual campaign
-        // For demo, we'll just log the update
-        console.log(`Updating campaign ${campaignId}:`, campaignData);
-        
+        const allowedFields = ['title', 'provider', 'placement', 'size', 'imageUrl', 'targetUrl', 'description', 'budget', 'dailyBudget', 'costPerClick', 'costPerView', 'startDate', 'endDate', 'status', 'targetAudience'];
+        const updateData = {};
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        }
+
+        const campaign = await Campaign.findByIdAndUpdate(campaignId, updateData, { new: true, runValidators: true });
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: "Campaign not found" });
+        }
+
         res.status(200).json({
             success: true,
             message: "Campaign updated successfully",
-            campaign: {
-                _id: campaignId,
-                ...campaignData,
-                updatedAt: new Date()
-            }
+            campaign
         });
     } catch (error) {
-        console.error("[v0] Error updating campaign:", error);
+        console.error("Error updating campaign:", error);
         res.status(500).json({
             success: false,
             message: "Error updating campaign",
@@ -1650,17 +1678,17 @@ export const updateAdCampaign = async (req, res) => {
 export const deleteAdCampaign = async (req, res) => {
     try {
         const { campaignId } = req.params;
-        
-        // Here you would delete the actual campaign
-        // For demo, we'll just log the deletion
-        console.log(`Deleting campaign ${campaignId}`);
-        
+        const campaign = await Campaign.findByIdAndDelete(campaignId);
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: "Campaign not found" });
+        }
+
         res.status(200).json({
             success: true,
             message: "Campaign deleted successfully"
         });
     } catch (error) {
-        console.error("[v0] Error deleting campaign:", error);
+        console.error("Error deleting campaign:", error);
         res.status(500).json({
             success: false,
             message: "Error deleting campaign",
@@ -1674,17 +1702,23 @@ export const toggleAdCampaignStatus = async (req, res) => {
     try {
         const { campaignId } = req.params;
         const { status } = req.body;
-        
-        // Here you would update the actual campaign status
-        // For demo, we'll just log the status change
-        console.log(`Toggling campaign ${campaignId} status to:`, status);
-        
+
+        if (!['active', 'paused', 'expired', 'draft', 'completed'].includes(status)) {
+            return res.status(400).json({ success: false, message: "Invalid status value" });
+        }
+
+        const campaign = await Campaign.findByIdAndUpdate(campaignId, { status }, { new: true });
+        if (!campaign) {
+            return res.status(404).json({ success: false, message: "Campaign not found" });
+        }
+
         res.status(200).json({
             success: true,
-            message: `Campaign ${status} successfully`
+            message: `Campaign ${status} successfully`,
+            campaign
         });
     } catch (error) {
-        console.error("[v0] Error toggling campaign status:", error);
+        console.error("Error toggling campaign status:", error);
         res.status(500).json({
             success: false,
             message: "Error toggling campaign status",
@@ -3941,28 +3975,8 @@ export const updateB2CPartnerProfile = async (req, res) => {
             });
         }
 
-        // Log profile update in transaction history
-        await Transaction.create({
-            userId: userId,
-            type: "B2C_PARTNER_PROFILE_UPDATE",
-            category: "B2C_PARTNER",
-            status: "UPDATED",
-            createdAt: new Date(),
-            metadata: {
-                updatedBy: userId,
-                previousProfile: {
-                    fullName: user.fullName,
-                    email: user.email,
-                    whatsappNumber: user.whatsappNumber,
-                    company: user.company,
-                    licenseNumber: user.licenseNumber,
-                    officeAddress: user.officeAddress,
-                    website: user.website
-                },
-                newProfile: profile,
-                preferences: preferences
-            }
-        });
+    // Profile update logged via console (no wallet transaction needed for profile updates)
+    console.log(`B2C partner profile updated for user ${userId}`);
 
         console.log(`[v0] B2C partner profile updated successfully for user ${userId}`);
 
@@ -3991,24 +4005,7 @@ export const updateB2CPartnerProfile = async (req, res) => {
     } catch (error) {
         console.error("[v0] Error updating B2C partner profile:", error);
         
-        // Log failed profile update attempt
-        try {
-            await Transaction.create({
-                userId: req.userId,
-                type: "B2C_PARTNER_PROFILE_UPDATE_FAILED",
-                category: "B2C_PARTNER",
-                status: "FAILED",
-                createdAt: new Date(),
-                metadata: {
-                    error: error.message,
-                    attemptedAt: new Date(),
-                    profileData: req.body.profile,
-                    preferencesData: req.body.preferences
-                }
-            });
-        } catch (logError) {
-            console.error("[v0] Failed to log B2C partner profile update error:", logError);
-        }
+    console.error("B2C partner profile update failed for user:", req.userId, error.message);
 
         res.status(500).json({
             success: false,
@@ -4135,19 +4132,29 @@ export const getB2BPartnerOverview = async (req, res) => {
 // Get payment statistics for admin
 export const getPaymentStats = async (req, res) => {
     try {
-        const stats = {
-            totalPending: 5,
-            totalVerified: 12,
-            totalRejected: 2,
-            totalAmount: 15420.50
-        };
+        const [totalPending, totalVerified, totalRejected, totalAmountResult] = await Promise.all([
+            Payment.countDocuments({ verificationStatus: 'PENDING' }),
+            Payment.countDocuments({ verificationStatus: { $in: ['VERIFIED', 'AUTO_VERIFIED'] } }),
+            Payment.countDocuments({ verificationStatus: 'REJECTED' }),
+            Payment.aggregate([
+                { $match: { status: { $in: ['COMPLETED', 'PROCESSING'] } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ])
+        ]);
+
+        const totalAmount = totalAmountResult[0]?.total || 0;
 
         res.status(200).json({
             success: true,
-            stats
+            stats: {
+                totalPending,
+                totalVerified,
+                totalRejected,
+                totalAmount
+            }
         });
     } catch (error) {
-        console.error("[v0] Error fetching payment stats:", error);
+        console.error("Error fetching payment stats:", error);
         res.status(500).json({
             success: false,
             message: "Error fetching payment statistics",

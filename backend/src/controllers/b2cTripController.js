@@ -223,6 +223,71 @@ export const getB2CPartnerRoutes = async (req, res) => {
     }
 };
 
+// Update B2C partner route
+export const updateB2CPartnerRoute = async (req, res) => {
+    try {
+        const { routeId } = req.params;
+        const allowedFields = ['fromLocation', 'toLocation', 'startTime', 'totalSeats', 'availableSeats', 'pricing', 'tripType', 'routeStartDate', 'availableDays', 'assignedVehicle', 'assignedDriver', 'status', 'isActive'];
+        
+        const updateData = {};
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        }
+
+        // Handle pricing as nested object
+        if (updateData.pricing) {
+            updateData.pricing = {
+                oneWayPrice: parseFloat(updateData.pricing.oneWayPrice || 0),
+                roundTripPrice: parseFloat(updateData.pricing.roundTripPrice || 0),
+                monthlyOneWayPrice: parseFloat(updateData.pricing.monthlyOneWayPrice || 0),
+                monthlyRoundTripPrice: parseFloat(updateData.pricing.monthlyRoundTripPrice || 0),
+            };
+        }
+
+        if (updateData.totalSeats) {
+            updateData.totalSeats = parseInt(updateData.totalSeats);
+        }
+
+        // Handle assignedDriver -> assignedDriverId mapping
+        if (updateData.assignedDriver) {
+            updateData.assignedDriverId = updateData.assignedDriver;
+            delete updateData.assignedDriver;
+        }
+
+        const route = await B2CPartnerRoute.findOneAndUpdate(
+            { _id: routeId, b2cPartnerId: req.userId },
+            { $set: updateData },
+            { new: true }
+        )
+        .populate('assignedVehicle', 'model vehicleType seatingCapacity licensePlate year')
+        .populate('assignedDriverId', 'name phoneNumber email profileImage');
+
+        if (!route) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found or you don't have permission to update it"
+            });
+        }
+
+        console.log(`[v0] Successfully updated B2C route: ${route.fromLocation} to ${route.toLocation}`);
+
+        res.status(200).json({
+            success: true,
+            message: "Route updated successfully",
+            route
+        });
+    } catch (error) {
+        console.error("[v0] Error updating B2C route:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error updating route",
+            error: error.message
+        });
+    }
+};
+
 // Delete B2C partner route
 export const deleteB2CPartnerRoute = async (req, res) => {
     try {

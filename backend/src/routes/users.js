@@ -1,6 +1,6 @@
 import express from "express"
 import { verifyToken } from "../middleware/auth.js"
-import { getAllUsers, getCurrentUser, updateUserProfile } from "../controllers/userController.js"
+import { getAllUsers, getCurrentUser, updateUserProfile, changePassword } from "../controllers/userController.js"
 
 const router = express.Router()
 
@@ -13,5 +13,8 @@ router.get("/me", verifyToken, getCurrentUser)
 // Profile routes (alias for /me with update support)
 router.get("/profile", verifyToken, getCurrentUser)
 router.put("/profile", verifyToken, updateUserProfile)
+
+// Change password
+router.put("/change-password", verifyToken, changePassword)
 
 export default router

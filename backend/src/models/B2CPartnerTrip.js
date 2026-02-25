@@ -15,12 +15,12 @@ const b2cPartnerTripSchema = new mongoose.Schema(
         vehicleId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "B2CPartnerVehicle",
-            required: true,
+            default: null,
         },
         driverId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "B2CPartnerDriver",
-            required: true,
+            default: null,
         },
         tripDate: {
             type: Date,
