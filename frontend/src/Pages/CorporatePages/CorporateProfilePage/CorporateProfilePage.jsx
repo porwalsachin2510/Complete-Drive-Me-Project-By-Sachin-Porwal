@@ -12,6 +12,7 @@ import RequirementManagement from "../../../Components/Corporate/RequirementMana
 import CorporateContractPage from "../CorporateContractPage/CorporateContractPage";
 import CorporateEmployeeBookingsPage from "../CorporateEmployeeBookingsPage/CorporateEmployeeBookingsPage";
 import CorporateBilling from "../../../Components/Corporate/CorporateBilling/CorporateBilling";
+import MyQuotationsContent from "../MyQuotations/MyQuotationsContent";
 import Footer from "../../../Components/Footer/Footer";
 import "./corporateprofilepage.css";
 
@@ -98,6 +99,8 @@ export default function CorporateProfilePage() {
     switch (corporateactiveTab) {
       case "company-profile":
         return <CompanyProfile />;
+      case "my-quotations":
+        return <MyQuotationsContent />;
       case "contracts":
         return <CorporateContractPage />;
       case "employee-management":
@@ -362,6 +365,16 @@ export default function CorporateProfilePage() {
               onClick={() => setCorporateActiveTab("company-profile")}
             >
               Company Profile
+            </button>
+            <button
+              className={`corporate-tab ${
+                corporateactiveTab === "my-quotations"
+                  ? "corporate-active"
+                  : ""
+              }`}
+              onClick={() => setCorporateActiveTab("my-quotations")}
+            >
+              My Quotations
             </button>
             <button
               className={`corporate-tab ${

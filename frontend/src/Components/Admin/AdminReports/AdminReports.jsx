@@ -11,6 +11,12 @@ function AdminReports() {
   const [userActivity, setUserActivity] = useState([])
   const [systemLogs, setSystemLogs] = useState([])
   const [reports, setReports] = useState([])
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportForm, setReportForm] = useState({ reportType: 'general', dateFrom: '', dateTo: '' })
+  const [generatedReport, setGeneratedReport] = useState(null)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     fetchReportsData()
@@ -58,6 +64,38 @@ function AdminReports() {
       fetchReportsData()
     } catch (error) {
       console.error(`Error ${action} user:`, error)
+    }
+  }
+
+  const handleViewUserDetails = async (userId) => {
+    try {
+      const response = await api.get(`/admin/users/${userId}`)
+      if (response.data.success) {
+        setSelectedUser(response.data.user)
+      } else {
+        setSelectedUser({ _id: userId, fullName: 'User', message: 'Could not load full details' })
+      }
+    } catch (error) {
+      console.error("Error fetching user details:", error)
+      // Show basic info from userActivity
+      const user = userActivity.find(u => u._id === userId)
+      setSelectedUser(user || { _id: userId, fullName: 'Unknown User' })
+    }
+    setShowUserModal(true)
+  }
+
+  const handleGenerateReport = async () => {
+    try {
+      setGenerating(true)
+      const response = await api.post('/admin/reports/generate', reportForm)
+      if (response.data.success) {
+        setGeneratedReport(response.data.report)
+      }
+    } catch (error) {
+      console.error("Error generating report:", error)
+      setGeneratedReport({ title: 'Error', error: error.message })
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -193,7 +231,7 @@ function AdminReports() {
                   </span>
                 </td>
                 <td>
-                  <button className="view-btn">View Details</button>
+                  <button className="view-btn" onClick={() => handleViewUserDetails(user._id)}>View Details</button>
                   {user.status === 'Flagged' && (
                     <button 
                       className="unflag-btn"
@@ -251,7 +289,7 @@ function AdminReports() {
     <div className="reports-section">
       <div className="section-header">
         <h3>Custom Reports</h3>
-        <button className="generate-report-btn">Generate Report</button>
+        <button className="generate-report-btn" onClick={() => { setShowReportModal(true); setGeneratedReport(null) }}>Generate Report</button>
       </div>
 
       <div className="reports-grid">
@@ -357,6 +395,133 @@ function AdminReports() {
       <div className="reports-content">
         {renderContent()}
       </div>
+
+      {/* User Details Modal */}
+      {showUserModal && selectedUser && (
+        <div className="reports-modal-overlay" onClick={() => setShowUserModal(false)}>
+          <div className="reports-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="reports-modal-header">
+              <h3>User Details</h3>
+              <button className="reports-modal-close" onClick={() => setShowUserModal(false)}>X</button>
+            </div>
+            <div className="reports-modal-body">
+              <div className="user-detail-grid">
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Name</span>
+                  <span className="user-detail-value">{selectedUser.fullName || 'N/A'}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Email</span>
+                  <span className="user-detail-value">{selectedUser.email || 'N/A'}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Phone</span>
+                  <span className="user-detail-value">{selectedUser.whatsappNumber || 'N/A'}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Role</span>
+                  <span className="user-detail-value">{selectedUser.role || 'N/A'}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Status</span>
+                  <span className={`status-badge ${(selectedUser.status || '').toLowerCase()}`}>{selectedUser.status || 'N/A'}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Risk Score</span>
+                  <span className="user-detail-value">{selectedUser.riskScore || 0}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Complaints</span>
+                  <span className="user-detail-value">{selectedUser.complaints || 0}</span>
+                </div>
+                <div className="user-detail-row">
+                  <span className="user-detail-label">Joined</span>
+                  <span className="user-detail-value">{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Report Modal */}
+      {showReportModal && (
+        <div className="reports-modal-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="reports-modal reports-modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="reports-modal-header">
+              <h3>Generate Custom Report</h3>
+              <button className="reports-modal-close" onClick={() => setShowReportModal(false)}>X</button>
+            </div>
+            <div className="reports-modal-body">
+              <div className="report-form">
+                <div className="report-form-group">
+                  <label>Report Type</label>
+                  <select value={reportForm.reportType} onChange={(e) => setReportForm({ ...reportForm, reportType: e.target.value })}>
+                    <option value="general">General Summary</option>
+                    <option value="revenue">Revenue Report</option>
+                    <option value="users">User Report</option>
+                    <option value="bookings">Bookings Report</option>
+                  </select>
+                </div>
+                <div className="report-form-row">
+                  <div className="report-form-group">
+                    <label>Date From</label>
+                    <input type="date" value={reportForm.dateFrom} onChange={(e) => setReportForm({ ...reportForm, dateFrom: e.target.value })} />
+                  </div>
+                  <div className="report-form-group">
+                    <label>Date To</label>
+                    <input type="date" value={reportForm.dateTo} onChange={(e) => setReportForm({ ...reportForm, dateTo: e.target.value })} />
+                  </div>
+                </div>
+                <button className="generate-report-btn" onClick={handleGenerateReport} disabled={generating}>
+                  {generating ? 'Generating...' : 'Generate Report'}
+                </button>
+              </div>
+
+              {generatedReport && !generatedReport.error && (
+                <div className="generated-report-result">
+                  <h4>{generatedReport.title}</h4>
+                  <div className="report-result-stats">
+                    <div className="report-result-stat">
+                      <span className="stat-label">Records</span>
+                      <span className="stat-value">{generatedReport.recordCount}</span>
+                    </div>
+                    <div className="report-result-stat">
+                      <span className="stat-label">Generated</span>
+                      <span className="stat-value">{new Date(generatedReport.generatedAt).toLocaleString()}</span>
+                    </div>
+                    {generatedReport.totalRevenue !== undefined && (
+                      <div className="report-result-stat">
+                        <span className="stat-label">Total Revenue</span>
+                        <span className="stat-value">AED {generatedReport.totalRevenue.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {generatedReport.summary && (
+                      <>
+                        <div className="report-result-stat">
+                          <span className="stat-label">Users</span>
+                          <span className="stat-value">{generatedReport.summary.users}</span>
+                        </div>
+                        <div className="report-result-stat">
+                          <span className="stat-label">Payments</span>
+                          <span className="stat-value">{generatedReport.summary.payments}</span>
+                        </div>
+                        <div className="report-result-stat">
+                          <span className="stat-label">Bookings</span>
+                          <span className="stat-value">{generatedReport.summary.bookings}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              {generatedReport?.error && (
+                <div className="report-error">Error: {generatedReport.error}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

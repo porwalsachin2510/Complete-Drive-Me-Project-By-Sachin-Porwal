@@ -48,13 +48,17 @@ function AdminPassengersReassignments() {
     setShowReassignModal(true)
   }
 
-  const filteredReassignments = reassignments.filter(reassignment => 
-    reassignment.passengerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reassignment.passengerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reassignment.originalRoute.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reassignment.newRoute.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reassignment.reason.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredReassignments = reassignments.filter(reassignment => {
+    const term = searchTerm.toLowerCase()
+    return (
+      (reassignment.passengerName || '').toLowerCase().includes(term) ||
+      (reassignment.passengerEmail || '').toLowerCase().includes(term) ||
+      (reassignment.routeName || reassignment.originalRoute || '').toLowerCase().includes(term) ||
+      (reassignment.providerName || reassignment.newRoute || '').toLowerCase().includes(term) ||
+      (reassignment.startPoint || '').toLowerCase().includes(term) ||
+      (reassignment.endPoint || '').toLowerCase().includes(term)
+    )
+  })
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -87,8 +91,8 @@ function AdminPassengersReassignments() {
     <div className="ad-dash-passenger-reassignments">
       <div className="ad-dash-pr-header">
         <div>
-          <h3 className="ad-dash-pr-title">Passenger Reassignments</h3>
-          <p className="ad-dash-pr-subtitle">Manage passenger route change requests and transfers.</p>
+          <h3 className="ad-dash-pr-title">Passengers & Bookings</h3>
+          <p className="ad-dash-pr-subtitle">Manage B2C passenger bookings, approvals, and route assignments.</p>
         </div>
       </div>
 
@@ -116,62 +120,53 @@ function AdminPassengersReassignments() {
           <thead>
             <tr>
               <th>Passenger</th>
-              <th>Original Route</th>
-              <th>New Route</th>
-              <th>Reason</th>
-              <th>Priority</th>
+              <th>Route</th>
+              <th>Provider</th>
+              <th>Seats</th>
+              <th>Amount</th>
+              <th>Payment</th>
               <th>Status</th>
-              <th>Requested</th>
+              <th>Booked</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredReassignments.map((reassignment) => (
-              <tr key={reassignment._id}>
+            {filteredReassignments.map((booking) => (
+              <tr key={booking._id}>
                 <td>
                   <div className="passenger-info">
-                    <span className="passenger-name">{reassignment.passengerName}</span>
-                    <span className="passenger-email">{reassignment.passengerEmail}</span>
+                    <span className="passenger-name">{booking.passengerName}</span>
+                    <span className="passenger-email">{booking.passengerEmail}</span>
                   </div>
                 </td>
                 <td>
                   <div className="route-info">
-                    <div className="route-name">{reassignment.originalRoute}</div>
-                    <div className="provider-name">{reassignment.originalProvider}</div>
+                    <div className="route-name">{booking.routeName || `${booking.startPoint} - ${booking.endPoint}`}</div>
+                    <div className="provider-name">{booking.startPoint} to {booking.endPoint}</div>
                   </div>
                 </td>
                 <td>
-                  <div className="route-info">
-                    <div className="route-name">{reassignment.newRoute}</div>
-                    <div className="provider-name">{reassignment.newProvider}</div>
-                  </div>
+                  <span className="provider-text">{booking.providerName}</span>
+                </td>
+                <td>{booking.seats || 1}</td>
+                <td>
+                  <span className="amount-text">AED {(booking.amount || booking.price || 0).toFixed(2)}</span>
                 </td>
                 <td>
-                  <span className="reason-text">{reassignment.reason}</span>
-                </td>
-                <td>
-                  <span 
-                    className="priority-badge" 
-                    style={{ backgroundColor: getPriorityColor(reassignment.priority) }}
-                  >
-                    {reassignment.priority}
-                  </span>
+                  <span className="payment-badge">{booking.paymentMethod || 'CASH'}</span>
                 </td>
                 <td>
                   <span 
                     className="status-badge" 
-                    style={{ backgroundColor: getStatusColor(reassignment.status) }}
+                    style={{ backgroundColor: getStatusColor((booking.status || '').toLowerCase()) }}
                   >
-                    {reassignment.status}
+                    {booking.status}
                   </span>
                 </td>
                 <td>
                   <div className="date-info">
                     <span className="request-date">
-                      {new Date(reassignment.requestedAt).toLocaleDateString()}
-                    </span>
-                    <span className="request-time">
-                      {new Date(reassignment.requestedAt).toLocaleTimeString()}
+                      {new Date(booking.bookingDate || booking.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </td>
@@ -179,30 +174,25 @@ function AdminPassengersReassignments() {
                   <div className="action-buttons">
                     <button 
                       className="view-btn"
-                      onClick={() => handleViewDetails(reassignment)}
+                      onClick={() => handleViewDetails(booking)}
                     >
                       View Details
                     </button>
-                    {reassignment.status === 'pending' && (
+                    {(booking.status === 'PENDING' || booking.status === 'pending') && (
                       <>
                         <button 
                           className="approve-btn"
-                          onClick={() => handleProcessReassignment(reassignment._id, 'approved')}
+                          onClick={() => handleProcessReassignment(booking._id, 'approved')}
                         >
                           Approve
                         </button>
                         <button 
                           className="reject-btn"
-                          onClick={() => handleProcessReassignment(reassignment._id, 'rejected')}
+                          onClick={() => handleProcessReassignment(booking._id, 'rejected')}
                         >
                           Reject
                         </button>
                       </>
-                    )}
-                    {reassignment.processedBy && (
-                      <div className="processed-by">
-                        by {reassignment.processedBy}
-                      </div>
                     )}
                   </div>
                 </td>

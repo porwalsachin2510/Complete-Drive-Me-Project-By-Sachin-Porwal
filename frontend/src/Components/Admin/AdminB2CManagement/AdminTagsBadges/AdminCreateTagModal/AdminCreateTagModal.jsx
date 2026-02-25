@@ -3,9 +3,12 @@
 import { useState } from "react"
 import "./AdminCreateTagModal.css"
 
-function AdminCreateTagModal({ onClose }) {
-  const [tagLabel, setTagLabel] = useState("")
-  const [selectedColor, setSelectedColor] = useState("#000000")
+function AdminCreateTagModal({ onClose, onSave, editMode = false, initialData = null }) {
+  const [tagLabel, setTagLabel] = useState(initialData?.label || "")
+  const [selectedColor, setSelectedColor] = useState(initialData?.color || "#000000")
+  const [description, setDescription] = useState(initialData?.description || "")
+  const [category, setCategory] = useState(initialData?.category || "general")
+  const [saving, setSaving] = useState(false)
 
   const colors = [
     { id: "black", value: "#000000", bg: "#f3f4f6" },
@@ -22,7 +25,7 @@ function AdminCreateTagModal({ onClose }) {
     <div className="ad-dash-modal-overlay" onClick={onClose}>
       <div className="ad-dash-modal-content ad-dash-tag-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ad-dash-modal-header">
-          <h3 className="ad-dash-modal-title">Create New Tag</h3>
+          <h3 className="ad-dash-modal-title">{editMode ? 'Edit Tag' : 'Create New Tag'}</h3>
           <button className="ad-dash-modal-close" onClick={onClose}>
             ✕
           </button>
@@ -57,6 +60,32 @@ function AdminCreateTagModal({ onClose }) {
           </div>
 
           <div className="ad-dash-form-group">
+            <label className="ad-dash-form-label">Description</label>
+            <input
+              type="text"
+              className="ad-dash-form-input"
+              placeholder="Brief description of this tag"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="ad-dash-form-group">
+            <label className="ad-dash-form-label">Category</label>
+            <select
+              className="ad-dash-form-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="general">General</option>
+              <option value="route">Route</option>
+              <option value="vehicle">Vehicle</option>
+              <option value="service">Service</option>
+              <option value="promo">Promotion</option>
+            </select>
+          </div>
+
+          <div className="ad-dash-form-group">
             <label className="ad-dash-form-label">Preview</label>
             <div className="ad-dash-tag-preview">
               <span
@@ -76,7 +105,30 @@ function AdminCreateTagModal({ onClose }) {
           <button className="ad-dash-btn-secondary" onClick={onClose}>
             Cancel
           </button>
-          <button className="ad-dash-btn-primary">Save Tag</button>
+          <button 
+            className="ad-dash-btn-primary" 
+            disabled={!tagLabel.trim() || saving}
+            onClick={async () => {
+              if (!tagLabel.trim()) return
+              setSaving(true)
+              try {
+                const colorObj = colors.find((c) => c.value === selectedColor)
+                await onSave({
+                  label: tagLabel.trim(),
+                  color: selectedColor,
+                  textColor: colorObj?.bg === '#f3f4f6' ? '#ffffff' : '#ffffff',
+                  description,
+                  category
+                })
+              } catch (err) {
+                console.error("Error saving tag:", err)
+              } finally {
+                setSaving(false)
+              }
+            }}
+          >
+            {saving ? 'Saving...' : (editMode ? 'Update Tag' : 'Save Tag')}
+          </button>
         </div>
       </div>
     </div>

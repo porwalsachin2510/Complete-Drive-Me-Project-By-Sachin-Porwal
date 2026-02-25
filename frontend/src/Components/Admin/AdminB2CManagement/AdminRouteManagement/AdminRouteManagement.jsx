@@ -17,31 +17,7 @@ function AdminRouteManagement() {
   })
   const [notification, setNotification] = useState(null)
 
-  useEffect(() => {
-    fetchRoutes()
-    fetchRouteStats()
-  }, [fetchRoutes, fetchRouteStats])
-
-  const fetchRoutes = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await api.get('/admin/b2c/routes', {
-        params: { status: statusFilter !== "all" ? statusFilter : undefined }
-      })
-      
-      if (response.data.success) {
-        setRoutes(response.data.routes || [])
-        await fetchRouteStats()
-      }
-    } catch (error) {
-      console.error("Error fetching routes:", error)
-      setRoutes([])
-    } finally {
-      setLoading(false)
-    }
-  }, [statusFilter])
-
-  const fetchRouteStats = useCallback(async () => {
+  const fetchRouteStats = useCallback(async (routeData) => {
     try {
       const response = await api.get('/admin/b2c/stats')
       
@@ -58,8 +34,9 @@ function AdminRouteManagement() {
       console.error("Error fetching route stats:", error)
       
       // Fallback: Calculate stats from current routes data
-      if (routes.length > 0) {
-        const calculatedStats = routes.reduce((acc, route) => {
+      const currentRoutes = routeData || routes
+      if (currentRoutes.length > 0) {
+        const calculatedStats = currentRoutes.reduce((acc, route) => {
           acc.totalRoutes++
           if (route.status === 'Active' || route.status === 'active') acc.activeRoutes++
           else if (route.status === 'Inactive' || route.status === 'inactive') acc.inactiveRoutes++
@@ -70,7 +47,31 @@ function AdminRouteManagement() {
         setStats(calculatedStats)
       }
     }
-  }, [statusFilter])
+  }, [routes])
+
+  const fetchRoutes = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await api.get('/admin/b2c/routes', {
+        params: { status: statusFilter !== "all" ? statusFilter : undefined }
+      })
+      
+      if (response.data.success) {
+        const routeData = response.data.routes || []
+        setRoutes(routeData)
+        await fetchRouteStats(routeData)
+      }
+    } catch (error) {
+      console.error("Error fetching routes:", error)
+      setRoutes([])
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter, fetchRouteStats])
+
+  useEffect(() => {
+    fetchRoutes()
+  }, [fetchRoutes])
 
   const handleEditClick = (route) => {
     // Admin can only view route details, not edit

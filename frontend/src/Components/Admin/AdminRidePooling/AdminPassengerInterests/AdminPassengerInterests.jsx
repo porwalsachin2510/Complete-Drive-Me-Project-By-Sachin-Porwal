@@ -9,6 +9,8 @@ const AdminPassengerInterests = () => {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedInterest, setSelectedInterest] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
 
   const fetchPassengerInterests = useCallback(async () => {
     try {
@@ -132,7 +134,7 @@ const AdminPassengerInterests = () => {
                 <td>{interest.matchedRoutes}</td>
                 <td>
                   <div className="action-buttons">
-                    <button className="view-btn">View Details</button>
+                    <button className="view-btn" onClick={() => { setSelectedInterest(interest); setShowDetailModal(true) }}>View Details</button>
                     {interest.status === 'pending' && (
                       <>
                         <button 
@@ -168,6 +170,55 @@ const AdminPassengerInterests = () => {
       {filteredInterests.length === 0 && (
         <div className="no-interests">
           <p>No passenger interests found</p>
+        </div>
+      )}
+
+      {showDetailModal && selectedInterest && (
+        <div className="interest-modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="interest-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="interest-modal-header">
+              <h3>Passenger Interest Details</h3>
+              <button className="interest-modal-close" onClick={() => setShowDetailModal(false)}>X</button>
+            </div>
+            <div className="interest-modal-body">
+              <div className="interest-detail-grid">
+                <div className="interest-detail-row">
+                  <span className="detail-label">Passenger</span>
+                  <span className="detail-value">{selectedInterest.passengerName}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Pickup</span>
+                  <span className="detail-value">{selectedInterest.pickupLocation}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Dropoff</span>
+                  <span className="detail-value">{selectedInterest.dropoffLocation}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Preferred Time</span>
+                  <span className="detail-value">{selectedInterest.preferredTime}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Frequency</span>
+                  <span className="detail-value">{selectedInterest.frequency}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Status</span>
+                  <span className="status-badge" style={{ backgroundColor: getStatusColor(selectedInterest.status) }}>
+                    {formatStatus(selectedInterest.status)}
+                  </span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Matched Routes</span>
+                  <span className="detail-value">{selectedInterest.matchedRoutes || 0}</span>
+                </div>
+                <div className="interest-detail-row">
+                  <span className="detail-label">Created</span>
+                  <span className="detail-value">{selectedInterest.createdAt ? new Date(selectedInterest.createdAt).toLocaleString() : 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -62,6 +62,9 @@ import {
     getB2CPassengerReassignments,
     processPassengerReassignment,
     getB2CEarningsPayments,
+    resolveFraudAlert,
+    investigateFraudAlert,
+    generateCustomReport,
     getB2BFleetAndDrivers,
     getB2BAnalytics,
     getB2BPartnerOverview,
@@ -128,9 +131,12 @@ router.put("/finance/payouts/:payoutId/complete", verifyToken, checkAdminRole, c
 
 // Reports Management
 router.get("/reports/fraud-alerts", verifyToken, checkAdminRole, getFraudAlerts)
+router.put("/reports/fraud-alerts/:alertId/resolve", verifyToken, checkAdminRole, resolveFraudAlert)
+router.put("/reports/fraud-alerts/:alertId/investigate", verifyToken, checkAdminRole, investigateFraudAlert)
 router.get("/reports/user-activity", verifyToken, checkAdminRole, getUserActivity)
 router.get("/reports/system-logs", verifyToken, checkAdminRole, getSystemLogs)
 router.get("/reports", verifyToken, checkAdminRole, getCustomReports)
+router.post("/reports/generate", verifyToken, checkAdminRole, generateCustomReport)
 
 // Communication Management
 router.get("/comm/templates", verifyToken, checkAdminRole, getCommTemplates)

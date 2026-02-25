@@ -11,6 +11,9 @@ import B2CPartnerVehicle from "../models/B2CPartnerVehicle.js";
 import RouteRequest from "../models/RouteRequest.js";
 import Quotation from "../models/Quotation.js";
 import Campaign from "../models/Campaign.js";
+import Tag from "../models/Tag.js";
+import B2CPartnerTrip from "../models/B2CPartnerTrip.js";
+import B2CPartnerDriver from "../models/B2CPartnerDriver.js";
 // Get all users for admin
 export const getAllUsers = async (req, res) => {
     try {
@@ -850,6 +853,78 @@ export const getSystemLogs = async (req, res) => {
             message: "Error fetching system logs",
             error: error.message,
         });
+    }
+};
+
+// Resolve a fraud alert
+export const resolveFraudAlert = async (req, res) => {
+    try {
+        const { alertId } = req.params;
+        const updated = await Transaction.findByIdAndUpdate(alertId, { status: 'RESOLVED' }, { new: true });
+        if (!updated) {
+            return res.status(404).json({ success: false, message: "Alert not found" });
+        }
+        res.status(200).json({ success: true, message: "Fraud alert resolved successfully", alert: updated });
+    } catch (error) {
+        console.error("[v0] Error resolving fraud alert:", error);
+        res.status(500).json({ success: false, message: "Error resolving fraud alert", error: error.message });
+    }
+};
+
+// Investigate a fraud alert
+export const investigateFraudAlert = async (req, res) => {
+    try {
+        const { alertId } = req.params;
+        const updated = await Transaction.findByIdAndUpdate(alertId, { status: 'INVESTIGATING' }, { new: true });
+        if (!updated) {
+            return res.status(404).json({ success: false, message: "Alert not found" });
+        }
+        res.status(200).json({ success: true, message: "Fraud alert marked for investigation", alert: updated });
+    } catch (error) {
+        console.error("[v0] Error investigating fraud alert:", error);
+        res.status(500).json({ success: false, message: "Error investigating fraud alert", error: error.message });
+    }
+};
+
+// Generate custom report
+export const generateCustomReport = async (req, res) => {
+    try {
+        const { reportType, dateFrom, dateTo } = req.body;
+        const dateFilter = {};
+        if (dateFrom) dateFilter.$gte = new Date(dateFrom);
+        if (dateTo) dateFilter.$lte = new Date(dateTo);
+
+        let reportData = {};
+
+        switch (reportType) {
+            case 'revenue': {
+                const payments = await Payment.find(dateFilter.$gte ? { createdAt: dateFilter } : {});
+                const total = payments.reduce((s, p) => s + (p.amount || 0), 0);
+                reportData = { title: 'Revenue Report', recordCount: payments.length, totalRevenue: total, generatedAt: new Date() };
+                break;
+            }
+            case 'users': {
+                const users = await User.find(dateFilter.$gte ? { createdAt: dateFilter } : {}).select('-password');
+                reportData = { title: 'User Report', recordCount: users.length, users: users.slice(0, 50), generatedAt: new Date() };
+                break;
+            }
+            case 'bookings': {
+                const bookings = await B2CPassengerBooking.find(dateFilter.$gte ? { createdAt: dateFilter } : {});
+                reportData = { title: 'Bookings Report', recordCount: bookings.length, generatedAt: new Date() };
+                break;
+            }
+            default: {
+                const users = await User.countDocuments();
+                const payments = await Payment.countDocuments();
+                const bookings = await B2CPassengerBooking.countDocuments();
+                reportData = { title: 'General Summary Report', recordCount: users + payments + bookings, summary: { users, payments, bookings }, generatedAt: new Date() };
+            }
+        }
+
+        res.status(200).json({ success: true, report: reportData });
+    } catch (error) {
+        console.error("[v0] Error generating report:", error);
+        res.status(500).json({ success: false, message: "Error generating report", error: error.message });
     }
 };
 
@@ -2622,23 +2697,45 @@ export const getB2CTags = async (req, res) => {
 // Create B2C tag
 export const createB2CTag = async (req, res) => {
     try {
-        const tagData = req.body;
+        const { label, color, textColor, icon, description, category } = req.body;
         
-        // Here you would create the actual tag in database
-        const newTag = {
-            _id: `tag-${Date.now()}`,
-            ...tagData,
-            usageCount: 0,
-            status: "active",
-            createdAt: new Date()
-        };
-        
-        console.log(`Creating B2C tag:`, newTag);
+        if (!label) {
+            return res.status(400).json({ success: false, message: "Tag label is required" });
+        }
+
+        // Check for duplicate
+        const existing = await Tag.findOne({ label: { $regex: new RegExp(`^${label}$`, 'i') } });
+        if (existing) {
+            return res.status(400).json({ success: false, message: "A tag with this label already exists" });
+        }
+
+        const newTag = new Tag({
+            label,
+            color: color || "#6b7280",
+            textColor: textColor || "#ffffff",
+            icon: icon || "",
+            description: description || "",
+            category: category || "general",
+            status: "active"
+        });
+
+        await newTag.save();
         
         res.status(201).json({
             success: true,
             message: "B2C tag created successfully",
-            tag: newTag
+            tag: {
+                _id: newTag._id,
+                label: newTag.label,
+                color: newTag.color,
+                textColor: newTag.textColor,
+                icon: newTag.icon,
+                description: newTag.description,
+                category: newTag.category,
+                status: newTag.status,
+                usageCount: 0,
+                createdAt: newTag.createdAt
+            }
         });
     } catch (error) {
         console.error("[v0] Error creating B2C tag:", error);
@@ -2650,52 +2747,50 @@ export const createB2CTag = async (req, res) => {
     }
 };
 
-// Get B2C passenger reassignments
+// Get B2C passenger reassignments (real data from bookings)
 export const getB2CPassengerReassignments = async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
-        const query = {};
+        const bookingQuery = {};
 
-        if (status) query.status = status;
+        if (status && status !== 'all') {
+            bookingQuery.status = status.toUpperCase();
+        }
 
-        const reassignments = [
-            {
-                _id: 'reassign-001',
-                passengerId: 'PASS-001',
-                passengerName: 'Ahmed Mohammed',
-                passengerEmail: 'ahmed@email.com',
-                originalRoute: 'Route 5001: Hawally Loop',
-                newRoute: 'Route 5002: Salwa Loop',
-                originalProvider: 'KGL Transport',
-                newProvider: 'Gulf Transport',
-                reason: 'Schedule conflict',
-                requestedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-                status: 'pending',
-                priority: 'normal',
-                processedBy: null
-            },
-            {
-                _id: 'reassign-002',
-                passengerId: 'PASS-002',
-                passengerName: 'Fatima Al-Rashid',
-                passengerEmail: 'fatima@email.com',
-                originalRoute: 'Route 5003: Kuwait City Loop',
-                newRoute: 'Route 5001: Hawally Loop',
-                originalProvider: 'Gulf Transport',
-                newProvider: 'KGL Transport',
-                reason: 'Location change',
-                requestedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-                status: 'approved',
-                priority: 'high',
-                processedBy: 'Admin User'
-            }
-        ];
+        // Fetch real bookings from B2CPassengerBooking collection
+        const bookings = await B2CPassengerBooking.find(bookingQuery)
+            .populate('passengerId', 'fullName email whatsappNumber profileImage')
+            .populate('routeId', 'name startPoint endPoint departureTime arrivalTime price')
+            .populate('b2cPartnerId', 'fullName companyName')
+            .sort({ createdAt: -1 })
+            .limit(Number.parseInt(limit))
+            .skip((Number.parseInt(page) - 1) * Number.parseInt(limit));
 
-        const total = reassignments.length;
+        const total = await B2CPassengerBooking.countDocuments(bookingQuery);
+
+        const formattedBookings = bookings.map(booking => ({
+            _id: booking._id,
+            passengerName: booking.passengerId?.fullName || 'Unknown',
+            passengerEmail: booking.passengerId?.email || 'N/A',
+            passengerPhone: booking.passengerId?.whatsappNumber || 'N/A',
+            passengerImage: booking.passengerId?.profileImage || '',
+            routeName: booking.routeId?.name || 'N/A',
+            startPoint: booking.routeId?.startPoint || 'N/A',
+            endPoint: booking.routeId?.endPoint || 'N/A',
+            departureTime: booking.routeId?.departureTime || 'N/A',
+            price: booking.routeId?.price || booking.amount || 0,
+            providerName: booking.b2cPartnerId?.companyName || booking.b2cPartnerId?.fullName || 'N/A',
+            status: booking.status || 'PENDING',
+            seats: booking.seats || 1,
+            bookingDate: booking.bookingDate || booking.createdAt,
+            paymentMethod: booking.paymentMethod || 'CASH',
+            amount: booking.amount || 0,
+            createdAt: booking.createdAt
+        }));
 
         res.status(200).json({
             success: true,
-            reassignments,
+            reassignments: formattedBookings,
             pagination: {
                 total,
                 page: Number.parseInt(page),
@@ -2703,10 +2798,10 @@ export const getB2CPassengerReassignments = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("[v0] Error fetching B2C passenger reassignments:", error);
+        console.error("[v0] Error fetching B2C passenger bookings:", error);
         res.status(500).json({
             success: false,
-            message: "Error fetching B2C passenger reassignments",
+            message: "Error fetching B2C passenger bookings",
             error: error.message,
         });
     }
@@ -2735,64 +2830,74 @@ export const processPassengerReassignment = async (req, res) => {
     }
 };
 
-// Get B2C earnings and payments
+// Get B2C earnings and payments (real data)
 export const getB2CEarningsPayments = async (req, res) => {
     try {
-        const { period, providerId } = req.query;
-        
-        const earnings = {
-            totalRevenue: 45678.90,
-            totalBookings: 1234,
-            averageFare: 37.02,
-            commissionEarned: 4567.89,
-            providerPayouts: 41111.01,
-            pendingPayouts: 2345.67,
-            completedPayouts: 38765.34,
-            period: period || 'monthly',
-            breakdown: [
-                {
-                    month: 'January 2026',
-                    revenue: 12500.00,
-                    bookings: 340,
-                    commission: 1250.00,
-                    payout: 11250.00
-                },
-                {
-                    month: 'December 2025',
-                    revenue: 11800.00,
-                    bookings: 325,
-                    commission: 1180.00,
-                    payout: 10620.00
-                },
-                {
-                    month: 'November 2025',
-                    revenue: 21378.90,
-                    bookings: 569,
-                    commission: 2137.89,
-                    payout: 19241.01
-                }
-            ],
-            topProviders: [
-                {
-                    providerId: 'provider-001',
-                    providerName: 'KGL Transport',
-                    revenue: 28500.00,
-                    bookings: 780,
-                    commission: 2850.00
-                },
-                {
-                    providerId: 'provider-002',
-                    providerName: 'Gulf Transport',
-                    revenue: 17178.90,
-                    bookings: 454,
-                    commission: 1717.89
-                }
-            ]
-        };
+        const { period } = req.query;
+
+        // Real aggregation from payments
+        const [revenueData, bookingCount, providerData, recentPayments] = await Promise.all([
+            Payment.aggregate([
+                { $match: { type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] }, status: { $in: ['COMPLETED', 'PROCESSING'] } } },
+                { $group: { _id: null, totalRevenue: { $sum: '$amount' }, count: { $sum: 1 } } }
+            ]),
+            B2CPassengerBooking.countDocuments(),
+            Payment.aggregate([
+                { $match: { type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] }, status: { $in: ['COMPLETED', 'PROCESSING'] } } },
+                { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'provider' } },
+                { $unwind: { path: '$provider', preserveNullAndEmptyArrays: true } },
+                { $group: {
+                    _id: '$userId',
+                    providerName: { $first: { $ifNull: ['$provider.companyName', '$provider.fullName'] } },
+                    revenue: { $sum: '$amount' },
+                    bookings: { $sum: 1 }
+                }},
+                { $sort: { revenue: -1 } },
+                { $limit: 5 }
+            ]),
+            Payment.find({ type: { $in: ['B2C_BOOKING', 'B2C_SUBSCRIPTION', 'B2C_TRIP_EARNING'] } })
+                .populate('userId', 'fullName companyName')
+                .sort({ createdAt: -1 })
+                .limit(20)
+        ]);
+
+        const totalRevenue = revenueData[0]?.totalRevenue || 0;
+        const totalPaymentCount = revenueData[0]?.count || 0;
+        const avgFare = totalPaymentCount > 0 ? totalRevenue / totalPaymentCount : 0;
+        const commissionRate = 0.10;
+        const commissionEarned = totalRevenue * commissionRate;
+
+        const topProviders = providerData.map(p => ({
+            providerId: p._id,
+            providerName: p.providerName || 'Unknown',
+            revenue: p.revenue,
+            bookings: p.bookings,
+            commission: p.revenue * commissionRate
+        }));
+
+        const transactions = recentPayments.map(p => ({
+            _id: p._id,
+            providerName: p.userId?.companyName || p.userId?.fullName || 'Unknown',
+            amount: p.amount,
+            type: p.type,
+            status: p.status,
+            date: p.createdAt
+        }));
 
         res.status(200).json({
             success: true,
-            earnings
+            earnings: {
+                totalRevenue,
+                totalBookings: bookingCount,
+                averageFare: avgFare,
+                commissionEarned,
+                providerPayouts: totalRevenue - commissionEarned,
+                pendingPayouts: 0,
+                completedPayouts: totalRevenue - commissionEarned,
+                period: period || 'monthly',
+                topProviders,
+                transactions
+            }
         });
     } catch (error) {
         console.error("[v0] Error fetching B2C earnings:", error);

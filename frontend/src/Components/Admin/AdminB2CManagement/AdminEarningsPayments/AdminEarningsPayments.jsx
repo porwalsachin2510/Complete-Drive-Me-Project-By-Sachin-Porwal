@@ -151,34 +151,36 @@ function AdminEarningsPayments() {
         </div>
       </div>
 
-      {/* Revenue Breakdown */}
-      <div className="ad-dash-ep-breakdown">
-        <h4>Revenue Breakdown - {earnings.period}</h4>
-        <div className="breakdown-chart">
-          {earnings.breakdown?.map((item, index) => (
-            <div key={index} className="breakdown-item">
-              <div className="breakdown-header">
-                <span className="breakdown-period">{item.month}</span>
-                <span className="breakdown-revenue">{formatCurrency(item.revenue)}</span>
+      {/* Recent Transactions */}
+      {earnings.transactions && earnings.transactions.length > 0 && (
+        <div className="ad-dash-ep-breakdown">
+          <h4>Recent Transactions</h4>
+          <div className="breakdown-chart">
+            {earnings.transactions.map((txn, index) => (
+              <div key={txn._id || index} className="breakdown-item">
+                <div className="breakdown-header">
+                  <span className="breakdown-period">{txn.providerName || 'Unknown'}</span>
+                  <span className="breakdown-revenue">{formatCurrency(txn.amount || 0)}</span>
+                </div>
+                <div className="breakdown-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Type:</span>
+                    <span className="detail-value">{(txn.type || '').replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Status:</span>
+                    <span className="detail-value">{txn.status}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Date:</span>
+                    <span className="detail-value">{txn.date ? formatDate(txn.date) : 'N/A'}</span>
+                  </div>
+                </div>
               </div>
-              <div className="breakdown-details">
-                <div className="detail-item">
-                  <span className="detail-label">Bookings:</span>
-                  <span className="detail-value">{item.bookings}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Commission:</span>
-                  <span className="detail-value">{formatCurrency(item.commission)}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Payout:</span>
-                  <span className="detail-value">{formatCurrency(item.payout)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Top Providers */}
       <div className="ad-dash-ep-providers">
