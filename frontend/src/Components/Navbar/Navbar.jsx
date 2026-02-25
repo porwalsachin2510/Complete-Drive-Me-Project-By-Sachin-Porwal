@@ -115,30 +115,6 @@ export default function Navbar({ activeTab, setActiveTab }) {
         {/* Nav Items */}
         <div className={`navbar-items ${mobileMenuOpen ? "active" : ""}`}>
           <div className="nav-tabs">
-            {isAuthenticated && user?.role === "CORPORATE" && (
-              <>
-                <button
-                  className={`navbar-tab ${
-                    activeTab === "my-quotations" ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    handleTabClick("my-quotations");
-                    navigate("/my-quotations");
-                  }}
-                >
-                  My Quotations
-                </button>
-
-                <button
-                  className={`navbar-tab ${
-                    activeTab === "contracts" ? "active" : ""
-                  }`}
-                  onClick={() => handleContractTabClick("contracts")}
-                >
-                  <span className="building-icon">⌂</span> Contracts
-                </button>
-              </>
-            )}
           </div>
 
           {isAuthenticated ? (

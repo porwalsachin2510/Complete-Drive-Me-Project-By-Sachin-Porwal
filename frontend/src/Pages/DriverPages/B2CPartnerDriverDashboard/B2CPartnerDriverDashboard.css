@@ -57,6 +57,23 @@
   border-color: #c6f6d5;
 }
 
+.driver-logout-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid #e53e3e;
+  background: #fff5f5;
+  color: #e53e3e;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.driver-logout-btn:hover {
+  background: #e53e3e;
+  color: white;
+}
+
 /* Dashboard Tabs */
 .dashboard-tabs {
   display: flex;

@@ -417,8 +417,11 @@ function B2CPartnerDriverDashboard() {
           <div
             className={`location-status ${isSharingLocation ? "active" : ""}`}
           >
-            📍 {isSharingLocation ? "Sharing Live" : "Not Sharing"}
+            {isSharingLocation ? "Sharing Live" : "Not Sharing"}
           </div>
+          <button className="driver-logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </div>
 

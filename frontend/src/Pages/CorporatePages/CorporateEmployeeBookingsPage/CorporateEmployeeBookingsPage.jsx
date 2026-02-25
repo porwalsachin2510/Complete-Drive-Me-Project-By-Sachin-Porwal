@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getCorporateOwnerBookings } from "../../../Redux/slices/bookingSlice";
-import Navbar from "../../../Components/Navbar/Navbar";
-import Footer from "../../../Components/Footer/Footer";
 import "./corporateemployeebookingspage.css";
 
 const CorporateEmployeeBookingsPage = () => {
@@ -67,7 +65,6 @@ const CorporateEmployeeBookingsPage = () => {
 
   return (
     <div className="corporate-bookings-page">
-      <Navbar />
 
       <div className="bookings-container">
         <div className="bookings-header">
@@ -223,7 +220,6 @@ const CorporateEmployeeBookingsPage = () => {
         )}
       </div>
 
-      <Footer />
     </div>
   );
 };

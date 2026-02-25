@@ -4,8 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getPassengerBookings } from "../../../Redux/slices/bookingSlice";
 import { useSocket } from "../../../hooks/useSocket";
-import Navbar from "../../../Components/Navbar/Navbar";
-import Footer from "../../../Components/Footer/Footer";
 import DailyTripsInBooking from "../../../Components/DailyTripsInBooking/DailyTripsInBooking";
 import commuterBookingAPI from "../../../services/commuterBookingAPI";
 import api from "../../../utils/api";

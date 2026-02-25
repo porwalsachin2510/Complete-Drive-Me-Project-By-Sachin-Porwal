@@ -5,7 +5,7 @@ import "./DailyTripsInBooking.css";
 const DailyTripsInBooking = ({ booking, userRole, onTripStatusChange, currentUserId, currentDriverId, onTripStart, onTripComplete }) => {
   const [dailyTrips, setDailyTrips] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState("upcoming"); // "upcoming", "all", "today"
+  const [filter, setFilter] = useState("today"); // "today", "upcoming", "all"
   const [actionLoading, setActionLoading] = useState(null);
 
   const fetchDailyTrips = useCallback(async () => {

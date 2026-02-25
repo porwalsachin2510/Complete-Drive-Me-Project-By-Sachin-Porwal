@@ -79,7 +79,7 @@ export default function Navigation({ profileactiveTab, setProfileActiveTab }) {
         ))}
       </div>
       <button className="logout-btn" onClick={handleLogout}>
-        <span>↗️</span>
+        Logout
       </button>
     </div>
   );
