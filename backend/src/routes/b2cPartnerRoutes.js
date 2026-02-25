@@ -9,6 +9,8 @@ import {
     createB2CPartnerTrip,
     getB2CPartnerProfile,
     updateB2CPartnerProfile,
+    assignDriverToB2CVehicle,
+    assignDriverToB2CRoute,
 } from "../controllers/adminController.js"
 import {
     createB2CPartnerDriver,

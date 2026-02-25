@@ -5,7 +5,8 @@ import {
     assignRouteToVehicle,
     getAssignedRoutesStatus,
     assignEmployeesToTrip,
-    getTripDetails
+    getTripDetails,
+    getCorporateEmployeeBookings
 } from "../controllers/corporateOperationsController.js";
 import { verifyToken } from "../middleware/auth.js";
 
@@ -24,5 +25,8 @@ router.post("/trips/:tripId/assign-employees", verifyToken, assignEmployeesToTri
 
 // Trip details
 router.get("/trips/:tripId/details", verifyToken, getTripDetails);
+
+// Corporate employee bookings
+router.get("/bookings", verifyToken, getCorporateEmployeeBookings);
 
 export default router;

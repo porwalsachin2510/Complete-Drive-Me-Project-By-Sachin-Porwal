@@ -524,3 +524,64 @@ export const getTripDetails = async (req, res) => {
         });
     }
 };
+
+// @desc    Get all employee bookings for corporate operations
+// @route   GET /api/corporate-operations/bookings
+// @access  Private (CORPORATE only)
+export const getCorporateEmployeeBookings = async (req, res) => {
+    try {
+        const corporateOwnerId = req.userId;
+        const { status, startDate, endDate, employeeId, page = 1, limit = 20 } = req.query;
+
+        const filter = { corporateOwnerId };
+
+        if (status) filter.status = status;
+        if (employeeId) filter.passengerId = employeeId;
+        if (startDate || endDate) {
+            filter.bookingDate = {};
+            if (startDate) filter.bookingDate.$gte = new Date(startDate);
+            if (endDate) filter.bookingDate.$lte = new Date(endDate);
+        }
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const bookings = await CorporateBooking.find(filter)
+            .populate("passengerId", "fullName email whatsappNumber")
+            .populate("routeId", "fromLocation toLocation startTime endTime")
+            .populate("driverId", "fullName email")
+            .populate("contractId", "contractNumber status")
+            .sort({ bookingDate: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        const totalCount = await CorporateBooking.countDocuments(filter);
+
+        const summary = {
+            total: totalCount,
+            active: await CorporateBooking.countDocuments({ corporateOwnerId, status: "CONFIRMED" }),
+            completed: await CorporateBooking.countDocuments({ corporateOwnerId, status: "COMPLETED" }),
+            cancelled: await CorporateBooking.countDocuments({ corporateOwnerId, status: "CANCELLED" }),
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                bookings,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(totalCount / parseInt(limit)),
+                    totalItems: totalCount,
+                    itemsPerPage: parseInt(limit),
+                },
+                summary,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching corporate employee bookings:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch employee bookings",
+            error: error.message,
+        });
+    }
+};

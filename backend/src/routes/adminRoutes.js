@@ -12,6 +12,7 @@ import {
     activateUser,
     deleteUser,
     getUserDetails,
+    editUser,
     getRecentActivity,
     getB2CProviders,
     getB2CProviderStats,
@@ -90,6 +91,7 @@ router.get("/b2c/stats", verifyToken, checkAdminRole, getB2CStats)
 router.get("/users", verifyToken, checkAdminRole, getAllUsers)
 router.get("/users/stats", verifyToken, checkAdminRole, getUserStats)
 router.get("/users/:userId", verifyToken, checkAdminRole, getUserDetails)
+router.put("/users/:userId", verifyToken, checkAdminRole, editUser)
 router.put("/users/:userId/suspend", verifyToken, checkAdminRole, suspendUser)
 router.put("/users/:userId/activate", verifyToken, checkAdminRole, activateUser)
 router.delete("/users/:userId", verifyToken, checkAdminRole, deleteUser)

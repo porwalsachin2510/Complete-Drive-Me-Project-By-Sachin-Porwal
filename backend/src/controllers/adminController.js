@@ -212,6 +212,44 @@ export const deleteUser = async (req, res) => {
     }
 };
 
+// Edit user details (admin)
+export const editUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const updates = req.body;
+
+        // Prevent updating sensitive fields
+        const disallowedFields = ['password', 'role', '_id'];
+        disallowedFields.forEach(field => delete updates[field]);
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updates },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "User updated successfully",
+            data: { user }
+        });
+    } catch (error) {
+        console.error("[v0] Error editing user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error editing user",
+            error: error.message,
+        });
+    }
+};
+
 // Get user details for admin
 export const getUserDetails = async (req, res) => {
     try {
@@ -3259,6 +3297,149 @@ export const deleteB2CPartnerVehicle = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Error deleting B2C vehicle",
+            error: error.message
+        });
+    }
+};
+
+// Assign driver to a B2C Partner vehicle
+export const assignDriverToB2CVehicle = async (req, res) => {
+    try {
+        const { vehicleId } = req.params;
+        const { driverId } = req.body;
+        const partnerId = req.userId;
+
+        if (!driverId) {
+            return res.status(400).json({
+                success: false,
+                message: "Driver ID is required"
+            });
+        }
+
+        const vehicle = await B2CPartnerVehicle.findOne({
+            _id: vehicleId,
+            b2cPartnerId: partnerId,
+        });
+
+        if (!vehicle) {
+            return res.status(404).json({
+                success: false,
+                message: "Vehicle not found or you don't have permission"
+            });
+        }
+
+        // Verify driver belongs to this partner
+        const driver = await B2CPartnerDriver.findOne({
+            _id: driverId,
+            b2cPartnerId: partnerId,
+        });
+
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found or does not belong to your fleet"
+            });
+        }
+
+        // Check if driver is already assigned
+        if (vehicle.assignedDrivers.includes(driverId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Driver is already assigned to this vehicle"
+            });
+        }
+
+        vehicle.assignedDrivers.push(driverId);
+        await vehicle.save();
+
+        // Update driver's assigned vehicle reference
+        driver.assignedVehicle = vehicleId;
+        await driver.save();
+
+        const updatedVehicle = await B2CPartnerVehicle.findById(vehicleId)
+            .populate('assignedDrivers', 'name phoneNumber licenseNumber profileImage')
+            .populate('assignedRoutes', 'fromLocation toLocation');
+
+        res.status(200).json({
+            success: true,
+            message: "Driver assigned to vehicle successfully",
+            data: { vehicle: updatedVehicle }
+        });
+    } catch (error) {
+        console.error("[v0] Error assigning driver to vehicle:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error assigning driver to vehicle",
+            error: error.message
+        });
+    }
+};
+
+// Assign driver to a B2C Partner route
+export const assignDriverToB2CRoute = async (req, res) => {
+    try {
+        const { driverId, routeId, vehicleId } = req.body;
+        const partnerId = req.userId;
+
+        if (!driverId || !routeId) {
+            return res.status(400).json({
+                success: false,
+                message: "Driver ID and Route ID are required"
+            });
+        }
+
+        // Verify driver belongs to partner
+        const driver = await B2CPartnerDriver.findOne({
+            _id: driverId,
+            b2cPartnerId: partnerId,
+        });
+
+        if (!driver) {
+            return res.status(404).json({
+                success: false,
+                message: "Driver not found or does not belong to your fleet"
+            });
+        }
+
+        // Verify route belongs to partner
+        const route = await B2CPartnerRoute.findOne({
+            _id: routeId,
+            b2cPartnerId: partnerId,
+        });
+
+        if (!route) {
+            return res.status(404).json({
+                success: false,
+                message: "Route not found or does not belong to you"
+            });
+        }
+
+        // Update route with driver assignment
+        route.assignedDriver = driverId;
+        if (vehicleId) route.assignedVehicle = vehicleId;
+        await route.save();
+
+        // Update driver with route assignment
+        if (!driver.assignedRoutes) driver.assignedRoutes = [];
+        if (!driver.assignedRoutes.includes(routeId)) {
+            driver.assignedRoutes.push(routeId);
+        }
+        await driver.save();
+
+        const updatedRoute = await B2CPartnerRoute.findById(routeId)
+            .populate('assignedDriver', 'name phoneNumber licenseNumber')
+            .populate('assignedVehicle', 'model licensePlate vehicleType');
+
+        res.status(200).json({
+            success: true,
+            message: "Driver assigned to route successfully",
+            data: { route: updatedRoute }
+        });
+    } catch (error) {
+        console.error("[v0] Error assigning driver to route:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error assigning driver to route",
             error: error.message
         });
     }
