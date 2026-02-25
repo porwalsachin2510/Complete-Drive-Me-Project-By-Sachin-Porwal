@@ -177,11 +177,58 @@ export const delayTrip = async (req, res) => {
     }
 };
 
+// Get driver location by driverId (for passengers/corporate to track)
+export const getDriverLocation = async (req, res) => {
+    try {
+        const { driverId } = req.params;
+
+        // Find the active trip for the driver to get latest location
+        const trip = await B2CPartnerTrip.findOne({
+            $or: [
+                { driverId: driverId },
+                { 'assignedDriver': driverId },
+                { b2cPartnerId: driverId }
+            ],
+            status: { $in: ['In Progress', 'IN_PROGRESS', 'Scheduled', 'SCHEDULED'] }
+        }).select('currentLocation locationHistory status driverId routeId');
+
+        if (!trip) {
+            return res.json({
+                success: true,
+                data: {
+                    driverId,
+                    location: null,
+                    message: 'No active trip found for this driver'
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                driverId,
+                tripId: trip._id,
+                location: trip.currentLocation || null,
+                locationHistory: (trip.locationHistory || []).slice(-10),
+                tripStatus: trip.status
+            }
+        });
+
+    } catch (error) {
+        console.error('Error getting driver location:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get driver location'
+        });
+    }
+};
+
 export default {
     getActiveTrip,
     updateLocation,
     startTrip,
     completeTrip,
     reportEmergency,
-    delayTrip
+    delayTrip,
+    getDriverLocation
 };

@@ -9,6 +9,8 @@ import {
     getFleetOwnerContracts,
     approveContract,
     rejectContract,
+    corporateAcceptContract,
+    corporateRejectContract,
     assignVehicles,
     getAssignedVehiclesForContract,
     assignRouteToVehicle,
@@ -71,6 +73,16 @@ router.post("/:contractId/approve", verifyToken, checkFleetOwnerRole, approveCon
 // @desc    Fleet owner rejects signed contract
 // @access  Private (B2B_PARTNER only)
 router.post("/:contractId/reject", verifyToken, checkFleetOwnerRole, rejectContract)
+
+// @route   POST /api/contracts/:contractId/corporate-accept
+// @desc    Corporate owner accepts contract
+// @access  Private (CORPORATE only)
+router.post("/:contractId/corporate-accept", verifyToken, checkCorporateOwnerRole, corporateAcceptContract)
+
+// @route   POST /api/contracts/:contractId/corporate-reject
+// @desc    Corporate owner rejects contract
+// @access  Private (CORPORATE only)
+router.post("/:contractId/corporate-reject", verifyToken, checkCorporateOwnerRole, corporateRejectContract)
 
 // @route   POST /api/contracts/:contractId/assign-vehicles
 // @desc    Fleet owner assigns vehicles to contract

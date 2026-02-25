@@ -1,6 +1,6 @@
 import express from "express"
 import jwt from "jsonwebtoken"
-import { register, login, logout, verifyOTP, resendOTP } from "../controllers/authController.js"
+import { register, login, adminLogin, logout, verifyOTP, resendOTP } from "../controllers/authController.js"
 import { verifyToken } from "../middleware/auth.js"
 import { upload } from "../Config/multerConfig.js"
 
@@ -47,6 +47,9 @@ router.post(
 
 // Login
 router.post("/login", login)
+
+// Admin Login
+router.post("/admin-login", adminLogin)
 
 // Verify OTP
 router.post("/verify-otp", verifyOTP)

@@ -22,6 +22,7 @@ import {
     startCorporateTrip,
     completeCorporateBooking,
     getDailyTripsForBooking,
+    cancelBooking,
 } from "../controllers/bookingController.js"
 
 const router = express.Router()
@@ -46,6 +47,9 @@ router.put("/:bookingId/accept", verifyToken, acceptB2CBooking)
 router.put("/:bookingId/reject", verifyToken, rejectB2CBooking)
 router.put("/:bookingId/start", verifyToken, startB2CTrip)
 router.put("/:bookingId/complete", verifyToken, completeB2CTrip)
+
+// Cancel booking
+router.put("/:bookingId/cancel", verifyToken, cancelBooking)
 
 // Daily trips for a booking
 router.get("/:bookingId/daily-trips", verifyToken, getDailyTripsForBooking)

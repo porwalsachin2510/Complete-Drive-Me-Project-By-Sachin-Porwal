@@ -7,7 +7,8 @@ import {
     startTrip,
     completeTrip,
     reportEmergency,
-    delayTrip
+    delayTrip,
+    getDriverLocation
 } from "../controllers/driverLocationController.js";
 
 const router = express.Router();
@@ -70,6 +71,15 @@ router.post(
     verifyToken,
     checkDriverRole,
     delayTrip,
+);
+
+// ROUTE: GET /api/driver/location/:driverId
+// DESCRIPTION: GET DRIVER LOCATION BY ID (for passengers/corporate tracking)
+// ACCESS: PROTECTED - ANY AUTHENTICATED USER
+router.get(
+    "/location/:driverId",
+    verifyToken,
+    getDriverLocation,
 );
 
 export default router;

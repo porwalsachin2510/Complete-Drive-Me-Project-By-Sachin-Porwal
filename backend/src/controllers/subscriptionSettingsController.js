@@ -185,6 +185,107 @@ export const cancelSubscription = async (req, res) => {
     }
 };
 
+// Manually renew subscription
+export const renewSubscription = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { paymentMethod } = req.body;
+
+        const settings = await SubscriptionSettings.findOne({ userId });
+        if (!settings) {
+            return res.status(404).json({
+                success: false,
+                message: "Subscription settings not found"
+            });
+        }
+
+        // Find active pass to renew
+        const activePass = await B2CMonthlyPass.findOne({
+            passengerId: userId,
+            status: { $in: ["ACTIVE", "EXPIRED"] }
+        }).sort({ endDate: -1 });
+
+        if (!activePass) {
+            return res.status(404).json({
+                success: false,
+                message: "No active or recently expired subscription found to renew"
+            });
+        }
+
+        // Create new monthly pass
+        const startDate = new Date() > new Date(activePass.endDate) 
+            ? new Date() 
+            : new Date(activePass.endDate);
+        const newEndDate = new Date(startDate);
+        newEndDate.setMonth(newEndDate.getMonth() + 1);
+
+        const newPass = new B2CMonthlyPass({
+            passengerId: activePass.passengerId,
+            routeId: activePass.routeId,
+            scheduleId: activePass.scheduleId,
+            partnerId: activePass.partnerId,
+            passType: activePass.passType,
+            outboundTripTime: activePass.outboundTripTime,
+            returnTripTime: activePass.returnTripTime,
+            pickupLocation: activePass.pickupLocation,
+            dropoffLocation: activePass.dropoffLocation,
+            returnPickupLocation: activePass.returnPickupLocation,
+            returnDropoffLocation: activePass.returnDropoffLocation,
+            startDate: startDate,
+            endDate: newEndDate,
+            durationMonths: 1,
+            totalAmount: activePass.totalAmount,
+            paymentMethod: paymentMethod || activePass.paymentMethod,
+            adminCommission: activePass.totalAmount * 0.2,
+            partnerEarnings: activePass.totalAmount * 0.8,
+            status: "ACTIVE"
+        });
+
+        await newPass.save();
+
+        // Update old pass
+        if (activePass.status === "ACTIVE") {
+            activePass.status = "RENEWED";
+            await activePass.save();
+        }
+
+        // Update subscription settings
+        settings.autoRenewal = true;
+        settings.lastRenewalDate = new Date();
+        settings.nextRenewalDate = newEndDate;
+        settings.cancellationReason = null;
+        settings.cancellationDate = null;
+        settings.currentRenewalAttempts = 0;
+
+        settings.renewalHistory.push({
+            date: new Date(),
+            status: "SUCCESS",
+            amount: activePass.totalAmount,
+            paymentMethod: paymentMethod || settings.renewalPaymentMethod
+        });
+
+        await settings.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Subscription renewed successfully",
+            data: {
+                newPass,
+                nextRenewalDate: newEndDate,
+                amount: activePass.totalAmount
+            }
+        });
+
+    } catch (error) {
+        console.error("Error renewing subscription:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error renewing subscription",
+            error: error.message
+        });
+    }
+};
+
 // Process renewals (cron job function)
 export const processRenewals = async () => {
     try {

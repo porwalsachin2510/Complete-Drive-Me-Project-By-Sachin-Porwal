@@ -122,6 +122,67 @@ export const register = async (req, res) => {
     }
 }
 
+export const adminLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required",
+            })
+        }
+
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials",
+            })
+        }
+
+        // Verify user is an ADMIN
+        if (user.role !== "ADMIN") {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Admin credentials required.",
+            })
+        }
+
+        const isPasswordValid = await user.comparePassword(password)
+
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials",
+            })
+        }
+
+        const token = generateToken(user._id, user.role)
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        })
+
+        res.status(200).json({
+            success: true,
+            message: "Admin login successful",
+            token,
+            user: user.toJSON(),
+        })
+    } catch (error) {
+        console.error("Admin login error:", error)
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        })
+    }
+}
+
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body

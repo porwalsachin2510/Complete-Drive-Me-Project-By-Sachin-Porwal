@@ -694,6 +694,102 @@ export const respondToQuotation = async (req, res) => {
     }
 }
 
+// @desc    Corporate owner negotiates quotation price
+// @route   POST /api/quotations/corporate/:quotationId/negotiate
+// @access  Private (CORPORATE only)
+export const negotiateQuotation = async (req, res) => {
+    try {
+        const { quotationId } = req.params
+        const corporateOwnerId = req.userId
+        const { counterOffer, message } = req.body
+
+        if (!counterOffer || !counterOffer.totalAmount || Number.parseFloat(counterOffer.totalAmount) <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid counter offer amount is required",
+            })
+        }
+
+        const quotation = await Quotation.findOne({
+            _id: quotationId,
+            corporateOwnerId,
+        })
+
+        if (!quotation) {
+            return res.status(404).json({
+                success: false,
+                message: "Quotation not found",
+            })
+        }
+
+        if (!["QUOTED", "NEGOTIATING"].includes(quotation.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot negotiate quotation with status: ${quotation.status}`,
+            })
+        }
+
+        if (quotation.validUntil && new Date() > new Date(quotation.validUntil)) {
+            quotation.status = "EXPIRED"
+            await quotation.save()
+            return res.status(400).json({
+                success: false,
+                message: "This quotation has expired",
+            })
+        }
+
+        // Update quotation with negotiation data
+        quotation.status = "NEGOTIATING"
+        quotation.corporateResponseMessage = message || "Counter offer submitted"
+
+        // Store negotiation history
+        if (!quotation.negotiationHistory) {
+            quotation.negotiationHistory = []
+        }
+        quotation.negotiationHistory.push({
+            from: "CORPORATE",
+            amount: Number.parseFloat(counterOffer.totalAmount),
+            message: message || "",
+            timestamp: new Date(),
+        })
+
+        // Extend validity for negotiation
+        quotation.validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+
+        await quotation.save()
+
+        // Create notification for fleet owner
+        await createNotification(
+            quotation.fleetOwnerId,
+            "QUOTATION_NEGOTIATION",
+            "Quotation Counter Offer",
+            `Corporate owner has submitted a counter offer of ${counterOffer.totalAmount} for quotation ${quotation.quotationNumber}`,
+            quotation._id,
+            "QUOTATION",
+        )
+
+        const populatedQuotation = await Quotation.findById(quotation._id)
+            .populate("corporateOwnerId", "fullName companyName email whatsappNumber")
+            .populate("fleetOwnerId", "fullName email whatsappNumber")
+            .populate("vehicles.vehicleId", "vehicleName vehicleCategory pricing")
+
+        res.status(200).json({
+            success: true,
+            message: "Counter offer submitted successfully",
+            data: {
+                quotation: populatedQuotation,
+            },
+        })
+    } catch (error) {
+        console.error("Error negotiating quotation:", error)
+        res.status(500).json({
+            success: false,
+            message: "Failed to submit counter offer",
+            error: error.message,
+        })
+    }
+}
+
 // @desc    Get single quotation details for fleet owner
 // @route   GET /api/quotations/fleet/:quotationId
 // @access  Private (B2B_PARTNER only)

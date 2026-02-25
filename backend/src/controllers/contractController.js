@@ -780,6 +780,120 @@ export const rejectContract = async (req, res) => {
     }
 }
 
+// @desc    Corporate owner accepts the contract
+// @route   POST /api/contracts/:contractId/corporate-accept
+// @access  Private (CORPORATE only)
+export const corporateAcceptContract = async (req, res) => {
+    try {
+        const { contractId } = req.params
+        const corporateOwnerId = req.userId
+        const { acceptanceNotes } = req.body
+
+        const contract = await Contract.findOne({
+            _id: contractId,
+            corporateOwnerId,
+        })
+
+        if (!contract) {
+            return res.status(404).json({
+                success: false,
+                message: "Contract not found",
+            })
+        }
+
+        if (!["PENDING", "DRAFT", "PENDING_SIGNATURES"].includes(contract.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot accept contract with status: ${contract.status}`,
+            })
+        }
+
+        contract.status = "PENDING_SIGNATURES"
+        contract.corporateAcceptedAt = new Date()
+        contract.statusHistory.push({
+            status: "PENDING_SIGNATURES",
+            changedBy: corporateOwnerId,
+            reason: acceptanceNotes || "Corporate owner accepted the contract",
+        })
+
+        await contract.save()
+
+        await contract.populate([
+            { path: "corporateOwnerId", select: "fullName email companyName" },
+            { path: "fleetOwnerId", select: "fullName email companyName" },
+            { path: "vehicles.vehicleId", select: "vehicleName vehicleCategory registrationNumber" },
+        ])
+
+        res.status(200).json({
+            success: true,
+            message: "Contract accepted successfully. Ready for signatures.",
+            data: { contract },
+        })
+    } catch (error) {
+        console.error("Error accepting contract:", error)
+        res.status(500).json({
+            success: false,
+            message: "Failed to accept contract",
+            error: error.message,
+        })
+    }
+}
+
+// @desc    Corporate owner rejects the contract
+// @route   POST /api/contracts/:contractId/corporate-reject
+// @access  Private (CORPORATE only)
+export const corporateRejectContract = async (req, res) => {
+    try {
+        const { contractId } = req.params
+        const corporateOwnerId = req.userId
+        const { rejectionReason } = req.body
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: "Rejection reason is required",
+            })
+        }
+
+        const contract = await Contract.findOne({
+            _id: contractId,
+            corporateOwnerId,
+        })
+
+        if (!contract) {
+            return res.status(404).json({
+                success: false,
+                message: "Contract not found",
+            })
+        }
+
+        contract.status = "REJECTED"
+        contract.rejectedAt = new Date()
+        contract.rejectedBy = corporateOwnerId
+        contract.rejectionReason = rejectionReason
+        contract.statusHistory.push({
+            status: "REJECTED",
+            changedBy: corporateOwnerId,
+            reason: rejectionReason,
+        })
+
+        await contract.save()
+
+        res.status(200).json({
+            success: true,
+            message: "Contract rejected successfully",
+            data: { contract },
+        })
+    } catch (error) {
+        console.error("Error rejecting contract:", error)
+        res.status(500).json({
+            success: false,
+            message: "Failed to reject contract",
+            error: error.message,
+        })
+    }
+}
+
 // @desc    Fleet owner assigns specific vehicles to contract
 // @route   POST /api/contracts/:contractId/assign-vehicles
 // @access  Private (B2B_PARTNER only)

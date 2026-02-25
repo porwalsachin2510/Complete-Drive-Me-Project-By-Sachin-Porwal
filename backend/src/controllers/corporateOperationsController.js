@@ -3,6 +3,7 @@ import Route from "../models/Route.js";
 import Contract from "../models/Contract.js";
 import CorporateEmployee from "../models/CorporateEmployee.js";
 import CorporateDriver from "../models/CorporateDriver.js";
+import CorporateBooking from "../models/CorporateBooking.js";
 import Vehicle from "../models/Vehicle.js";
 import User from "../models/User.js";
 import { io } from "../index.js";

@@ -6,7 +6,8 @@ import {
     respondToQuotation,
     fetchFleetQuotations,
     getFleetQuotationById,
-    corporateDecisionOnQuotation
+    corporateDecisionOnQuotation,
+    negotiateQuotation
 } from "../controllers/quotationController.js"
 import { verifyToken, checkCorporateOwnerRole, checkFleetOwnerRole } from "../middleware/auth.js"
 
@@ -34,6 +35,11 @@ router.get(
 // @desc    Corporate owner accepts or rejects the quoted price
 // @access  Private (CORPORATE only)
 router.post("/corporate/:quotationId/decision", verifyToken, checkCorporateOwnerRole, corporateDecisionOnQuotation)
+
+// @route   POST /api/quotations/corporate/:quotationId/negotiate
+// @desc    Corporate owner negotiates the quoted price
+// @access  Private (CORPORATE only)
+router.post("/corporate/:quotationId/negotiate", verifyToken, checkCorporateOwnerRole, negotiateQuotation)
 
 // ============================================
 // FLEET OWNER ROUTES (B2B_PARTNER role)
