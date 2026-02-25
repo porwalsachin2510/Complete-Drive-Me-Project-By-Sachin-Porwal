@@ -19,6 +19,29 @@ import Footer from "../../../Components/Footer/Footer";
 import Navbar from "../../../Components/Navbar/Navbar";
 import "./CorporateContractDetails.css";
 
+// Normalize payment method strings between DB format and code format
+// DB stores: "Cash", "Credit Card", "Bank Transfer", "Mobile Wallet"
+// Code uses: "CASH", "CARD", "BANK_TRANSFER", "WALLET"
+const PAYMENT_METHOD_NORMALIZE = {
+  "Cash": "CASH",
+  "Credit Card": "CARD",
+  "Bank Transfer": "BANK_TRANSFER",
+  "Mobile Wallet": "WALLET",
+  "CASH": "CASH",
+  "CARD": "CARD",
+  "BANK_TRANSFER": "BANK_TRANSFER",
+  "WALLET": "WALLET",
+};
+
+const normalizeMethod = (method) => PAYMENT_METHOD_NORMALIZE[method] || method;
+
+const PAYMENT_METHOD_INFO = {
+  CARD: { icon: "\uD83D\uDCB3", name: "Credit/Debit Card" },
+  WALLET: { icon: "\uD83D\uDCF1", name: "Mobile Wallet" },
+  BANK_TRANSFER: { icon: "\uD83C\uDFE6", name: "Bank Transfer" },
+  CASH: { icon: "\uD83D\uDCB5", name: "Cash Payment" },
+};
+
 const CorporateContractDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -100,7 +123,7 @@ const CorporateContractDetails = () => {
       setShowSignModal(false);
       setSignature("");
       alert("Contract signed successfully!");
-      dispatch(getContractById(id));
+      dispatch(getContractById({ contractId: id }));
     } catch (error) {
       alert(error || "Failed to sign contract");
     }
@@ -130,23 +153,31 @@ const CorporateContractDetails = () => {
 
        console.log("Payment creation result:", result);
 
-       if (result.data.paymentUrl) {
-         console.log(
-           "Redirecting to payment gateway:",
-           result.data.provider
-         );
-         window.location.href = result.data.paymentUrl;
-       } else if (result.data.bankDetails) {
+       // Handle card/wallet payments - backend returns paymentSession with paymentUrl
+       if (result.data?.paymentSession?.paymentUrl) {
+         console.log("Redirecting to payment gateway:", result.data.paymentSession.paymentUrl);
+         window.location.href = result.data.paymentSession.paymentUrl;
+       } else if (paymentMethod === "BANK_TRANSFER") {
+         // Bank transfer - show reference info
+         const ref = result.data?.payment?.reference || "N/A";
          alert(
-           `Bank Transfer Details:\n\nBank: ${result.data.bankDetails.bankName}\nAccount: ${result.data.bankDetails.accountNumber}\nIBAN: ${result.data.bankDetails.iban}\nReference: ${result.data.bankDetails.reference}\n\n${result.data.instructions}`
+           `Bank Transfer Payment Created\n\nReference: ${ref}\n\nPlease complete the bank transfer and it will be verified by admin.`
          );
-         dispatch(getContractById(id));
+         dispatch(getContractById({ contractId: id }));
+         dispatch(getPaymentByContract({ contractId: id }));
        } else if (paymentMethod === "CASH") {
+         // Cash payment - show reference info
+         const ref = result.data?.payment?.reference || "N/A";
          alert(
-           result.data.instructions ||
-             "Please contact admin to arrange cash payment"
+           `Cash Payment Created\n\nReference: ${ref}\n\n${result.message || "Payment record created. Awaiting admin verification."}`
          );
-         dispatch(getContractById(id));
+         dispatch(getContractById({ contractId: id }));
+         dispatch(getPaymentByContract({ contractId: id }));
+       } else {
+         // Fallback for any other method
+         alert(result.message || "Payment initiated successfully");
+         dispatch(getContractById({ contractId: id }));
+         dispatch(getPaymentByContract({ contractId: id }));
        }
      } catch (error) {
        console.error("Payment error:", error);
@@ -522,7 +553,8 @@ const CorporateContractDetails = () => {
           )}
 
           {showMakePaymentButton &&
-            contract.fleetOwnerId?.acceptedPaymentMethods && (
+            contract.fleetOwnerId?.acceptedPaymentMethods &&
+            contract.fleetOwnerId.acceptedPaymentMethods.length > 0 && (
               <div className="corporate-contract-section payment-methods-section">
                 <h2>Accepted Payment Methods</h2>
                 <p className="payment-methods-subtitle">
@@ -532,20 +564,16 @@ const CorporateContractDetails = () => {
                 <div className="accepted-payment-methods">
                   {contract.fleetOwnerId.acceptedPaymentMethods.map(
                     (method) => {
-                      const methodInfo = {
-                        CARD: { icon: "💳", name: "Credit/Debit Card" },
-                        WALLET: { icon: "📱", name: "Mobile Wallet" },
-                        BANK_TRANSFER: { icon: "🏦", name: "Bank Transfer" },
-                        CASH: { icon: "💵", name: "Cash Payment" },
-                      }[method];
+                      const normalized = normalizeMethod(method);
+                      const methodInfo = PAYMENT_METHOD_INFO[normalized];
 
                       return (
                         <div key={method} className="payment-method-badge">
                           <span className="method-icon">
-                            {methodInfo?.icon}
+                            {methodInfo?.icon || "\uD83D\uDCB0"}
                           </span>
                           <span className="method-name">
-                            {methodInfo?.name}
+                            {methodInfo?.name || method}
                           </span>
                         </div>
                       );
@@ -647,7 +675,9 @@ const CorporateContractDetails = () => {
 
         {showPaymentMethodModal && (
           <PaymentMethodSelector
-            acceptedMethods={["CARD", "WALLET", "BANK_TRANSFER", "CASH"]}
+            acceptedMethods={
+              (contract.fleetOwnerId?.acceptedPaymentMethods || []).map(normalizeMethod)
+            }
             onSelectMethod={handleSelectPaymentMethod}
             onClose={() => setShowPaymentMethodModal(false)}
             contract={contract}

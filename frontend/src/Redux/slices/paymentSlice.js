@@ -108,7 +108,10 @@ const paymentSlice = createSlice({
             })
             .addCase(getPaymentByContract.fulfilled, (state, action) => {
                 state.loading = false
-                state.currentPayment = action.payload.data.payment
+                // Backend now returns 200 with null payment when none exists
+                const payment = action.payload?.data?.data?.payment || action.payload?.data?.payment || null
+                state.currentPayment = payment
+                state.error = null
             })
             .addCase(getPaymentByContract.rejected, (state, action) => {
                 state.loading = false

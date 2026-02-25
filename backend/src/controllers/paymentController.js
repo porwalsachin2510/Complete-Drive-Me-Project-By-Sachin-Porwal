@@ -10,6 +10,32 @@ import paymentGatewayService, {
 import crypto from "crypto"
 import stripe from "stripe"
 
+// Normalize payment method strings between DB format and code format
+// DB stores: "Cash", "Credit Card", "Bank Transfer", "Mobile Wallet"
+// Code uses: "CASH", "CARD", "BANK_TRANSFER", "WALLET"
+const PAYMENT_METHOD_MAP = {
+    "Cash": "CASH",
+    "Credit Card": "CARD",
+    "Bank Transfer": "BANK_TRANSFER",
+    "Mobile Wallet": "WALLET",
+    "CASH": "CASH",
+    "CARD": "CARD",
+    "BANK_TRANSFER": "BANK_TRANSFER",
+    "WALLET": "WALLET",
+    "KNET": "KNET",
+    "APPLE_PAY": "APPLE_PAY",
+    "GOOGLE_PAY": "GOOGLE_PAY",
+}
+
+const normalizePaymentMethod = (method) => {
+    return PAYMENT_METHOD_MAP[method] || method
+}
+
+const normalizeAcceptedMethods = (methods) => {
+    if (!methods || !Array.isArray(methods)) return []
+    return methods.map(normalizePaymentMethod)
+}
+
 // Create payment for contract (Advance + Security Deposit combined)
 export const createPayment = async (req, res) => {
     try {
@@ -18,8 +44,12 @@ export const createPayment = async (req, res) => {
         const { paymentMethod, paymentType = "advance", currency = "AED" } = req.body
         const corporateOwnerId = req.userId
 
+        // Normalize the incoming payment method
+        const normalizedMethod = normalizePaymentMethod(paymentMethod)
+
         console.log("[v0] Contract ID:", contractId)
-        console.log("[v0] Payment Method:", paymentMethod)
+        console.log("[v0] Payment Method (original):", paymentMethod)
+        console.log("[v0] Payment Method (normalized):", normalizedMethod)
         console.log("[v0] Payment Type:", paymentType)
         console.log("[v0] Currency:", currency)
 
@@ -51,9 +81,13 @@ export const createPayment = async (req, res) => {
             })
         }
 
-        // Check if fleet owner accepts this payment method
+        // Check if fleet owner accepts this payment method (normalize both sides for comparison)
         const fleetOwner = contract.fleetOwnerId
-        if (!fleetOwner.acceptedPaymentMethods || !fleetOwner.acceptedPaymentMethods.includes(paymentMethod)) {
+        const normalizedAccepted = normalizeAcceptedMethods(fleetOwner.acceptedPaymentMethods)
+        console.log("[v0] Fleet owner accepted methods (raw):", fleetOwner.acceptedPaymentMethods)
+        console.log("[v0] Fleet owner accepted methods (normalized):", normalizedAccepted)
+        
+        if (!normalizedAccepted.length || !normalizedAccepted.includes(normalizedMethod)) {
             return res.status(400).json({
                 success: false,
                 message: `Fleet owner does not accept ${paymentMethod}`,
@@ -142,7 +176,7 @@ export const createPayment = async (req, res) => {
 
         console.log("[v0] Payment Reference:", reference)
 
-        if (["CARD", "WALLET", "KNET", "APPLE_PAY", "GOOGLE_PAY"].includes(paymentMethod)) {
+        if (["CARD", "WALLET", "KNET", "APPLE_PAY", "GOOGLE_PAY"].includes(normalizedMethod)) {
             try {
                 const paymentSession = await paymentGatewayService.createPaymentSession({
                     gateway,
@@ -173,7 +207,7 @@ export const createPayment = async (req, res) => {
                     fleetOwnerAmount,
                     currency,
                     paymentType,
-                    paymentMethod,
+                    paymentMethod: normalizedMethod,
                     description: paymentDescription,
                     paymentProvider: gateway,
                     gatewaySessionId: paymentSession.sessionId,
@@ -214,7 +248,7 @@ export const createPayment = async (req, res) => {
                     error: error.message,
                 })
             }
-        } else if (paymentMethod === "BANK_TRANSFER" || paymentMethod === "CASH") {
+        } else if (normalizedMethod === "BANK_TRANSFER" || normalizedMethod === "CASH") {
             const payment = new Payment({
                 contractId,
                 corporateOwnerId,
@@ -226,7 +260,7 @@ export const createPayment = async (req, res) => {
                 fleetOwnerAmount,
                 currency,
                 paymentType,
-                paymentMethod,
+                paymentMethod: normalizedMethod,
                 description: paymentDescription,
                 paymentProvider: "MANUAL",
                 status: "PENDING",
@@ -382,16 +416,11 @@ export const getPaymentByContract = async (req, res) => {
             .populate("corporateOwnerId", "username email")
             .populate("fleetOwnerId", "username email")
 
-        if (!payment) {
-            return res.status(404).json({
-                success: false,
-                message: "Payment not found",
-            })
-        }
-
+        // Return 200 with null payment instead of 404 when no payment exists yet
+        // This prevents frontend errors when contract has no payment yet
         return res.status(200).json({
             success: true,
-            data: { payment },
+            data: { payment: payment || null },
         })
     } catch (error) {
         console.error("[v0] Error fetching payment:", error)
