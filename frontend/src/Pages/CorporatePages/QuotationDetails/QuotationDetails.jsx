@@ -7,6 +7,7 @@ import {
   getQuotationById,
   acceptQuotation,
   rejectQuotation,
+  negotiateQuotation,
 } from "../../../Redux/slices/quotationSlice";
 import ContractRequestModal from "../../../Components/Corporate/ContractRequest/ContractRequestModal";
 import LoadingSpinner from "../../../Components/LoadingSpinner/LoadingSpinner";
@@ -37,6 +38,9 @@ const QuotationDetails = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectMessage, setRejectMessage] = useState("");
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showNegotiateModal, setShowNegotiateModal] = useState(false);
+  const [negotiateAmount, setNegotiateAmount] = useState("");
+  const [negotiateMessage, setNegotiateMessage] = useState("");
 
   const quotation = currentQuotation?.quotation || currentQuotation;
 
@@ -102,6 +106,29 @@ const QuotationDetails = () => {
       alert("Quotation rejected successfully!");
       setShowRejectModal(false);
       navigate(`/my-quotations`);
+    }
+  };
+
+  const handleNegotiate = async () => {
+    if (!negotiateAmount || parseFloat(negotiateAmount) <= 0) {
+      alert("Please enter a valid counter offer amount");
+      return;
+    }
+
+    const result = await dispatch(
+      negotiateQuotation({
+        quotationId: id,
+        counterOffer: { totalAmount: parseFloat(negotiateAmount) },
+        message: negotiateMessage,
+      })
+    );
+
+    if (result.type === "quotation/negotiateQuotation/fulfilled") {
+      alert("Counter offer submitted successfully!");
+      setShowNegotiateModal(false);
+      setNegotiateAmount("");
+      setNegotiateMessage("");
+      dispatch(getQuotationById(id));
     }
   };
 
@@ -514,6 +541,13 @@ const QuotationDetails = () => {
                     Accept Quotation
                   </button>
                   <button
+                    className="single-quotation-btn single-quotation-btn-negotiate"
+                    onClick={() => setShowNegotiateModal(true)}
+                    style={{ backgroundColor: "#f59e0b", color: "#fff" }}
+                  >
+                    Negotiate Price
+                  </button>
+                  <button
                     className="single-quotation-btn single-quotation-btn-reject"
                     onClick={() => setShowRejectModal(true)}
                   >
@@ -664,6 +698,71 @@ const QuotationDetails = () => {
                   onClick={handleReject}
                 >
                   Confirm Rejection
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Negotiate Modal */}
+        {showNegotiateModal && (
+          <div
+            className="single-quotation-modal-overlay"
+            onClick={() => setShowNegotiateModal(false)}
+          >
+            <div
+              className="single-quotation-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="single-quotation-modal-header">
+                <h2>Negotiate Price</h2>
+                <button
+                  className="single-quotation-modal-close"
+                  onClick={() => setShowNegotiateModal(false)}
+                >
+                  x
+                </button>
+              </div>
+              <div className="single-quotation-modal-body">
+                <p>
+                  Current quoted price: <strong>KWD {quotedPrice.totalAmount?.toFixed(2) || "0.00"}</strong>
+                </p>
+                <label style={{ display: "block", marginTop: "12px", fontWeight: "600" }}>
+                  Your Counter Offer (KWD):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="single-quotation-textarea"
+                  style={{ height: "auto", padding: "10px" }}
+                  placeholder="Enter your counter offer amount..."
+                  value={negotiateAmount}
+                  onChange={(e) => setNegotiateAmount(e.target.value)}
+                />
+                <label style={{ display: "block", marginTop: "12px", fontWeight: "600" }}>
+                  Message (optional):
+                </label>
+                <textarea
+                  className="single-quotation-textarea"
+                  rows="3"
+                  placeholder="Explain your counter offer..."
+                  value={negotiateMessage}
+                  onChange={(e) => setNegotiateMessage(e.target.value)}
+                />
+              </div>
+              <div className="single-quotation-modal-footer">
+                <button
+                  className="single-quotation-btn single-quotation-btn-secondary"
+                  onClick={() => setShowNegotiateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="single-quotation-btn single-quotation-btn-accept"
+                  onClick={handleNegotiate}
+                  style={{ backgroundColor: "#f59e0b" }}
+                >
+                  Submit Counter Offer
                 </button>
               </div>
             </div>

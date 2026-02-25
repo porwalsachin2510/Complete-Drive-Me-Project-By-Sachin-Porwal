@@ -128,12 +128,13 @@ export const createRoute = async (routeData) => {
   }
 };
 
-// Update route - no PUT route exists, repost
+// Update route
+// Backend: PUT /api/b2c-partner/routes/:routeId (b2cPartnerRoutes.js)
 export const updateRoute = async (routeId, routeData) => {
   try {
-    const response = await api.post(
-      `/b2c-partner/routes`,
-      { ...routeData, _id: routeId }
+    const response = await api.put(
+      `/b2c-partner/routes/${routeId}`,
+      routeData
     );
     return response.data;
   } catch (error) {
@@ -150,6 +151,36 @@ export const deleteRoute = async (routeId) => {
     return response.data;
   } catch (error) {
     console.error("Error deleting route:", error);
+    throw error;
+  }
+};
+
+// Assign driver to vehicle
+// Backend: POST /api/b2c-partner/vehicles/:vehicleId/assign-driver (b2cPartnerRoutes.js)
+export const assignDriverToVehicle = async (vehicleId, driverId) => {
+  try {
+    const response = await api.post(
+      `/b2c-partner/vehicles/${vehicleId}/assign-driver`,
+      { driverId }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error assigning driver to vehicle:", error);
+    throw error;
+  }
+};
+
+// Assign driver to route
+// Backend: POST /api/b2c-partner/assign-driver-route (b2cPartnerRoutes.js)
+export const assignDriverToRoute = async (driverId, routeId, vehicleId = null) => {
+  try {
+    const response = await api.post(
+      `/b2c-partner/assign-driver-route`,
+      { driverId, routeId, vehicleId }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error assigning driver to route:", error);
     throw error;
   }
 };
@@ -298,6 +329,8 @@ export default {
   createRoute,
   updateRoute,
   deleteRoute,
+  assignDriverToVehicle,
+  assignDriverToRoute,
   getMonthlyPassSubscriptions,
   getRouteBookings,
   getEarnings,

@@ -192,6 +192,72 @@ export const getContractDetails = async (contractId) => {
   }
 };
 
+// Corporate accept contract
+// Backend: POST /api/contracts/:contractId/corporate-accept (contractRoutes.js)
+export const corporateAcceptContract = async (contractId, acceptanceNotes = "") => {
+  try {
+    const response = await api.post(
+      `/contracts/${contractId}/corporate-accept`,
+      { acceptanceNotes }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error accepting contract:", error);
+    throw error;
+  }
+};
+
+// Corporate reject contract
+// Backend: POST /api/contracts/:contractId/corporate-reject (contractRoutes.js)
+export const corporateRejectContract = async (contractId, rejectionReason) => {
+  try {
+    const response = await api.post(
+      `/contracts/${contractId}/corporate-reject`,
+      { rejectionReason }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error rejecting contract:", error);
+    throw error;
+  }
+};
+
+// Renew subscription
+// Backend: POST /api/subscription-settings/renew (subscriptionSettingsRoutes.js)
+export const renewSubscription = async (paymentMethod) => {
+  try {
+    const response = await api.post("/subscription-settings/renew", { paymentMethod });
+    return response.data;
+  } catch (error) {
+    console.error("Error renewing subscription:", error);
+    throw error;
+  }
+};
+
+// Get employee bookings (corporate operations)
+// Backend: GET /api/corporate-operations/bookings (corporateOperationsRoutes.js)
+export const getCorporateEmployeeBookings = async (filters = {}) => {
+  try {
+    const response = await api.get("/corporate-operations/bookings", { params: filters });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching employee bookings:", error);
+    throw error;
+  }
+};
+
+// Get driver location by ID (for tracking)
+// Backend: GET /api/driver/location/:driverId (driverLocationRoutes.js)
+export const getDriverLocation = async (driverId) => {
+  try {
+    const response = await api.get(`/driver/location/${driverId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching driver location:", error);
+    throw error;
+  }
+};
+
 // Get quotations for corporate owner
 export const getQuotations = async () => {
   try {
@@ -199,6 +265,21 @@ export const getQuotations = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching quotations:", error);
+    throw error;
+  }
+};
+
+// Negotiate quotation price
+// Backend: POST /api/quotations/corporate/:quotationId/negotiate (quotationRoutes.js)
+export const negotiateQuotation = async (quotationId, counterOffer, message) => {
+  try {
+    const response = await api.post(
+      `/quotations/corporate/${quotationId}/negotiate`,
+      { counterOffer, message }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error negotiating quotation:", error);
     throw error;
   }
 };
@@ -304,8 +385,14 @@ export default {
   getAttendanceReport,
   getContracts,
   getContractDetails,
+  corporateAcceptContract,
+  corporateRejectContract,
+  negotiateQuotation,
   getQuotations,
   acceptQuotation,
+  renewSubscription,
+  getCorporateEmployeeBookings,
+  getDriverLocation,
   getRequirements,
   createRequirement,
   getCorporateProfile,

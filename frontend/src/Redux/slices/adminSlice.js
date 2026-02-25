@@ -1,6 +1,26 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import api from "../../utils/api"
 
+// Admin login
+export const adminLogin = createAsyncThunk("admin/adminLogin", async (credentials, { rejectWithValue }) => {
+    try {
+        const response = await api.post("/auth/admin-login", credentials)
+        return response.data
+    } catch (error) {
+        return rejectWithValue(error.response?.data?.message || "Admin login failed")
+    }
+})
+
+// Admin edit user
+export const editUser = createAsyncThunk("admin/editUser", async ({ userId, updates }, { rejectWithValue }) => {
+    try {
+        const response = await api.put(`/admin/users/${userId}`, updates)
+        return response.data
+    } catch (error) {
+        return rejectWithValue(error.response?.data?.message || "Failed to edit user")
+    }
+})
+
 // Get dashboard stats
 export const getDashboardStats = createAsyncThunk("admin/getDashboardStats", async (_, { rejectWithValue }) => {
     try {

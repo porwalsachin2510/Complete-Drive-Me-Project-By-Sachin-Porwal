@@ -134,6 +134,30 @@ export const assignVehicles = createAsyncThunk(
     },
 )
 
+export const corporateAcceptContract = createAsyncThunk(
+    "contract/corporateAccept",
+    async ({ contractId, acceptanceNotes }, { rejectWithValue }) => {
+        try {
+            const response = await api.post(`/contracts/${contractId}/corporate-accept`, { acceptanceNotes })
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to accept contract")
+        }
+    },
+)
+
+export const corporateRejectContract = createAsyncThunk(
+    "contract/corporateReject",
+    async ({ contractId, rejectionReason }, { rejectWithValue }) => {
+        try {
+            const response = await api.post(`/contracts/${contractId}/corporate-reject`, { rejectionReason })
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to reject contract")
+        }
+    },
+)
+
 export const approveContract = createAsyncThunk(
     "contract/approve",
     async ({ contractId, approvalNotes }, { rejectWithValue }) => {
@@ -270,6 +294,42 @@ const contractSlice = createSlice({
                 state.currentContract = action.payload
             })
             .addCase(approveContract.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Corporate Accept Contract
+            .addCase(corporateAcceptContract.pending, (state) => {
+                state.loading = true
+                state.error = null
+            })
+            .addCase(corporateAcceptContract.fulfilled, (state, action) => {
+                state.loading = false
+                const contract = action.payload?.data?.contract
+                if (contract) {
+                    state.currentContract = contract
+                    const index = state.contracts.findIndex((c) => c._id === contract._id)
+                    if (index !== -1) state.contracts[index] = contract
+                }
+            })
+            .addCase(corporateAcceptContract.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Corporate Reject Contract
+            .addCase(corporateRejectContract.pending, (state) => {
+                state.loading = true
+                state.error = null
+            })
+            .addCase(corporateRejectContract.fulfilled, (state, action) => {
+                state.loading = false
+                const contract = action.payload?.data?.contract
+                if (contract) {
+                    state.currentContract = contract
+                    const index = state.contracts.findIndex((c) => c._id === contract._id)
+                    if (index !== -1) state.contracts[index] = contract
+                }
+            })
+            .addCase(corporateRejectContract.rejected, (state, action) => {
                 state.loading = false
                 state.error = action.payload
             })

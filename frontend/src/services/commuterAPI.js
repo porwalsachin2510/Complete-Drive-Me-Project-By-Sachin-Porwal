@@ -92,10 +92,10 @@ export const addWalletMoney = async (amount, paymentMethod) => {
 };
 
 // Cancel booking
-// Backend: DELETE /api/trips/:tripId/cancel (tripRoutes.js)
-export const cancelBooking = async (bookingId) => {
+// Backend: PUT /api/bookings/:bookingId/cancel (bookingRoutes.js)
+export const cancelBooking = async (bookingId, cancellationReason = "") => {
   try {
-    const response = await api.delete(`/trips/${bookingId}/cancel`);
+    const response = await api.put(`/bookings/${bookingId}/cancel`, { cancellationReason });
     return response.data;
   } catch (error) {
     console.error("Error cancelling booking:", error);

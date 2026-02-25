@@ -38,12 +38,12 @@ export const commuterBookingAPI = {
 
   /**
    * Cancel booking
-   * Backend: PUT /api/b2c-bookings/booking/:bookingId/status (b2cBookingRoutes.js)
+   * Backend: PUT /api/bookings/:bookingId/cancel (bookingRoutes.js)
    */
-  cancelBooking: async (bookingId) => {
+  cancelBooking: async (bookingId, cancellationReason = "") => {
     try {
-      const response = await api.put(`/b2c-bookings/booking/${bookingId}/status`, {
-        status: "cancelled"
+      const response = await api.put(`/bookings/${bookingId}/cancel`, {
+        cancellationReason
       });
       return response.data;
     } catch (error) {

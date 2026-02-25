@@ -2206,3 +2206,112 @@ export const getDailyTripsForBooking = async (req, res) => {
     }
 }
 
+// Cancel a booking
+export const cancelBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params
+        const userId = req.userId
+        const { cancellationReason } = req.body
+
+        // Try B2C booking first
+        let booking = await B2CPassengerBooking.findOne({
+            _id: bookingId,
+            passengerId: userId,
+        })
+
+        let bookingType = "B2C"
+
+        // If not B2C, try Corporate booking
+        if (!booking) {
+            booking = await CorporateBooking.findOne({
+                _id: bookingId,
+                $or: [
+                    { passengerId: userId },
+                    { corporateOwnerId: userId },
+                ],
+            })
+            bookingType = "CORPORATE"
+        }
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found or you don't have permission to cancel it",
+            })
+        }
+
+        if (["CANCELLED", "COMPLETED"].includes(booking.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot cancel booking with status: ${booking.status}`,
+            })
+        }
+
+        // Check if trip is already in progress
+        if (booking.status === "IN_PROGRESS") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel a trip that is already in progress",
+            })
+        }
+
+        booking.status = "CANCELLED"
+        booking.cancellationReason = cancellationReason || "Cancelled by user"
+        booking.cancelledAt = new Date()
+        booking.cancelledBy = userId
+
+        await booking.save()
+
+        // Process refund if payment was made
+        if (booking.paymentStatus === "PAID" && booking.totalAmount > 0) {
+            try {
+                const wallet = await Wallet.findOne({ userId })
+                if (wallet) {
+                    wallet.balance += booking.totalAmount
+                    wallet.transactions.push({
+                        type: "REFUND",
+                        amount: booking.totalAmount,
+                        description: `Refund for cancelled booking #${booking.bookingNumber || bookingId}`,
+                        reference: bookingId,
+                        timestamp: new Date(),
+                    })
+                    await wallet.save()
+                }
+                booking.paymentStatus = "REFUNDED"
+                booking.refundAmount = booking.totalAmount
+                await booking.save()
+            } catch (refundError) {
+                console.error("Refund processing error:", refundError)
+            }
+        }
+
+        // Notify the partner/driver
+        const notifyUserId = booking.b2cPartnerId || booking.driverId
+        if (notifyUserId) {
+            await createNotification(
+                notifyUserId,
+                "BOOKING_CANCELLED",
+                "Booking Cancelled",
+                `Booking #${booking.bookingNumber || bookingId} has been cancelled by the passenger.`,
+                bookingId,
+                "BOOKING"
+            )
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully",
+            data: {
+                booking,
+                refunded: booking.paymentStatus === "REFUNDED",
+            },
+        })
+    } catch (error) {
+        console.error("Error cancelling booking:", error)
+        res.status(500).json({
+            success: false,
+            message: "Failed to cancel booking",
+            error: error.message,
+        })
+    }
+}

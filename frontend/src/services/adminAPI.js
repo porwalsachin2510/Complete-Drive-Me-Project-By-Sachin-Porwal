@@ -133,6 +133,28 @@ export const blockUser = async (userId, reason) => {
   }
 };
 
+// Backend: PUT /api/admin/users/:userId (adminRoutes.js) - Edit user details
+export const editUser = async (userId, updates) => {
+  try {
+    const response = await api.put(`/admin/users/${userId}`, updates);
+    return response.data;
+  } catch (error) {
+    console.error("Error editing user:", error);
+    throw error;
+  }
+};
+
+// Backend: POST /api/auth/admin-login (auth.js) - Admin login
+export const adminLogin = async (credentials) => {
+  try {
+    const response = await api.post("/auth/admin-login", credentials);
+    return response.data;
+  } catch (error) {
+    console.error("Error admin login:", error);
+    throw error;
+  }
+};
+
 // Backend: PUT /api/admin/users/:userId/activate (adminRoutes.js)
 export const unblockUser = async (userId) => {
   try {
@@ -340,6 +362,8 @@ export default {
   approveB2BClient,
   getAllUsers,
   getUserDetails,
+  editUser,
+  adminLogin,
   blockUser,
   unblockUser,
   getPendingPayments,

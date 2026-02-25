@@ -197,6 +197,18 @@ export const completeBooking = createAsyncThunk("booking/completeBooking", async
     }
 })
 
+export const cancelBooking = createAsyncThunk(
+    "booking/cancelBooking",
+    async ({ bookingId, cancellationReason }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(`/bookings/${bookingId}/cancel`, { cancellationReason })
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to cancel booking")
+        }
+    },
+)
+
 export const verifyBookingPayment = createAsyncThunk(
     "booking/verifyBookingPayment",
     async ({ sessionId, bookingId }, { rejectWithValue }) => {
@@ -354,6 +366,25 @@ const bookingSlice = createSlice({
                 state.corporateOwnerBookings = action.payload?.bookings || action.payload || []
             })
             .addCase(getCorporateOwnerBookings.rejected, (state, action) => {
+                state.loading = false
+                state.error = action.payload
+            })
+            // Cancel Booking
+            .addCase(cancelBooking.pending, (state) => {
+                state.loading = true
+                state.error = null
+            })
+            .addCase(cancelBooking.fulfilled, (state, action) => {
+                state.loading = false
+                const bookingId = action.meta.arg.bookingId
+                state.passengerBookings = state.passengerBookings.map((b) =>
+                    b._id === bookingId ? { ...b, status: "CANCELLED" } : b
+                )
+                state.corporateOwnerBookings = state.corporateOwnerBookings.map((b) =>
+                    b._id === bookingId ? { ...b, status: "CANCELLED" } : b
+                )
+            })
+            .addCase(cancelBooking.rejected, (state, action) => {
                 state.loading = false
                 state.error = action.payload
             })

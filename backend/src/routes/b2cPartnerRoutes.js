@@ -86,6 +86,12 @@ router.delete("/routes/:routeId", verifyToken, checkB2CPartnerRole, deleteB2CPar
 router.get("/routes/:routeId/trips/seat-availability", verifyToken, checkB2CPartnerRole, getRouteTripSeatAvailability)
 router.get("/public/routes/:routeId/trips/seat-availability", getPublicRouteTripSeatAvailability)
 
+// B2C Partner Assign Driver to Vehicle
+router.post("/vehicles/:vehicleId/assign-driver", verifyToken, checkB2CPartnerRole, assignDriverToB2CVehicle)
+
+// B2C Partner Assign Driver to Route
+router.post("/assign-driver-route", verifyToken, checkB2CPartnerRole, assignDriverToB2CRoute)
+
 // B2C Partner Trips
 router.post("/trips", verifyToken, checkB2CPartnerRole, createB2CPartnerTrip)
 
