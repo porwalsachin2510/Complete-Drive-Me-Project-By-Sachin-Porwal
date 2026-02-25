@@ -5,7 +5,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getContractById,
-  signContract
+  signContract,
+  corporateAcceptContract,
+  corporateRejectContract,
 } from "../../../Redux/slices/contractSlice";
 import {
   createPayment,
@@ -102,9 +104,47 @@ const CorporateContractDetails = () => {
 
   const [showSignModal, setShowSignModal] = useState(false);
   const [signature, setSignature] = useState("");
+  const [showRejectContractModal, setShowRejectContractModal] = useState(false);
+  const [contractRejectionReason, setContractRejectionReason] = useState("");
   
 
   
+
+  const handleAcceptContract = async () => {
+    try {
+      await dispatch(
+        corporateAcceptContract({
+          contractId: contract._id,
+          acceptanceNotes: "Accepted by corporate owner",
+        })
+      ).unwrap();
+      alert("Contract accepted successfully!");
+      dispatch(getContractById({ contractId: id }));
+    } catch (error) {
+      alert(error || "Failed to accept contract");
+    }
+  };
+
+  const handleRejectContract = async () => {
+    if (!contractRejectionReason.trim()) {
+      alert("Please provide a reason for rejection");
+      return;
+    }
+    try {
+      await dispatch(
+        corporateRejectContract({
+          contractId: contract._id,
+          rejectionReason: contractRejectionReason,
+        })
+      ).unwrap();
+      setShowRejectContractModal(false);
+      setContractRejectionReason("");
+      alert("Contract rejected successfully");
+      dispatch(getContractById({ contractId: id }));
+    } catch (error) {
+      alert(error || "Failed to reject contract");
+    }
+  };
 
   const handleSignContract = async () => {
     if (!signature.trim()) {
@@ -585,6 +625,26 @@ const CorporateContractDetails = () => {
 
           {/* Actions */}
           <div className="corporate-contract-actions">
+            {/* Accept/Reject for PENDING or DRAFT contracts */}
+            {["PENDING", "DRAFT", "PENDING_SIGNATURES"].includes(contract.status) && (
+              <>
+                <button
+                  className="corporate-contract-btn-success"
+                  onClick={handleAcceptContract}
+                  style={{ backgroundColor: "#4CAF50", color: "#fff" }}
+                >
+                  Accept Contract
+                </button>
+                <button
+                  className="corporate-contract-btn-secondary"
+                  onClick={() => setShowRejectContractModal(true)}
+                  style={{ backgroundColor: "#F44336", color: "#fff" }}
+                >
+                  Reject Contract
+                </button>
+              </>
+            )}
+
             {contract.status === "PENDING_CORPORATE_SIGNATURE" &&
               !contract.digitalSignatures?.corporateOwner?.signed && (
                 <button
@@ -667,6 +727,42 @@ const CorporateContractDetails = () => {
                   onClick={handleSignContract}
                 >
                   Confirm Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reject Contract Modal */}
+        {showRejectContractModal && (
+          <div className="corporate-contract-modal-overlay">
+            <div className="corporate-contract-modal">
+              <h2>Reject Contract</h2>
+              <p>Please provide a reason for rejecting this contract:</p>
+              <textarea
+                value={contractRejectionReason}
+                onChange={(e) => setContractRejectionReason(e.target.value)}
+                placeholder="Enter rejection reason..."
+                className="corporate-contract-input"
+                rows="4"
+                style={{ width: "100%", resize: "vertical" }}
+              />
+              <div className="corporate-contract-modal-actions">
+                <button
+                  className="corporate-contract-btn-secondary"
+                  onClick={() => {
+                    setShowRejectContractModal(false);
+                    setContractRejectionReason("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="corporate-contract-btn-primary"
+                  onClick={handleRejectContract}
+                  style={{ backgroundColor: "#F44336" }}
+                >
+                  Confirm Rejection
                 </button>
               </div>
             </div>
