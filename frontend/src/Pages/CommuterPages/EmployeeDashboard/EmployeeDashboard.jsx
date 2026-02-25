@@ -7,7 +7,8 @@ import "./employeedashboard.css";
 
 export default function EmployeeDashboard() {
   const user = useSelector((state) => state.auth.user);
-  const [activeTab, setActiveTab] = useState("trip-info");
+  const [dashTab, setDashTab] = useState("trip-info");
+  const [navTab, setNavTab] = useState("employee");
   const [tripInfo, setTripInfo] = useState(null);
   const [myBookings, setMyBookings] = useState([]);
   const [history, setHistory] = useState([]);
@@ -107,7 +108,7 @@ export default function EmployeeDashboard() {
   };
 
   const renderContent = () => {
-    switch (activeTab) {
+    switch (dashTab) {
       case "trip-info":
         return <TripInfoTab tripInfo={tripInfo} loading={loading} onMarkNotTraveling={handleMarkNotTraveling} />;
       case "my-bookings":
@@ -131,11 +132,9 @@ export default function EmployeeDashboard() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState("employee");
-
   return (
     <>
-    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+    <Navbar activeTab={navTab} setActiveTab={setNavTab} />
     <div className="employee-dashboard">
       <div className="dashboard-header">
         <h1>Welcome, {user?.fullName || "Employee"}</h1>
@@ -144,32 +143,32 @@ export default function EmployeeDashboard() {
 
       <div className="dashboard-tabs">
         <button
-          className={`tab-btn ${activeTab === "trip-info" ? "active" : ""}`}
-          onClick={() => setActiveTab("trip-info")}
+          className={`tab-btn ${dashTab === "trip-info" ? "active" : ""}`}
+          onClick={() => setDashTab("trip-info")}
         >
           Trip Info
         </button>
         <button
-          className={`tab-btn ${activeTab === "my-bookings" ? "active" : ""}`}
-          onClick={() => setActiveTab("my-bookings")}
+          className={`tab-btn ${dashTab === "my-bookings" ? "active" : ""}`}
+          onClick={() => setDashTab("my-bookings")}
         >
           My Bookings
         </button>
         <button
-          className={`tab-btn ${activeTab === "history" ? "active" : ""}`}
-          onClick={() => setActiveTab("history")}
+          className={`tab-btn ${dashTab === "history" ? "active" : ""}`}
+          onClick={() => setDashTab("history")}
         >
           History
         </button>
         <button
-          className={`tab-btn ${activeTab === "notifications" ? "active" : ""}`}
-          onClick={() => setActiveTab("notifications")}
+          className={`tab-btn ${dashTab === "notifications" ? "active" : ""}`}
+          onClick={() => setDashTab("notifications")}
         >
           Notifications
         </button>
         <button
-          className={`tab-btn ${activeTab === "route-change" ? "active" : ""}`}
-          onClick={() => setActiveTab("route-change")}
+          className={`tab-btn ${dashTab === "route-change" ? "active" : ""}`}
+          onClick={() => setDashTab("route-change")}
         >
           Route Change
         </button>
