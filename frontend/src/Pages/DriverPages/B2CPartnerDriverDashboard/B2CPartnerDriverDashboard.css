@@ -170,7 +170,7 @@
 }
 
 .stat-card {
-  background: #f7fafc;
+  background-color: #f7fafc;
   border-radius: 10px;
   padding: 16px;
   text-align: center;
@@ -209,9 +209,9 @@
 
 /* Booking Card */
 .booking-card {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s;
 }
@@ -256,7 +256,7 @@
   color: #718096;
   font-size: 0.8rem;
   font-weight: 500;
-  background: #edf2f7;
+  background-color: #edf2f7;
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -274,7 +274,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #f7fafc;
+  background-color: #f7fafc;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
@@ -301,17 +301,18 @@
 /* Info Grid */
 .booking-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
-  background: #f7fafc;
-  border-radius: 6px;
+  gap: 4px;
+  padding: 10px 14px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #edf2f7;
 }
 
 .info-label {
@@ -326,6 +327,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: #2d3748;
+  word-break: break-word;
 }
 
 .info-value.price-highlight {
@@ -345,8 +347,8 @@
 }
 
 .accept-btn {
-  background: #48bb78;
-  color: white;
+  background-color: #48bb78;
+  color: #ffffff;
   border: none;
   padding: 8px 20px;
   border-radius: 6px;
@@ -357,12 +359,12 @@
 }
 
 .accept-btn:hover {
-  background: #38a169;
+  background-color: #38a169;
 }
 
 .reject-btn {
-  background: #fc8181;
-  color: white;
+  background-color: #fc8181;
+  color: #ffffff;
   border: none;
   padding: 8px 20px;
   border-radius: 6px;
