@@ -94,6 +94,11 @@ const routeSchema = new mongoose.Schema(
             enum: ["ACTIVE", "INACTIVE", "COMPLETED"],
             default: "ACTIVE",
         },
+        assignedDriver: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
         assignedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

@@ -1,210 +1,298 @@
-.ad-dash-passengers-reassignments {
-  padding: 24px;
+/* ============ PASSENGERS & BOOKINGS ============ */
+.ad-dash-passenger-reassignments {
+  width: 100%;
 }
 
-.ad-dash-passengers-search-bar {
+/* Header */
+.ad-dash-pr-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 24px;
-  gap: 16px;
 }
 
-.ad-dash-passengers-search-input-wrapper {
-  position: relative;
-  flex: 1;
-  max-width: 400px;
+.ad-dash-pr-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px 0;
 }
 
-.ad-dash-passengers-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: #94a3b8;
-}
-
-.ad-dash-passengers-search-input {
-  width: 100%;
-  padding: 10px 12px 10px 40px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+.ad-dash-pr-subtitle {
   font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
+  color: #6b7280;
+  margin: 0;
 }
 
-.ad-dash-passengers-search-input:focus {
-  border-color: #0891b2;
-}
-
-.ad-dash-passengers-refresh-btn {
+/* Filters */
+.ad-dash-pr-filters {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.ad-dash-pr-filters select {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
-  color: #334155;
+  background: white;
+  color: #374151;
   cursor: pointer;
   transition: all 0.2s;
+  outline: none;
+  min-width: 140px;
 }
 
-.ad-dash-passengers-refresh-btn svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 2;
+.ad-dash-pr-filters select:focus {
+  border-color: #00a699;
+  box-shadow: 0 0 0 3px rgba(0, 166, 153, 0.1);
 }
 
-.ad-dash-passengers-refresh-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+.ad-dash-pr-filters input[type="text"] {
+  flex: 1;
+  min-width: 240px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  transition: all 0.2s;
+  outline: none;
 }
 
-.ad-dash-passengers-table-container {
+.ad-dash-pr-filters input[type="text"]:focus {
+  border-color: #00a699;
+  box-shadow: 0 0 0 3px rgba(0, 166, 153, 0.1);
+}
+
+.ad-dash-pr-filters input[type="text"]::placeholder {
+  color: #9ca3af;
+}
+
+/* Table Container */
+.ad-dash-pr-table {
   background: white;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
 }
 
-.ad-dash-passengers-table {
+.ad-dash-pr-table table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.ad-dash-passengers-table thead {
+.ad-dash-pr-table thead {
   background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.ad-dash-passengers-table th {
-  padding: 16px;
+.ad-dash-pr-table th {
+  padding: 14px 16px;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.ad-dash-passengers-table tbody tr {
+.ad-dash-pr-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
 }
 
-.ad-dash-passengers-table tbody tr:hover {
+.ad-dash-pr-table tbody tr:hover {
   background: #f8fafc;
 }
 
-.ad-dash-passengers-table tbody tr:last-child {
+.ad-dash-pr-table tbody tr:last-child {
   border-bottom: none;
 }
 
-.ad-dash-passengers-table td {
-  padding: 16px;
+.ad-dash-pr-table td {
+  padding: 14px 16px;
   font-size: 14px;
-  color: #334155;
+  color: #374151;
+  vertical-align: middle;
 }
 
-.ad-dash-passengers-info {
+/* Passenger Info */
+.passenger-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
-.ad-dash-passengers-name {
-  font-weight: 500;
+.passenger-name {
+  font-weight: 600;
   color: #1e293b;
+  font-size: 14px;
 }
 
-.ad-dash-passengers-email {
-  font-size: 13px;
+.passenger-email {
+  font-size: 12px;
   color: #64748b;
 }
 
-.ad-dash-passengers-route {
+/* Route Info */
+.route-info {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #0891b2;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.route-name {
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.provider-name {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Provider Text */
+.provider-text {
+  font-size: 13px;
+  color: #374151;
   font-weight: 500;
 }
 
-.ad-dash-passengers-route-icon {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2;
-  flex-shrink: 0;
+/* Amount */
+.amount-text {
+  font-weight: 600;
+  color: #1e293b;
 }
 
-.ad-dash-passengers-status {
+/* Payment Badge */
+.payment-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Status Badge */
+.status-badge {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Date Info */
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.request-date {
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.view-btn {
+  padding: 6px 14px;
+  border: 1px solid #3b82f6;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  text-transform: capitalize;
-}
-
-.ad-dash-passengers-status-confirmed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.ad-dash-passengers-status-rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.ad-dash-passengers-status-pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.ad-dash-passengers-reassign-btn {
-  padding: 8px 16px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #334155;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.ad-dash-passengers-reassign-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+.view-btn:hover {
+  background: #dbeafe;
 }
 
+.approve-btn {
+  padding: 6px 14px;
+  border: none;
+  background: #10b981;
+  color: white;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.approve-btn:hover {
+  background: #059669;
+}
+
+.reject-btn {
+  padding: 6px 14px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.reject-btn:hover {
+  background: #dc2626;
+}
+
+/* No Reassignments */
+.no-reassignments {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #9ca3af;
+}
+
+/* ============ RESPONSIVE ============ */
 @media (max-width: 1024px) {
-  .ad-dash-passengers-search-bar {
+  .ad-dash-pr-filters {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .ad-dash-passengers-search-input-wrapper {
-    max-width: 100%;
+  .ad-dash-pr-filters input[type="text"] {
+    min-width: unset;
   }
 }
 
 @media (max-width: 768px) {
-  .ad-dash-passengers-reassignments {
-    padding: 16px;
-  }
-
-  .ad-dash-passengers-table-container {
+  .ad-dash-pr-table {
     overflow-x: auto;
   }
 
-  .ad-dash-passengers-table {
+  .ad-dash-pr-table table {
     min-width: 800px;
   }
 }

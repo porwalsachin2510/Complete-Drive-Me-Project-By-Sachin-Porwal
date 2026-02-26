@@ -155,8 +155,8 @@
 
 /* Booking Details */
 .booking-details {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 14px;
   padding: 12px 0;
@@ -166,10 +166,12 @@
 
 .detail-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px;
+  background: #f7fafc;
+  border-radius: 6px;
   min-width: 0;
-  gap: 12px;
 }
 
 .detail-label {

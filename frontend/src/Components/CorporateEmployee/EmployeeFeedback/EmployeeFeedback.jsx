@@ -30,16 +30,38 @@ const EmployeeFeedback = () => {
       setLoading(true);
       setError('');
       
-      // Backend: GET /api/corporate-employee-users/dashboard
-      const response = await api.get('/corporate-employee-users/dashboard');
-      
-      if (response.data.success) {
-        // Extract completed trips from dashboard data
-        const trips = response.data.data?.travelHistory?.trips || response.data.data?.todayTrips || [];
-        setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
-      } else {
-        setError(response.data.message || 'Failed to fetch completed trips');
+      // Try corporate employee dashboard first
+      try {
+        const response = await api.get('/corporate-employee-users/dashboard');
+        
+        if (response.data.success) {
+          const trips = response.data.data?.travelHistory?.trips || response.data.data?.todayTrips || [];
+          setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
+          return;
+        }
+      } catch (dashError) {
+        // If employee not found (404), try travel history as fallback
+        if (dashError.response?.status === 404) {
+          console.log('Employee dashboard not available, trying travel history...');
+        } else {
+          throw dashError;
+        }
       }
+
+      // Fallback: try travel history endpoint
+      try {
+        const historyResponse = await api.get('/travel-history/my-history');
+        if (historyResponse.data.success) {
+          const trips = historyResponse.data.data?.trips || historyResponse.data.history || [];
+          setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
+          return;
+        }
+      } catch (histErr) {
+        console.log('Travel history not available:', histErr.message);
+      }
+
+      // If both fail, set empty array (no error shown)
+      setCompletedTrips([]);
     } catch (error) {
       console.error('Error fetching completed trips:', error);
       setError(error.response?.data?.message || 'Failed to fetch trips');
