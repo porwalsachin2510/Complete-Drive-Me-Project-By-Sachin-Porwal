@@ -37,12 +37,16 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
-  background: white;
+  background-color: #ffffff;
   color: #374151;
   cursor: pointer;
   transition: all 0.2s;
   outline: none;
   min-width: 140px;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  line-height: 1.5;
 }
 
 .ad-dash-pr-filters select:focus {
@@ -58,8 +62,10 @@
   border-radius: 8px;
   font-size: 14px;
   color: #111827;
+  background-color: #ffffff;
   transition: all 0.2s;
   outline: none;
+  line-height: 1.5;
 }
 
 .ad-dash-pr-filters input[type="text"]:focus {
@@ -73,7 +79,7 @@
 
 /* Table Container */
 .ad-dash-pr-table {
-  background: white;
+  background-color: #ffffff;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   overflow: hidden;
@@ -85,7 +91,7 @@
 }
 
 .ad-dash-pr-table thead {
-  background: #f8fafc;
+  background-color: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -97,6 +103,7 @@
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background-color: #f8fafc;
 }
 
 .ad-dash-pr-table tbody tr {
@@ -105,7 +112,7 @@
 }
 
 .ad-dash-pr-table tbody tr:hover {
-  background: #f8fafc;
+  background-color: #f8fafc;
 }
 
 .ad-dash-pr-table tbody tr:last-child {
@@ -117,103 +124,104 @@
   font-size: 14px;
   color: #374151;
   vertical-align: middle;
+  background-color: transparent;
 }
 
 /* Passenger Info */
-.passenger-info {
+.ad-dash-passenger-reassignments .passenger-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.passenger-name {
+.ad-dash-passenger-reassignments .passenger-name {
   font-weight: 600;
   color: #1e293b;
   font-size: 14px;
 }
 
-.passenger-email {
+.ad-dash-passenger-reassignments .passenger-email {
   font-size: 12px;
   color: #64748b;
 }
 
 /* Route Info */
-.route-info {
+.ad-dash-passenger-reassignments .route-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.route-name {
+.ad-dash-passenger-reassignments .route-name {
   font-weight: 500;
   color: #1e293b;
   font-size: 13px;
 }
 
-.provider-name {
+.ad-dash-passenger-reassignments .provider-name {
   font-size: 12px;
   color: #64748b;
 }
 
 /* Provider Text */
-.provider-text {
+.ad-dash-passenger-reassignments .provider-text {
   font-size: 13px;
   color: #374151;
   font-weight: 500;
 }
 
 /* Amount */
-.amount-text {
+.ad-dash-passenger-reassignments .amount-text {
   font-weight: 600;
   color: #1e293b;
 }
 
 /* Payment Badge */
-.payment-badge {
+.ad-dash-passenger-reassignments .payment-badge {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
-  background: #f1f5f9;
+  background-color: #f1f5f9;
   color: #475569;
 }
 
 /* Status Badge */
-.status-badge {
+.ad-dash-passenger-reassignments .status-badge {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 16px;
   font-size: 11px;
   font-weight: 600;
-  color: white;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 /* Date Info */
-.date-info {
+.ad-dash-passenger-reassignments .date-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.request-date {
+.ad-dash-passenger-reassignments .request-date {
   font-size: 13px;
   color: #374151;
 }
 
 /* Action Buttons */
-.action-buttons {
+.ad-dash-passenger-reassignments .action-buttons {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.view-btn {
+.ad-dash-passenger-reassignments .view-btn {
   padding: 6px 14px;
   border: 1px solid #3b82f6;
-  background: #eff6ff;
+  background-color: #eff6ff;
   color: #2563eb;
   border-radius: 6px;
   font-size: 12px;
@@ -223,15 +231,15 @@
   white-space: nowrap;
 }
 
-.view-btn:hover {
-  background: #dbeafe;
+.ad-dash-passenger-reassignments .view-btn:hover {
+  background-color: #dbeafe;
 }
 
-.approve-btn {
+.ad-dash-passenger-reassignments .approve-btn {
   padding: 6px 14px;
   border: none;
-  background: #10b981;
-  color: white;
+  background-color: #10b981;
+  color: #ffffff;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -240,15 +248,15 @@
   white-space: nowrap;
 }
 
-.approve-btn:hover {
-  background: #059669;
+.ad-dash-passenger-reassignments .approve-btn:hover {
+  background-color: #059669;
 }
 
-.reject-btn {
+.ad-dash-passenger-reassignments .reject-btn {
   padding: 6px 14px;
   border: none;
-  background: #ef4444;
-  color: white;
+  background-color: #ef4444;
+  color: #ffffff;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -257,12 +265,12 @@
   white-space: nowrap;
 }
 
-.reject-btn:hover {
-  background: #dc2626;
+.ad-dash-passenger-reassignments .reject-btn:hover {
+  background-color: #dc2626;
 }
 
 /* No Reassignments */
-.no-reassignments {
+.ad-dash-passenger-reassignments .no-reassignments {
   text-align: center;
   padding: 40px 20px;
   color: #9ca3af;
@@ -270,7 +278,7 @@
 }
 
 /* Loading */
-.loading {
+.ad-dash-passenger-reassignments .loading {
   text-align: center;
   padding: 40px;
   color: #9ca3af;

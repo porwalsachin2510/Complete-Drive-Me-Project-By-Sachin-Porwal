@@ -7,6 +7,7 @@ import api from "../../../../utils/api"
 function AdminRouteManagement() {
   const [routes, setRoutes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [initialLoad, setInitialLoad] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [stats, setStats] = useState({
@@ -47,11 +48,14 @@ function AdminRouteManagement() {
         setStats(calculatedStats)
       }
     }
-  }, [routes])
+  }, []) // removed routes dependency to prevent loop
 
-  const fetchRoutes = useCallback(async () => {
+  const fetchRoutes = useCallback(async (isInitial = false) => {
     try {
-      setLoading(true)
+      // Only show loading spinner on the very first load
+      if (isInitial) {
+        setLoading(true)
+      }
       const response = await api.get('/admin/b2c/routes', {
         params: { status: statusFilter !== "all" ? statusFilter : undefined }
       })
@@ -63,14 +67,19 @@ function AdminRouteManagement() {
       }
     } catch (error) {
       console.error("Error fetching routes:", error)
-      setRoutes([])
+      if (isInitial) {
+        setRoutes([])
+      }
     } finally {
-      setLoading(false)
+      if (isInitial) {
+        setLoading(false)
+        setInitialLoad(false)
+      }
     }
   }, [statusFilter, fetchRouteStats])
 
   useEffect(() => {
-    fetchRoutes()
+    fetchRoutes(initialLoad)
   }, [fetchRoutes])
 
   const handleEditClick = (route) => {

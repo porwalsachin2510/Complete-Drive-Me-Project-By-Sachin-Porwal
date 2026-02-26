@@ -144,12 +144,16 @@
   padding: 8px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: white;
+  background-color: #ffffff;
   color: #4a5568;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
   font-weight: 500;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  line-height: 1.5;
 }
 
 .status-filter:hover, .status-filter:focus {
@@ -547,27 +551,28 @@
 }
 
 .location-info {
-  background: #f7fafc;
+  background-color: #f0fff4;
   border-radius: 10px;
   padding: 20px;
   margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #c6f6d5;
 }
 
 .location-info p {
   margin: 8px 0;
-  color: #4a5568;
+  color: #2d3748;
   font-size: 0.9rem;
 }
 
 .location-info strong {
-  color: #2d3748;
+  color: #1a202c;
 }
 
 .location-map {
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
+  background-color: #ffffff;
 }
 
 .live-map {
@@ -579,9 +584,15 @@
 .no-location {
   text-align: center;
   padding: 40px;
-  background: #f7fafc;
+  background-color: #ffffff;
   border-radius: 10px;
-  color: #a0aec0;
+  color: #718096;
+  border: 1px dashed #e2e8f0;
+}
+
+.no-location p {
+  color: #718096;
+  margin: 0;
 }
 
 .loading {

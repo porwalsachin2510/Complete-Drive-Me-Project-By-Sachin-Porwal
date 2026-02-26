@@ -31,6 +31,7 @@ const EmployeeFeedback = () => {
       setError('');
       
       // Try corporate employee dashboard first
+      let dashboardFailed = false;
       try {
         const response = await api.get('/corporate-employee-users/dashboard');
         
@@ -40,31 +41,32 @@ const EmployeeFeedback = () => {
           return;
         }
       } catch (dashError) {
-        // If employee not found (404), try travel history as fallback
-        if (dashError.response?.status === 404) {
-          console.log('Employee dashboard not available, trying travel history...');
-        } else {
-          throw dashError;
-        }
+        // If employee not found (404) or any dashboard error, silently fall back
+        dashboardFailed = true;
       }
 
       // Fallback: try travel history endpoint
-      try {
-        const historyResponse = await api.get('/travel-history/my-history');
-        if (historyResponse.data.success) {
-          const trips = historyResponse.data.data?.trips || historyResponse.data.history || [];
-          setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
-          return;
+      if (dashboardFailed) {
+        try {
+          const historyResponse = await api.get('/travel-history/my-history');
+          if (historyResponse.data.success) {
+            const trips = historyResponse.data.data?.trips || historyResponse.data.history || [];
+            setCompletedTrips(trips.filter(trip => trip.status === 'COMPLETED'));
+            return;
+          }
+        } catch (histErr) {
+          // Silently handle - no error shown to user
         }
-      } catch (histErr) {
-        console.log('Travel history not available:', histErr.message);
       }
 
-      // If both fail, set empty array (no error shown)
+      // If both fail, set empty array (no error shown to user)
       setCompletedTrips([]);
     } catch (error) {
       console.error('Error fetching completed trips:', error);
-      setError(error.response?.data?.message || 'Failed to fetch trips');
+      // Only show error for unexpected failures, not for "Employee not found"
+      if (error.response?.status !== 404) {
+        setError(error.response?.data?.message || 'Failed to fetch trips');
+      }
     } finally {
       setLoading(false);
     }

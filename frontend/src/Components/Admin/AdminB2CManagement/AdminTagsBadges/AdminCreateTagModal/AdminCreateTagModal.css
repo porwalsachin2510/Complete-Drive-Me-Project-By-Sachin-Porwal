@@ -15,7 +15,7 @@
 
 /* ============ MODAL CONTENT ============ */
 .ad-dash-modal-content {
-  background: white;
+  background: #ffffff;
   border-radius: 16px;
   width: 92%;
   max-height: 90vh;
@@ -34,6 +34,7 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 .ad-dash-modal-title {
@@ -44,7 +45,7 @@
 }
 
 .ad-dash-modal-close {
-  background: none;
+  background: transparent;
   border: none;
   font-size: 20px;
   cursor: pointer;
@@ -56,6 +57,7 @@
   justify-content: center;
   border-radius: 8px;
   transition: all 0.2s;
+  padding: 0;
 }
 
 .ad-dash-modal-close:hover {
@@ -69,6 +71,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  background: #ffffff;
 }
 
 /* ============ FORM GROUPS ============ */
@@ -82,6 +85,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #374151;
+  display: block;
 }
 
 .ad-dash-form-input {
@@ -91,10 +95,21 @@
   border-radius: 8px;
   font-size: 14px;
   color: #111827;
-  background: white;
+  background-color: #ffffff;
   transition: all 0.2s;
   box-sizing: border-box;
   outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  line-height: 1.5;
+}
+
+select.ad-dash-form-input {
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  cursor: pointer;
 }
 
 .ad-dash-form-input:focus {
@@ -124,6 +139,7 @@
   justify-content: center;
   transition: all 0.2s;
   padding: 6px;
+  background-color: transparent;
 }
 
 .ad-dash-color-option:hover {
@@ -175,7 +191,7 @@
 .ad-dash-btn-secondary {
   padding: 10px 20px;
   border: 1px solid #d1d5db;
-  background: white;
+  background-color: #ffffff;
   color: #374151;
   border-radius: 8px;
   font-size: 14px;
@@ -185,15 +201,15 @@
 }
 
 .ad-dash-btn-secondary:hover {
-  background: #f3f4f6;
+  background-color: #f3f4f6;
   border-color: #9ca3af;
 }
 
 .ad-dash-btn-primary {
   padding: 10px 24px;
   border: none;
-  background: #00a699;
-  color: white;
+  background-color: #00a699;
+  color: #ffffff;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -202,7 +218,7 @@
 }
 
 .ad-dash-btn-primary:hover:not(:disabled) {
-  background: #008c80;
+  background-color: #008c80;
 }
 
 .ad-dash-btn-primary:disabled {

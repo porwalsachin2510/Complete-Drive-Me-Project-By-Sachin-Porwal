@@ -287,9 +287,9 @@ export const getAssignedRoutesStatus = async (req, res) => {
         }
 
         const routes = await Route.find(query)
-            .populate('vehicleId')
-            .populate('assignedDriver')
-            .populate('contractId');
+            .populate({ path: 'vehicleId', strictPopulate: false })
+            .populate({ path: 'assignedDriver', strictPopulate: false })
+            .populate({ path: 'contractId', strictPopulate: false });
 
         const routeStatuses = routes.map(route => ({
             routeId: route._id,
