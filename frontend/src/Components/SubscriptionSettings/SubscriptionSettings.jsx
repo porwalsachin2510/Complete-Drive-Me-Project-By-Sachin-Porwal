@@ -101,44 +101,47 @@ const SubscriptionSettings = () => {
 
       <div className="settings-section">
         <h3>Auto-Renewal</h3>
-        <div className="setting-item">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              name="autoRenewal"
-              checked={settings.autoRenewal}
-              onChange={handleInputChange}
-            />
-            <span className="checkmark"></span>
-            Enable automatic renewal
-          </label>
-          <p className="setting-description">
-            Your monthly pass will automatically renew at the end of each billing cycle.
-          </p>
-        </div>
+        <div className="setting-row">
+          <div className="setting-item">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="autoRenewal"
+                checked={settings.autoRenewal}
+                onChange={handleInputChange}
+              />
+              <span className="checkmark"></span>
+              Enable automatic renewal
+            </label>
+            <p className="setting-description">
+              Your monthly pass will automatically renew at the end of each billing cycle.
+            </p>
+          </div>
 
-        <div className="setting-item">
-          <label>Renewal Reminder</label>
-          <select
-            name="renewalReminderDays"
-            value={settings.renewalReminderDays}
-            onChange={handleInputChange}
-            disabled={!settings.autoRenewal}
-          >
-            <option value={3}>3 days before</option>
-            <option value={7}>7 days before</option>
-            <option value={14}>14 days before</option>
-            <option value={30}>30 days before</option>
-          </select>
-          <p className="setting-description">
-            When to send renewal reminder notifications
-          </p>
+          <div className="setting-item">
+            <label>Renewal Reminder</label>
+            <select
+              name="renewalReminderDays"
+              value={settings.renewalReminderDays}
+              onChange={handleInputChange}
+              disabled={!settings.autoRenewal}
+            >
+              <option value={3}>3 days before</option>
+              <option value={7}>7 days before</option>
+              <option value={14}>14 days before</option>
+              <option value={30}>30 days before</option>
+            </select>
+            <p className="setting-description">
+              When to send renewal reminder notifications
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="settings-section">
         <h3>Payment Method</h3>
         <div className="setting-item">
+          <label>Preferred payment method for renewals</label>
           <select
             name="paymentMethod"
             value={settings.paymentMethod}
@@ -149,44 +152,43 @@ const SubscriptionSettings = () => {
             <option value="WALLET">Wallet Balance</option>
             <option value="BANK_TRANSFER">Bank Transfer</option>
           </select>
-          <p className="setting-description">
-            Preferred payment method for renewals
-          </p>
         </div>
       </div>
 
       <div className="settings-section">
         <h3>Notifications</h3>
-        <div className="setting-item">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              name="emailNotifications"
-              checked={settings.emailNotifications}
-              onChange={handleInputChange}
-            />
-            <span className="checkmark"></span>
-            Email notifications
-          </label>
-          <p className="setting-description">
-            Receive trip updates, renewal reminders, and promotional offers via email
-          </p>
-        </div>
+        <div className="setting-row">
+          <div className="setting-item">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="emailNotifications"
+                checked={settings.emailNotifications}
+                onChange={handleInputChange}
+              />
+              <span className="checkmark"></span>
+              Email notifications
+            </label>
+            <p className="setting-description">
+              Receive trip updates, renewal reminders, and promotional offers via email
+            </p>
+          </div>
 
-        <div className="setting-item">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              name="smsNotifications"
-              checked={settings.smsNotifications}
-              onChange={handleInputChange}
-            />
-            <span className="checkmark"></span>
-            SMS notifications
-          </label>
-          <p className="setting-description">
-            Receive important trip alerts via SMS
-          </p>
+          <div className="setting-item">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="smsNotifications"
+                checked={settings.smsNotifications}
+                onChange={handleInputChange}
+              />
+              <span className="checkmark"></span>
+              SMS notifications
+            </label>
+            <p className="setting-description">
+              Receive important trip alerts via SMS
+            </p>
+          </div>
         </div>
       </div>
 

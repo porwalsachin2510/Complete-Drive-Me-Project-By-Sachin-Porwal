@@ -44,7 +44,7 @@
 .filter-btn {
   padding: 8px 18px;
   border: 1px solid #e2e8f0;
-  background: white;
+  background-color: #ffffff;
   border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
@@ -96,7 +96,7 @@
 
 /* Booking Card */
 .booking-card {
-  background: white;
+  background-color: #ffffff;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -245,7 +245,7 @@
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #fc8181;
-  background: white;
+  background-color: #ffffff;
   color: #e53e3e;
   border-radius: 6px;
   cursor: pointer;
@@ -283,7 +283,7 @@
   flex: 1;
   padding: 8px 12px;
   border: 1px solid #ed8936;
-  background: white;
+  background-color: #ffffff;
   color: #c05621;
   border-radius: 6px;
   cursor: pointer;

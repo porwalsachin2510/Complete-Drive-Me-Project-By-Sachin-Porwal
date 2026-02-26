@@ -40,6 +40,10 @@
   font-size: 14px;
   transition: border-color 0.2s;
   box-sizing: border-box;
+  background-color: #ffffff;
+  color: #1a202c;
+  outline: none;
+  line-height: 1.5;
 }
 
 .search-input:focus {
@@ -48,13 +52,23 @@
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
 
+.search-input::placeholder {
+  color: #a0aec0;
+}
+
 .filter-box .filter-select {
   padding: 10px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;
-  background: white;
+  background-color: #ffffff;
+  color: #374151;
   cursor: pointer;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  line-height: 1.5;
+  outline: none;
 }
 
 .filter-box .filter-select:focus {
@@ -72,10 +86,10 @@
 
 /* Route Card */
 .route-card {
-  background: #f7fafc;
+  background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 24px;
   transition: all 0.2s;
 }
 
@@ -139,7 +153,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: white;
+  background-color: #f7fafc;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
@@ -171,7 +185,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 12px;
-  background: white;
+  background-color: #f7fafc;
   border-radius: 6px;
   border: 1px solid #edf2f7;
 }
