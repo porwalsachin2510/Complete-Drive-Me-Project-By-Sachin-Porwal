@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import api from "../../../utils/api";
 import Navbar from "../../../Components/Navbar/Navbar";
 import Footer from "../../../Components/Footer/Footer";
+import EmployeeFeedback from "../../../Components/CorporateEmployee/EmployeeFeedback/EmployeeFeedback";
 import "./employeedashboard.css";
 
 export default function EmployeeDashboard() {
@@ -125,6 +126,8 @@ export default function EmployeeDashboard() {
         return (
           <NotificationsTab notifications={notifications} loading={loading} />
         );
+      case "feedback":
+        return <EmployeeFeedback />;
       case "route-change":
         return <RouteChangeTab onSubmit={handleRequestRouteChange} />;
       default:
@@ -165,6 +168,12 @@ export default function EmployeeDashboard() {
           onClick={() => setDashTab("notifications")}
         >
           Notifications
+        </button>
+        <button
+          className={`tab-btn ${dashTab === "feedback" ? "active" : ""}`}
+          onClick={() => setDashTab("feedback")}
+        >
+          Rate & Feedback
         </button>
         <button
           className={`tab-btn ${dashTab === "route-change" ? "active" : ""}`}

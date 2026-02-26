@@ -433,6 +433,12 @@ function B2CPartnerDriverDashboard() {
           Bookings
         </button>
         <button
+          className={`tab ${activeMainTab === "daily-trips" ? "active" : ""}`}
+          onClick={() => setActiveMainTab("daily-trips")}
+        >
+          Daily Trips
+        </button>
+        <button
           className={`tab ${activeMainTab === "location" ? "active" : ""}`}
           onClick={() => setActiveMainTab("location")}
         >
@@ -654,6 +660,55 @@ function B2CPartnerDriverDashboard() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeMainTab === "daily-trips" && (
+          <div className="daily-trips-section">
+            <h2 style={{ marginBottom: "16px" }}>Daily Trip Management</h2>
+            <p style={{ color: "#666", marginBottom: "24px" }}>
+              View and manage your daily trips. Start and complete individual trips for each booking.
+            </p>
+            {Array.isArray(driverBookings) && driverBookings.filter(
+              b => b.bookingStatus === "ACCEPTED" || b.bookingStatus === "IN_PROGRESS"
+            ).length > 0 ? (
+              driverBookings
+                .filter(b => b.bookingStatus === "ACCEPTED" || b.bookingStatus === "IN_PROGRESS")
+                .map((booking) => (
+                  <div key={booking._id} style={{ marginBottom: "24px" }}>
+                    <div style={{ padding: "12px 16px", background: "#f8f9fa", borderRadius: "8px 8px 0 0", borderBottom: "2px solid #007bff" }}>
+                      <strong>Booking #{booking._id.slice(-8)}</strong>
+                      <span style={{ marginLeft: "12px", color: "#666" }}>
+                        {booking.pickupLocation} → {booking.dropoffLocation}
+                      </span>
+                    </div>
+                    <DailyTripsInBooking
+                      booking={booking}
+                      userRole={user?.role}
+                      currentUserId={user?._id}
+                      currentDriverId={user?.driverId}
+                      onTripStatusChange={() => {
+                        dispatch(getPartnerDriverBookings({ status: "ALL" }));
+                      }}
+                      onTripStart={() => {
+                        setActiveTrip(booking);
+                        if (!isSharingLocation) {
+                          startAutomaticLocationSharing();
+                        }
+                      }}
+                      onTripComplete={() => {
+                        stopAutomaticLocationSharing();
+                      }}
+                    />
+                  </div>
+                ))
+            ) : (
+              <div className="no-bookings">
+                <div className="no-bookings-icon">📅</div>
+                <h3>No active trips</h3>
+                <p>You have no accepted or in-progress bookings with daily trips</p>
               </div>
             )}
           </div>

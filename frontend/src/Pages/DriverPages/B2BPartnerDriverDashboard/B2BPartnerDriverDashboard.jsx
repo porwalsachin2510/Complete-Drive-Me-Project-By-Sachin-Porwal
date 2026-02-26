@@ -236,6 +236,17 @@ function B2BPartnerDriverDashboard() {
     }
   }, [user._id, isSharingLocation, startAutomaticLocationSharing]);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      if (!user?._id) return;
+      const response = await api.get(`/notifications/user/${user._id}`);
+      const data = response.data?.data?.notifications || response.data?.notifications || [];
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching B2B driver notifications:", error);
+    }
+  }, [user?._id]);
+
   useEffect(() => {
     // Use setTimeout to avoid cascading renders
     const timer = setTimeout(() => {
@@ -246,12 +257,17 @@ function B2BPartnerDriverDashboard() {
   }, [fetchB2BPartnerBookings]);
 
   useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
     if (!socket || !socket.socket) return;
 
     // Listen for new bookings
     socket.socket.on("new-b2b-booking", (booking) => {
-      console.log("📱 New B2B booking received:", booking);
+      console.log("New B2B booking received:", booking);
       setBookings((prev) => [...prev, booking]);
+      fetchNotifications();
 
       // Start location sharing for new booking
       if (!isSharingLocation) {
@@ -494,12 +510,12 @@ function B2BPartnerDriverDashboard() {
             <h3>Notifications</h3>
             <div className="notification-list">
               {notifications.length > 0 ? (
-                notifications.map((notification, index) => (
-                  <div key={index} className="notification-item">
+                notifications.map((notification) => (
+                  <div key={notification._id} className={`notification-item ${!notification.isRead ? 'unread' : ''}`}>
                     <h4>{notification.title}</h4>
                     <p>{notification.message}</p>
                     <div className="time">
-                      {new Date(notification.timestamp).toLocaleString()}
+                      {new Date(notification.createdAt).toLocaleString()}
                     </div>
                   </div>
                 ))

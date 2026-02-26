@@ -14,6 +14,7 @@ export default function CorporateDriverDashboard() {
   const socket = useSocket();
 
   const [bookings, setBookings] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [liveLocation, setLiveLocation] = useState(null);
   const [activeBookingTab, setActiveBookingTab] = useState("confirmed");
   const [activeMainTab, setActiveMainTab] = useState("bookings");
@@ -161,6 +162,17 @@ export default function CorporateDriverDashboard() {
     }
   }, [user._id, isSharingLocation, startAutomaticLocationSharing]);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      if (!user?._id) return;
+      const response = await api.get(`/notifications/user/${user._id}`);
+      const data = response.data?.data?.notifications || response.data?.notifications || [];
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  }, [user?._id]);
+
   const startTrip = async (bookingId) => {
     try {
       const response = await api.put(`/bookings/corporate/${bookingId}/start`);
@@ -238,12 +250,17 @@ export default function CorporateDriverDashboard() {
   }, [fetchCorporateBookings]);
 
   useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
     if (!socket || !socket.socket) return;
 
     // Listen for new bookings
     socket.socket.on("new-corporate-booking", (booking) => {
-      console.log("📱 New corporate booking received:", booking);
+      console.log("New corporate booking received:", booking);
       setBookings((prev) => [...prev, booking]);
+      fetchNotifications();
 
       // Start location sharing for new booking
       if (!isSharingLocation) {
@@ -253,10 +270,11 @@ export default function CorporateDriverDashboard() {
 
     // Listen for booking updates
     socket.socket.on("corporate-booking-updated", (booking) => {
-      console.log("🔄 Corporate booking updated:", booking);
+      console.log("Corporate booking updated:", booking);
       setBookings((prev) =>
         prev.map((b) => (b._id === booking._id ? booking : b)),
       );
+      fetchNotifications();
     });
 
     // Listen for location updates
@@ -498,9 +516,21 @@ export default function CorporateDriverDashboard() {
           <div className="notifications-section">
             <h3>Notifications</h3>
             <div className="notification-list">
-              <div className="no-notifications">
-                <p>No notifications available</p>
-              </div>
+              {notifications.length > 0 ? (
+                notifications.map((notification) => (
+                  <div key={notification._id} className={`notification-item ${!notification.isRead ? 'unread' : ''}`}>
+                    <h4>{notification.title}</h4>
+                    <p>{notification.message}</p>
+                    <div className="time">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-notifications">
+                  <p>No notifications available</p>
+                </div>
+              )}
             </div>
           </div>
         )}
